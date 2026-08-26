@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QUANTUMVERSE — A Vikash Patel Production</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root{
+  --void: #030308;
+  --panel: #0A0E1A;
+  --panel-2: #10162A;
+  --line: #232C46;
+  --cyan: #4CE0E0;
+  --violet: #A78BFA;
+  --magenta: #F472B6;
+  --text: #E9ECF5;
+  --muted: #7C86A8;
+  --display: 'Space Grotesk', sans-serif;
+  --sans: 'Inter', sans-serif;
+  --mono: 'Space Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{ background: var(--void); color: var(--text); font-family: var(--sans); overflow-x:hidden;}
+
+/* ============ HERO ============ */
+.hero{ position:relative; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 20px; }
+#particleCanvas{ position:absolute; inset:0; width:100%; height:100%; }
+.hero-content{ position:relative; z-index:2; }
+.presents{ font-family: var(--mono); font-size:11px; letter-spacing:6px; text-transform:uppercase; color: var(--cyan); opacity:0; animation: fadeUp 1s ease-out .2s forwards;}
+.title-card{ font-family: var(--display); font-weight:700; font-size: clamp(46px,9vw,110px); line-height:0.95; letter-spacing:-2px; margin-top:20px;
+  background: linear-gradient(120deg, var(--cyan), var(--violet) 50%, var(--magenta)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  opacity:0; animation: fadeUp 1.1s ease-out .6s forwards;}
+.tagline{ font-size:16px; color: var(--muted); margin-top:22px; max-width:600px; margin-left:auto; margin-right:auto; line-height:1.7;
+  opacity:0; animation: fadeUp 1s ease-out 1.1s forwards;}
+.by-line{ font-family: var(--mono); font-size:12px; color: var(--violet); margin-top:16px; opacity:0; animation: fadeUp 1s ease-out 1.4s forwards;}
+@keyframes fadeUp{ from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+.scroll-cta{ margin-top:50px; font-family: var(--mono); font-size:11px; letter-spacing:3px; color:var(--muted); text-transform:uppercase;
+  border:1px solid var(--line); padding:11px 24px; border-radius:30px; cursor:pointer; text-decoration:none;
+  opacity:0; animation: fadeUp 1s ease-out 1.8s forwards, bob 2.4s ease-in-out 2.8s infinite; display:inline-block;}
+.scroll-cta:hover{ border-color: var(--cyan); color: var(--cyan); }
+@keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(6px);} }
+
+/* ============ SHARED ============ */
+.wrap{ max-width:1200px; margin:0 auto; padding:100px 24px; position:relative; z-index:2;}
+.eyebrow{ font-family: var(--mono); font-size:11px; letter-spacing:4px; text-transform:uppercase; color: var(--cyan); margin-bottom:10px;}
+.heading{ font-family: var(--display); font-size: clamp(30px,4.5vw,48px); font-weight:700; margin-bottom:18px;}
+.desc{ color: var(--muted); font-size:15px; max-width:680px; line-height:1.75; margin-bottom:46px;}
+.reveal{ opacity:0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
+.reveal.visible{ opacity:1; transform:translateY(0); }
+
+/* ============ STORY ============ */
+.story-section{ background: linear-gradient(180deg, transparent, rgba(76,224,224,0.03), transparent); }
+.story-text p{ font-size:17px; line-height:2; color:#D3D8EA; max-width:760px; margin-bottom:24px; font-family: var(--sans); }
+.story-text em{ color: var(--cyan); font-style:normal; font-weight:600; }
+.story-text .highlight{ color: var(--violet); font-weight:600; }
+
+/* ============ CONCEPT CARDS ============ */
+.concept-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap:20px; }
+@media (max-width:900px){ .concept-grid{ grid-template-columns:1fr; } }
+.concept-card{ background: var(--panel); border:1px solid var(--line); border-radius:18px; padding:28px; position:relative; overflow:hidden; }
+.concept-card::before{ content:''; position:absolute; top:-40%; right:-20%; width:220px; height:220px; border-radius:50%;
+  background: radial-gradient(circle, var(--card-glow, var(--cyan)) 0%, transparent 70%); opacity:0.15; }
+.concept-visual{ height:90px; margin-bottom:16px; display:flex; align-items:center; }
+.concept-name{ font-family: var(--display); font-size:22px; font-weight:700; margin-bottom:4px; }
+.concept-tagline{ font-family: var(--mono); font-size:11px; color: var(--card-glow, var(--cyan)); text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;}
+.concept-desc{ font-size:13.5px; color:#C7CCE0; line-height:1.7; margin-bottom:14px;}
+.concept-analogy{ background: var(--panel-2); border-left:3px solid var(--card-glow, var(--cyan)); padding:12px 16px; border-radius:8px; font-size:12.5px; color: var(--muted); }
+.concept-analogy b{ color: var(--text); }
+
+/* ============ GATES ============ */
+.gates-grid{ display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; margin-bottom:50px;}
+@media (max-width:900px){ .gates-grid{ grid-template-columns: repeat(2,1fr);} }
+.gate-card{ background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; text-align:center; }
+.gate-symbol{ font-family: var(--display); font-size:34px; font-weight:700; color: var(--cyan); margin-bottom:8px; }
+.gate-name{ font-size:13px; font-weight:600; margin-bottom:8px; }
+.gate-matrix{ font-family: var(--mono); font-size:10.5px; color: var(--muted); margin-bottom:10px; white-space:pre; }
+.gate-analogy{ font-size:11.5px; color:#B8BEDA; line-height:1.5; }
+
+/* ============ ALGO / QML CARDS ============ */
+.algo-list{ display:flex; flex-direction:column; gap:14px; }
+.algo-row{ background: var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; display:grid; grid-template-columns: 40px 1fr; gap:18px; align-items:start;}
+.algo-num{ font-family: var(--display); font-size:22px; font-weight:700; color: var(--violet); }
+.algo-name{ font-family: var(--display); font-size:18px; font-weight:700; margin-bottom:6px;}
+.algo-desc{ font-size:13.5px; color:#C7CCE0; line-height:1.65; margin-bottom:10px;}
+.algo-example{ font-family: var(--mono); font-size:11.5px; color: var(--cyan); background: rgba(76,224,224,0.07); padding:8px 12px; border-radius:8px; display:inline-block;}
+
+/* ============ FOOTER ============ */
+footer{ text-align:center; padding:60px 20px 80px; border-top:1px solid var(--line); color: var(--muted); font-size:12.5px; position:relative; z-index:2;}
+footer .signature{ font-family: var(--display); font-size:26px; font-weight:700; margin-bottom:8px;
+  background: linear-gradient(120deg, var(--cyan), var(--violet)); -webkit-background-clip:text; background-clip:text; color:transparent;}
+footer .final-line{ font-family: var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color: var(--muted); margin-top:16px;}
+</style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+
+<!-- ============ HERO ============ -->
+<section class="hero" id="top">
+  <div class="hero-content">
+    <div class="presents">A Vikash Patel Production</div>
+    <div class="title-card">QUANTUMVERSE</div>
+    <div class="tagline">Superposition. Entanglement. Interference. The universe's strangest rules are about to become the world's most powerful technology — and this is where you start understanding why.</div>
+    <div class="by-line">Curated &amp; Built by Vikash Patel</div>
+    <a href="#story" class="scroll-cta">↓ Enter the Quantum Realm</a>
+  </div>
+</section>
+
+<!-- ============ STORY ============ -->
+<section class="wrap story-section" id="story">
+  <div class="eyebrow reveal">Prologue</div>
+  <div class="heading reveal">Why Quantum is the Next Fire</div>
+  <div class="story-text reveal">
+    <p>For most of history, humanity built machines that obeyed one rule: a thing is either <em>this</em> or <em>that</em>. A switch is on or off. A coin is heads or tails. Classical computers turned that rule into civilization — every app, every website, every game you've ever touched runs on billions of switches flipping between two states.</p>
+    <p>But nature never actually followed that rule. At the smallest scales, a particle doesn't have to choose. It can be <span class="highlight">spinning up and down at once</span>, existing in every possible state simultaneously — until the moment you look. That single fact, buried in the mathematics of the 1920s, sat quietly for a century while classical computing ate the world.</p>
+    <p>Now it's waking up. <em>Quantum computers</em> don't replace classical ones — they attack a different class of problem entirely: simulating molecules for new medicines, breaking (and building) unbreakable encryption, optimizing millions of variables at once for logistics and finance. Countries and corporations are racing for "quantum advantage" the way nations once raced for electricity.</p>
+    <p>This page is your entry point — not a physics degree, but a working intuition for the ideas that will quietly reshape drug discovery, cryptography, AI, and materials science over the next twenty years. <span class="highlight">The future isn't binary anymore.</span></p>
+  </div>
+</section>
+
+<!-- ============ CORE CONCEPTS ============ -->
+<section class="wrap" id="concepts">
+  <div class="eyebrow reveal">Chapter I</div>
+  <div class="heading reveal">The Core Ideas</div>
+  <div class="desc reveal">Six ideas that sound like science fiction and are, in fact, measured in labs every day. Each comes with a real-world way to picture it.</div>
+  <div class="concept-grid" id="conceptGrid"></div>
+</section>
+
+<!-- ============ QUANTUM IMPLEMENTATION ============ -->
+<section class="wrap" id="implementation">
+  <div class="eyebrow reveal">Chapter II</div>
+  <div class="heading reveal">Quantum Implementation</div>
+  <div class="desc reveal">Ideas become engineering through <b>quantum gates</b> — the building blocks — and <b>quantum algorithms</b>, the recipes that arrange gates to solve real problems.</div>
+
+  <div class="eyebrow reveal" style="margin-top:10px;">Quantum Gates</div>
+  <div class="gates-grid" id="gatesGrid"></div>
+
+  <div class="eyebrow reveal">Quantum Algorithms</div>
+  <div class="algo-list" id="algoGrid"></div>
+</section>
+
+<!-- ============ QML ============ -->
+<section class="wrap" id="qml">
+  <div class="eyebrow reveal">Chapter III</div>
+  <div class="heading reveal">Quantum Machine Learning (QML)</div>
+  <div class="desc reveal">Where quantum computing meets AI — using quantum states to search, optimize, and learn patterns in ways classical machine learning can't easily replicate.</div>
+  <div class="algo-list" id="qmlGrid"></div>
+</section>
+
+<!-- ============ FINALE ============ -->
+<section class="wrap" id="finale" style="text-align:center;">
+  <div class="eyebrow reveal" style="justify-content:center;">Epilogue</div>
+  <div class="heading reveal">The Story Isn't Written Yet</div>
+  <div class="story-text reveal" style="margin:0 auto;">
+    <p>Every technology that changed the world looked impractical right before it didn't. Quantum computers today are noisy, fragile, and confined to labs — exactly how classical computers looked in the 1940s, filling entire rooms to add two numbers.</p>
+    <p>The physicists, engineers, and dreamers who understand <span class="highlight">superposition, entanglement, and interference</span> today are writing the operating manual for the next century. You just read the first page.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="signature">Vikash Patel</div>
+  <div>QUANTUMVERSE — where the strangest physics becomes the clearest story.</div>
+  <div class="final-line">— End of Transmission —</div>
+</footer>
+
+<script>
+// ============ PARTICLE / ENTANGLEMENT CANVAS ============
+const canvas = document.getElementById('particleCanvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [];
+function resize(){
+  W = canvas.width = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const PCOUNT = window.innerWidth < 700 ? 45 : 90;
+for(let i=0;i<PCOUNT;i++){
+  particles.push({
+    x: Math.random()*W, y: Math.random()*H,
+    vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4,
+    r: Math.random()*1.8+0.6
+  });
+}
+function animate(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#030308';
+  ctx.fillRect(0,0,W,H);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if(p.x<0||p.x>W) p.vx*=-1;
+    if(p.y<0||p.y>H) p.vy*=-1;
+  });
+  for(let i=0;i<particles.length;i++){
+    for(let j=i+1;j<particles.length;j++){
+      const a = particles[i], b = particles[j];
+      const dx = a.x-b.x, dy = a.y-b.y;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      if(dist < 140){
+        ctx.strokeStyle = `rgba(76,224,224,${(1-dist/140)*0.18})`;
+        ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+      }
+    }
+  }
+  particles.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(167,139,250,0.8)';
+    ctx.fill();
+  });
+  requestAnimationFrame(animate);
+}
+animate();
+
+// ============ SCROLL REVEAL ============
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.15 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ============ CONCEPT DATA ============
+const concepts = [
+  {
+    name: 'Superposition', glow: '#4CE0E0',
+    tagline: 'Being every answer at once',
+    desc: 'A quantum bit (qubit) isn\'t stuck at 0 or 1 — it exists in a blend of both until measured. This is what gives quantum computers their raw power: one qubit explores two possibilities simultaneously, and 300 qubits can represent more states than there are atoms in the observable universe.',
+    analogy: '<b>Real life:</b> Imagine spinning a coin instead of flipping it. While it spins, it isn\'t "heads" or "tails" — it\'s genuinely both, blended, until it lands and you look.',
+    visual: 'superposition'
+  },
+  {
+    name: 'Entanglement', glow: '#A78BFA',
+    tagline: 'Spooky action at a distance',
+    desc: 'Two particles can become linked so that measuring one instantly tells you about the other — even if they\'re light-years apart. Einstein called it "spooky action at a distance" because it seemed to break the speed-of-light limit on information. It doesn\'t (no usable message travels faster than light), but the correlation is real and experimentally confirmed.',
+    analogy: '<b>Real life:</b> Imagine two gloves separated into boxes and sent to opposite ends of the world. Opening one box and seeing "left glove" instantly tells you the other is "right" — except quantum particles don\'t have a fixed identity until the moment you check.',
+    visual: 'entanglement'
+  },
+  {
+    name: 'Interference', glow: '#F472B6',
+    tagline: 'Making wrong answers cancel out',
+    desc: 'Quantum states behave like waves — and waves can add up or cancel each other out. Quantum algorithms are engineered so that the paths leading to <i>wrong</i> answers interfere destructively (cancel), while paths leading to the <i>right</i> answer interfere constructively (amplify). This is the actual secret sauce behind quantum speedups.',
+    analogy: '<b>Real life:</b> Like noise-cancelling headphones — they don\'t block sound, they generate an opposite wave that cancels it out. Quantum algorithms cancel out wrong answers the same way, leaving the right one louder.',
+    visual: 'interference'
+  },
+  {
+    name: 'Quantum Foam', glow: '#4CE0E0',
+    tagline: 'Spacetime\'s violent, jittery floor',
+    desc: 'Zoom into spacetime far below the atomic scale (the Planck length, ~10⁻³⁵ meters) and physicists theorize it stops being smooth. Instead, it froths — particles and tiny black holes may pop in and out of existence in a chaotic foam. It\'s one of the biggest open puzzles connecting quantum mechanics and gravity.',
+    analogy: '<b>Real life:</b> Picture the ocean from an airplane — perfectly smooth. Now imagine diving in: it\'s all churn, bubbles, and turbulence. Quantum foam is spacetime\'s "close-up" view.',
+    visual: 'foam'
+  },
+  {
+    name: 'Quantum Realm', glow: '#A78BFA',
+    tagline: 'Where the classical rules stop applying',
+    desc: 'This isn\'t one specific size — it\'s the general zone (atoms, electrons, photons) where quantum effects dominate over classical physics. In this realm, particles tunnel through barriers they "shouldn\'t" cross, and observation itself changes outcomes. It\'s the actual physical stage where superposition and entanglement play out.',
+    analogy: '<b>Real life:</b> Like a video game with different physics engines for different zoom levels — walk normally in the "world map," but zoom into a specific tile and suddenly gravity works differently. The quantum realm is that zoomed-in tile of reality.',
+    visual: 'realm'
+  },
+  {
+    name: 'Quantum Teleportation', glow: '#F472B6',
+    tagline: 'Moving information, not matter',
+    desc: 'Despite the sci-fi name, nothing physically "beams" anywhere. Using entanglement plus a classical communication channel, the exact quantum <i>state</i> of one particle can be transferred to another particle far away — while destroying the original. It\'s a cornerstone technique for future quantum internet and secure communication.',
+    analogy: '<b>Real life:</b> Think of it like faxing a document, except the "ink pattern" is a fragile quantum state — the original page is destroyed the moment the copy is created elsewhere, and you still need a phone call (classical channel) to complete the transfer.',
+    visual: 'teleport'
+  }
+];
+
+const conceptGrid = document.getElementById('conceptGrid');
+concepts.forEach(c => {
+  const card = document.createElement('div');
+  card.className = 'concept-card reveal';
+  card.style.setProperty('--card-glow', c.glow);
+  card.innerHTML = `
+    <div class="concept-name">${c.name}</div>
+    <div class="concept-tagline">${c.tagline}</div>
+    <div class="concept-desc">${c.desc}</div>
+    <div class="concept-analogy">${c.analogy}</div>
+  `;
+  conceptGrid.appendChild(card);
+  observer.observe(card);
+});
+
+// Extra: String Theory as a bonus concept row appended
+const stringTheory = document.createElement('div');
+stringTheory.className = 'concept-card reveal';
+stringTheory.style.setProperty('--card-glow', '#4CE0E0');
+stringTheory.innerHTML = `
+  <div class="concept-name">String Theory</div>
+  <div class="concept-tagline">Vibrations instead of dots</div>
+  <div class="concept-desc">String theory proposes that the universe's fundamental particles aren't points, but tiny vibrating "strings" of energy — and the specific way each string vibrates determines whether it appears as an electron, a photon, or something else. It's an attempt to unify quantum mechanics with gravity, requiring up to 10 or 11 dimensions to work mathematically. It remains unproven experimentally, but it's one of physics' most ambitious frameworks.</div>
+  <div class="concept-analogy"><b>Real life:</b> Like a guitar string — the same string can produce a low note or a high note depending on how it vibrates. String theory says the same "string" can appear as different particles depending on its vibration pattern.</div>
+`;
+conceptGrid.appendChild(stringTheory);
+observer.observe(stringTheory);
+
+// ============ GATES DATA ============
+const gates = [
+  { symbol:'X', name:'Pauli-X (NOT Gate)', matrix:'[0 1]\n[1 0]', analogy:'Flips a qubit like flipping a light switch — 0 becomes 1 and vice versa.' },
+  { symbol:'H', name:'Hadamard Gate', matrix:'[1  1]\n[1 -1] /√2', analogy:'Puts a qubit into superposition — like setting that spinning coin in motion.' },
+  { symbol:'CNOT', name:'Controlled-NOT', matrix:'Flips target\nif control = 1', analogy:'Like a domino: if the first domino falls (control=1), it flips the second (target).' },
+  { symbol:'Z', name:'Pauli-Z (Phase Flip)', matrix:'[1  0]\n[0 -1]', analogy:'Leaves 0 alone but flips the "phase" of 1 — like flipping a wave upside down without moving it.' }
+];
+const gatesGrid = document.getElementById('gatesGrid');
+gates.forEach(g => {
+  const el = document.createElement('div');
+  el.className = 'gate-card reveal';
+  el.innerHTML = `
+    <div class="gate-symbol">${g.symbol}</div>
+    <div class="gate-name">${g.name}</div>
+    <div class="gate-matrix">${g.matrix}</div>
+    <div class="gate-analogy">${g.analogy}</div>
+  `;
+  gatesGrid.appendChild(el);
+  observer.observe(el);
+});
+
+// ============ ALGORITHMS DATA ============
+const algorithms = [
+  { name:'Deutsch–Jozsa Algorithm', desc:'Determines whether a function is "constant" or "balanced" in a single query, where a classical computer might need to check half of all possible inputs to be sure.', example:'Real-life parallel: Instantly knowing if a huge batch of products are all defective or all fine, versus checking every single unit one by one.' },
+  { name:"Grover's Search Algorithm", desc:'Searches an unsorted database of N items in roughly √N steps instead of N steps — a quadratic speedup for search problems.', example:'Real-life parallel: Finding one specific name in an unsorted phone book of a million entries in about 1,000 steps instead of 500,000.' },
+  { name:"Shor's Algorithm", desc:'Factors large numbers exponentially faster than the best known classical algorithms — the reason quantum computing is a long-term threat to current RSA encryption.', example:'Real-life parallel: Cracking a bank-vault-style lock that would take classical computers longer than the age of the universe, in hours or days instead.' },
+  { name:'Quantum Fourier Transform (QFT)', desc:'The quantum version of the Fourier Transform, used to detect repeating patterns and periodicity inside quantum states — it\'s the core subroutine inside Shor\'s algorithm.', example:'Real-life parallel: Figuring out which musical notes make up a chord just by listening to the combined sound — QFT does this for quantum states.' }
+];
+const algoGrid = document.getElementById('algoGrid');
+algorithms.forEach((a,i) => {
+  const el = document.createElement('div');
+  el.className = 'algo-row reveal';
+  el.innerHTML = `
+    <div class="algo-num">${String(i+1).padStart(2,'0')}</div>
+    <div>
+      <div class="algo-name">${a.name}</div>
+      <div class="algo-desc">${a.desc}</div>
+      <div class="algo-example">${a.example}</div>
+    </div>
+  `;
+  algoGrid.appendChild(el);
+  observer.observe(el);
+});
+
+// ============ QML DATA ============
+const qmlAlgos = [
+  { name:'Variational Quantum Eigensolver (VQE)', desc:'A hybrid quantum-classical algorithm that finds the lowest energy state of a system by looping between a quantum circuit and a classical optimizer — one of the most promising near-term uses of quantum hardware.', example:'Real-life parallel: Discovering the most stable (lowest energy) shape of a new drug molecule — critical for pharmaceutical research and materials design.' },
+  { name:'Quantum Approximate Optimization Algorithm (QAOA)', desc:'Designed to find good (though not always perfect) solutions to combinatorial optimization problems by encoding them into a quantum circuit whose measurement outcomes approximate the best answer.', example:'Real-life parallel: Planning delivery truck routes across a city to minimize total distance and fuel — a classic "traveling salesman"-style problem.' },
+  { name:'Quantum Support Vector Machine (QSVM)', desc:'Uses quantum circuits to map data into an extremely high-dimensional "feature space" where patterns that are tangled in normal space become easy to separate with a straight line.', example:'Real-life parallel: Sorting spam from real email when the difference is subtle — mapping messages into a richer space makes the boundary between "spam" and "not spam" much clearer.' },
+  { name:'Quantum Neural Networks (QNN)', desc:'Replace some layers of a classical neural network with parameterized quantum circuits, aiming to capture complex correlations in data using fewer parameters than classical deep learning.', example:'Real-life parallel: Recognizing handwriting styles or medical scan anomalies with a network that may need far less training data than a classical model.' },
+  { name:'HHL Algorithm (Linear Systems)', desc:'Solves systems of linear equations exponentially faster than classical methods under certain conditions — foundational for many machine learning subroutines that rely on linear algebra.', example:'Real-life parallel: Instantly balancing a massive financial portfolio\'s risk equations that would take a classical computer far longer to solve exactly.' },
+  { name:'Quantum k-Means Clustering', desc:'Uses quantum distance-estimation subroutines to group similar data points together faster than classical k-means, particularly as dataset size grows.', example:'Real-life parallel: Automatically grouping millions of customers into meaningful segments (e.g., "bargain shoppers," "luxury buyers") for targeted marketing.' }
+];
+const qmlGrid = document.getElementById('qmlGrid');
+qmlAlgos.forEach((a,i) => {
+  const el = document.createElement('div');
+  el.className = 'algo-row reveal';
+  el.innerHTML = `
+    <div class="algo-num">${String(i+1).padStart(2,'0')}</div>
+    <div>
+      <div class="algo-name">${a.name}</div>
+      <div class="algo-desc">${a.desc}</div>
+      <div class="algo-example">${a.example}</div>
+    </div>
+  `;
+  qmlGrid.appendChild(el);
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
