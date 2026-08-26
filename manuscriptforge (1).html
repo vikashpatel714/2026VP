@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManuscriptForge — A Vikash Patel Production</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@400;600&family=Space+Mono:wght@400;700&display=swap');
+
+:root{
+  --void: #05070B;
+  --panel: #0D1117;
+  --panel-2: #121924;
+  --line: #1F2A38;
+  --parchment: #F3ECDD;
+  --gold: #C9A24B;
+  --gold-bright: #E6C878;
+  --text: #E9ECF1;
+  --muted: #7E8CA0;
+  --crimson: #B8465A;
+  --sans: 'Inter', sans-serif;
+  --serif: 'Playfair Display', serif;
+  --body-serif: 'Source Serif 4', serif;
+  --mono: 'Space Mono', monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{ background: var(--void); color: var(--text); font-family: var(--sans); }
+
+/* ============ CINEMATIC HERO ============ */
+.hero{
+  min-height: 100vh; position: relative; overflow:hidden;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; padding: 40px 20px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(201,162,75,0.10) 0%, transparent 55%),
+    radial-gradient(ellipse at 20% 80%, rgba(184,70,90,0.06) 0%, transparent 50%),
+    var(--void);
+}
+.hero::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px);
+  background-size: 3px 3px; opacity: 0.06;
+}
+.hero .beam{
+  position:absolute; top:-20%; left:50%; transform: translateX(-50%);
+  width: 2px; height: 70%; background: linear-gradient(to bottom, rgba(201,162,75,0.5), transparent);
+  filter: blur(1px); opacity: 0; animation: beamFade 2.4s ease-out 0.3s forwards;
+}
+@keyframes beamFade{ to{ opacity:1; } }
+
+.presents{
+  font-family: var(--mono); font-size: 11px; letter-spacing: 6px; text-transform:uppercase;
+  color: var(--gold); opacity:0; animation: fadeUp 1s ease-out 0.2s forwards; margin-bottom: 22px;
+}
+.title-card{
+  font-family: var(--serif); font-weight: 900; font-size: clamp(42px, 8vw, 96px);
+  line-height: 1.02; letter-spacing: -1px; color: var(--parchment);
+  opacity:0; animation: fadeUp 1.1s ease-out 0.6s forwards;
+}
+.title-card em{ font-style: italic; color: var(--gold-bright); }
+.tagline{
+  font-family: var(--body-serif); font-size: 16px; color: var(--muted); margin-top: 18px; max-width: 560px;
+  opacity:0; animation: fadeUp 1s ease-out 1.1s forwards;
+}
+@keyframes fadeUp{ from{ opacity:0; transform: translateY(18px);} to{ opacity:1; transform:translateY(0);} }
+
+.scroll-cta{
+  margin-top: 46px; font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--muted);
+  text-transform: uppercase; opacity:0; animation: fadeUp 1s ease-out 1.6s forwards, bob 2.4s ease-in-out 2.6s infinite;
+  cursor:pointer; border: 1px solid var(--line); padding: 10px 22px; border-radius: 30px;
+}
+.scroll-cta:hover{ border-color: var(--gold); color: var(--gold); }
+@keyframes bob{ 0%,100%{ transform: translateY(0);} 50%{ transform: translateY(6px);} }
+
+/* ============ SHARED LAYOUT ============ */
+.wrap{ max-width: 1200px; margin: 0 auto; padding: 90px 24px; }
+.section-eyebrow{
+  font-family: var(--mono); font-size: 11px; letter-spacing: 4px; text-transform:uppercase;
+  color: var(--gold); margin-bottom: 10px;
+}
+.section-heading{ font-family: var(--serif); font-size: clamp(28px, 4vw, 42px); font-weight:700; margin-bottom: 14px; }
+.section-desc{ color: var(--muted); font-size: 14.5px; max-width: 620px; margin-bottom: 40px; line-height:1.6; }
+
+/* ============ FORMATTER TOOL ============ */
+.tool-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items:start; }
+@media (max-width: 980px){ .tool-grid{ grid-template-columns: 1fr; } }
+
+.input-panel{ background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px; }
+.field{ margin-bottom: 18px; }
+.field label{ display:block; font-family: var(--mono); font-size: 10.5px; letter-spacing:1.5px; text-transform:uppercase; color: var(--muted); margin-bottom: 7px; }
+.field input, .field textarea{
+  width: 100%; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text); padding: 10px 12px; font-family: var(--sans); font-size: 13.5px; resize: vertical;
+}
+.field textarea{ min-height: 90px; line-height:1.5; }
+.field input:focus, .field textarea:focus{ outline:none; border-color: var(--gold); }
+
+.template-toggle{ display:flex; gap:10px; margin-bottom: 22px; }
+.template-toggle button{
+  flex:1; font-family: var(--mono); font-size: 12px; padding: 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); cursor:pointer;
+}
+.template-toggle button.active{ background: var(--gold); color: var(--void); border-color: var(--gold); font-weight:700; }
+
+.action-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 6px;}
+.btn{
+  font-family: var(--mono); font-size: 12px; padding: 11px 20px; border-radius: 8px; cursor:pointer;
+  border: 1px solid var(--gold); background: transparent; color: var(--gold-bright);
+}
+.btn:hover{ background: rgba(201,162,75,0.12); }
+.btn.primary{ background: var(--gold); color: var(--void); font-weight:700; }
+.btn.primary:hover{ background: var(--gold-bright); }
+
+/* ---- Preview pane ---- */
+.preview-wrap{ background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+.preview-label{ font-family: var(--mono); font-size: 10.5px; color: var(--muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom: 12px; }
+#paperPreview{
+  background: var(--parchment); color: #1a1a1a; border-radius: 4px; padding: 34px;
+  max-height: 640px; overflow-y: auto; font-family: 'Times New Roman', Times, serif;
+}
+
+/* IEEE style */
+.ieee-title{ text-align:center; font-size: 20px; font-weight:700; margin-bottom: 4px; }
+.ieee-authors{ text-align:center; font-size: 12.5px; font-style: italic; margin-bottom: 2px; }
+.ieee-affil{ text-align:center; font-size: 10.5px; color: #333; margin-bottom: 14px; }
+.ieee-abstract{ font-size: 9.5pt; margin-bottom: 10px; }
+.ieee-abstract b{ font-style:italic; }
+.ieee-keywords{ font-size: 9.5pt; font-style: italic; margin-bottom: 16px; }
+.ieee-columns{ column-count: 2; column-gap: 22px; font-size: 9.8pt; line-height: 1.35; text-align: justify; }
+.ieee-columns h3{ font-size: 10.5pt; text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 6px; }
+.ieee-columns p{ margin-bottom: 8px; }
+.ieee-refs{ font-size: 8.8pt; margin-top: 10px; }
+.ieee-refs li{ margin-bottom: 4px; margin-left: 16px; }
+
+/* Springer Nature style */
+.sn-title{ font-size: 22px; font-weight:700; margin-bottom: 8px; font-family: 'Source Serif 4', serif; }
+.sn-authors{ font-size: 13px; margin-bottom: 3px; }
+.sn-affil{ font-size: 11px; color: #444; margin-bottom: 18px; }
+.sn-abstract{ background: #f7f2e4; border-left: 3px solid var(--gold); padding: 12px 16px; font-size: 11.5px; margin-bottom: 16px; }
+.sn-abstract b{ display:block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sn-keywords{ font-size: 11px; margin-bottom: 20px; }
+.sn-body{ font-size: 12.5px; line-height: 1.65; text-align: justify; }
+.sn-body h3{ font-size: 14px; margin: 20px 0 8px; font-family: 'Source Serif 4', serif; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+.sn-body p{ margin-bottom: 10px; }
+.sn-refs{ font-size: 10.5px; margin-top: 14px; }
+.sn-refs li{ margin-bottom: 6px; margin-left: 18px; }
+
+@media print{
+  body *{ visibility: hidden; }
+  #paperPreview, #paperPreview *{ visibility: visible; }
+  #paperPreview{ position: absolute; top:0; left:0; width:100%; max-height:none; overflow:visible; border-radius:0; padding: 20px 40px; }
+}
+
+/* ============ RESEARCH HUB ============ */
+.search-box{
+  display:flex; gap:10px; margin-bottom: 30px; flex-wrap:wrap;
+}
+.search-box input{
+  flex:1; min-width:220px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text); padding: 13px 16px; font-size: 14px;
+}
+.search-box input:focus{ outline:none; border-color: var(--gold); }
+
+.repo-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 900px){ .repo-grid{ grid-template-columns: 1fr; } }
+.repo-card{
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px;
+  text-decoration:none; color: inherit; display:block; transition: border-color .15s, transform .15s;
+}
+.repo-card:hover{ border-color: var(--gold); transform: translateY(-2px); }
+.repo-name{ font-family: var(--serif); font-size: 18px; font-weight:700; margin-bottom: 6px; }
+.repo-desc{ font-size: 12.5px; color: var(--muted); line-height:1.5; margin-bottom: 10px; }
+.repo-tag{ font-family: var(--mono); font-size: 10px; color: var(--gold); text-transform:uppercase; letter-spacing: 1px; }
+
+/* ============ WRITING POLISH ============ */
+.polish-grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items:start; }
+@media (max-width: 980px){ .polish-grid{ grid-template-columns: 1fr; } }
+
+.polish-input-panel{ background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px; }
+#polishInput{
+  width:100%; min-height: 260px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text); padding: 14px; font-family: var(--sans); font-size: 14px; line-height:1.6; resize: vertical;
+}
+#polishInput:focus{ outline:none; border-color: var(--gold); }
+
+.stats-bar{ display:flex; gap: 18px; flex-wrap:wrap; margin: 16px 0; }
+.stat-chip{
+  font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--panel-2);
+  border: 1px solid var(--line); padding: 7px 14px; border-radius: 20px;
+}
+.stat-chip b{ color: var(--gold-bright); }
+
+.legend{ display:flex; gap: 16px; flex-wrap:wrap; font-size: 11.5px; color: var(--muted); margin-bottom: 16px; }
+.legend span{ display:inline-flex; align-items:center; gap:6px; }
+.legend .swatch{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+
+.polish-output-panel{ background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+#annotatedText{
+  background: var(--parchment); color:#1a1a1a; border-radius: 8px; padding: 20px;
+  font-family: var(--body-serif); font-size: 14px; line-height: 1.8; max-height: 300px; overflow-y:auto; margin-bottom: 18px;
+}
+.flag-filler{ border-bottom: 2px dotted var(--crimson); cursor:help; }
+.flag-passive{ border-bottom: 2px solid var(--gold); background: rgba(201,162,75,0.15); cursor:help; }
+
+.suggestions-list{ max-height: 220px; overflow-y:auto; margin-bottom: 16px; }
+.suggestion-row{
+  display:flex; align-items:center; gap: 10px; font-size: 12.5px; padding: 8px 10px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px;
+}
+.suggestion-row .arrow{ color: var(--gold); font-family: var(--mono); }
+.suggestion-row del{ color: var(--muted); }
+.suggestion-row ins{ color: var(--gold-bright); text-decoration:none; font-weight:600; }
+
+#finalPolished{
+  width:100%; min-height: 140px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text); padding: 14px; font-family: var(--sans); font-size: 13.5px; line-height:1.6;
+}
+.empty-note{ color: var(--muted); font-size: 12.5px; font-style:italic; padding: 20px 0; text-align:center; }
+
+/* ============ FOOTER ============ */
+footer{
+  text-align:center; padding: 50px 20px 70px; border-top: 1px solid var(--line);
+  color: var(--muted); font-size: 12.5px;
+}
+footer .signature{
+  font-family: var(--serif); font-size: 22px; color: var(--gold-bright); margin-bottom: 6px;
+}
+</style>
+</head>
+<body>
+
+<!-- ============ CINEMATIC HERO ============ -->
+<section class="hero" id="top">
+  <div class="beam"></div>
+  <div class="presents">A Vikash Patel Production</div>
+  <div class="title-card">Manuscript<em>Forge</em></div>
+  <div class="tagline">Paste your research. Watch it transform into publication-ready IEEE or Springer Nature format — then find your next reference from the world's open archives.</div>
+  <a href="#tool" class="scroll-cta">↓ Begin</a>
+</section>
+
+<!-- ============ FORMATTER TOOL ============ -->
+<section class="wrap" id="tool">
+  <div class="section-eyebrow">Act I — The Formatter</div>
+  <div class="section-heading">Shape your manuscript</div>
+  <div class="section-desc">Fill in your paper's details, choose a template, and watch the preview render live in proper academic style. When it's ready, print it straight to PDF.</div>
+
+  <div class="tool-grid">
+    <div class="input-panel">
+      <div class="template-toggle">
+        <button id="btnIEEE" class="active" onclick="setTemplate('ieee')">IEEE Format</button>
+        <button id="btnSN" onclick="setTemplate('sn')">Springer Nature Format</button>
+      </div>
+
+      <div class="field">
+        <label>Paper Title</label>
+        <input type="text" id="pTitle" placeholder="e.g. A Novel Approach to Adaptive Load Balancing in Edge Networks" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>Author(s)</label>
+        <input type="text" id="pAuthors" placeholder="Vikash Patel" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>Affiliation</label>
+        <input type="text" id="pAffil" placeholder="Department, University / Institute" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>Abstract</label>
+        <textarea id="pAbstract" placeholder="Paste your abstract here..." oninput="renderPreview()"></textarea>
+      </div>
+      <div class="field">
+        <label>Keywords (comma separated)</label>
+        <input type="text" id="pKeywords" placeholder="edge computing, load balancing, IoT" oninput="renderPreview()">
+      </div>
+      <div class="field">
+        <label>Body Content (use lines starting with # for section headings)</label>
+        <textarea id="pBody" style="min-height:200px;" placeholder="# Introduction
+Paste your introduction here...
+
+# Methodology
+Paste your methodology here...
+
+# Results
+...
+
+# Conclusion
+..." oninput="renderPreview()"></textarea>
+      </div>
+      <div class="field">
+        <label>References (one per line)</label>
+        <textarea id="pRefs" placeholder="A. Author, 'Title of paper,' Journal Name, vol. 1, pp. 1-10, 2024." oninput="renderPreview()"></textarea>
+      </div>
+
+      <div class="action-row">
+        <button class="btn primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+        <button class="btn" onclick="downloadHTML()">⬇ Download formatted HTML</button>
+      </div>
+    </div>
+
+    <div class="preview-wrap">
+      <div class="preview-label">Live Preview</div>
+      <div id="paperPreview"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESEARCH HUB ============ -->
+<section class="wrap" id="research">
+  <div class="section-eyebrow">Act II — The Archive</div>
+  <div class="section-heading">Find your references, free</div>
+  <div class="section-desc">All of these are legitimate, free, open-access repositories — no paywalls, no piracy. Search directly or click through to browse.</div>
+
+  <div class="search-box">
+    <input type="text" id="scholarQuery" placeholder="Type a topic or paper title, then pick where to search...">
+  </div>
+
+  <div class="repo-grid" id="repoGrid"></div>
+</section>
+
+<!-- ============ WRITING POLISH ============ -->
+<section class="wrap" id="polish">
+  <div class="section-eyebrow">Act III — The Polish</div>
+  <div class="section-heading">Sharpen your writing</div>
+  <div class="section-desc">Paste a paragraph and this tool flags real editing issues — passive voice, filler words, overused terms — and suggests clearer, more formal phrasing. You stay in control: review each suggestion and accept only the ones you want.</div>
+
+  <div class="polish-grid">
+    <div class="polish-input-panel">
+      <label style="display:block; font-family: var(--mono); font-size: 10.5px; letter-spacing:1.5px; text-transform:uppercase; color: var(--muted); margin-bottom: 10px;">Paste your text</label>
+      <textarea id="polishInput" placeholder="Paste a paragraph or section from your paper here..."></textarea>
+      <div class="action-row" style="margin-top:14px;">
+        <button class="btn primary" onclick="analyzePolish()">✎ Analyze &amp; Suggest</button>
+        <button class="btn" onclick="clearPolish()">Clear</button>
+      </div>
+    </div>
+
+    <div class="polish-output-panel">
+      <div class="stats-bar" id="statsBar"></div>
+      <div class="legend">
+        <span><span class="swatch" style="background:var(--crimson);"></span> Filler word — consider removing</span>
+        <span><span class="swatch" style="background:var(--gold);"></span> Possible passive voice</span>
+      </div>
+      <div id="annotatedText"><div class="empty-note">Your annotated text will appear here after analysis.</div></div>
+
+      <div style="font-family: var(--mono); font-size: 10.5px; color: var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Suggested replacements — tick to apply</div>
+      <div class="suggestions-list" id="suggestionsList"><div class="empty-note">No suggestions yet.</div></div>
+
+      <div class="action-row" style="margin-bottom:14px;">
+        <button class="btn primary" onclick="applySuggestions()">Apply selected → build final text</button>
+      </div>
+
+      <label style="display:block; font-family: var(--mono); font-size: 10.5px; letter-spacing:1.5px; text-transform:uppercase; color: var(--muted); margin-bottom: 10px;">Final polished text</label>
+      <textarea id="finalPolished" readonly placeholder="Your final text will appear here once you apply suggestions."></textarea>
+      <div class="action-row" style="margin-top:12px;">
+        <button class="btn" onclick="copyFinal()">📋 Copy to clipboard</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="signature">Vikash Patel</div>
+  <div>ManuscriptForge — crafted for researchers who deserve a beautiful workflow.</div>
+</footer>
+
+<script>
+// ---------- Template state ----------
+let currentTemplate = 'ieee';
+function setTemplate(t){
+  currentTemplate = t;
+  document.getElementById('btnIEEE').classList.toggle('active', t==='ieee');
+  document.getElementById('btnSN').classList.toggle('active', t==='sn');
+  renderPreview();
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function parseBody(raw){
+  const lines = (raw||'').split('\n');
+  let html = '';
+  let inPara = [];
+  function flush(){
+    if(inPara.length){
+      html += `<p>${escapeHtml(inPara.join(' '))}</p>`;
+      inPara = [];
+    }
+  }
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if(trimmed.startsWith('#')){
+      flush();
+      html += `<h3>${escapeHtml(trimmed.replace(/^#+\s*/, ''))}</h3>`;
+    } else if(trimmed === ''){
+      flush();
+    } else {
+      inPara.push(trimmed);
+    }
+  });
+  flush();
+  return html;
+}
+
+function renderPreview(){
+  const title = document.getElementById('pTitle').value || 'Your Paper Title Here';
+  const authors = document.getElementById('pAuthors').value || 'Author Name';
+  const affil = document.getElementById('pAffil').value || 'Affiliation, University';
+  const abstract = document.getElementById('pAbstract').value || 'Your abstract will appear here as you type it on the left.';
+  const keywords = document.getElementById('pKeywords').value || 'keyword1, keyword2, keyword3';
+  const bodyRaw = document.getElementById('pBody').value;
+  const refsRaw = document.getElementById('pRefs').value;
+  const refsList = refsRaw.split('\n').map(r=>r.trim()).filter(r=>r.length>0);
+
+  const bodyHtml = parseBody(bodyRaw);
+  const preview = document.getElementById('paperPreview');
+
+  if(currentTemplate === 'ieee'){
+    preview.innerHTML = `
+      <div class="ieee-title">${escapeHtml(title)}</div>
+      <div class="ieee-authors">${escapeHtml(authors)}</div>
+      <div class="ieee-affil">${escapeHtml(affil)}</div>
+      <div class="ieee-abstract"><b>Abstract</b> — ${escapeHtml(abstract)}</div>
+      <div class="ieee-keywords"><b>Index Terms</b>—${escapeHtml(keywords)}</div>
+      <div class="ieee-columns">${bodyHtml || '<p>Your section content will render here in two-column IEEE style.</p>'}</div>
+      ${refsList.length ? `<div class="ieee-refs"><h3 style="font-size:10.5pt;">References</h3><ol>${refsList.map(r=>`<li>${escapeHtml(r)}</li>`).join('')}</ol></div>` : ''}
+    `;
+  } else {
+    preview.innerHTML = `
+      <div class="sn-title">${escapeHtml(title)}</div>
+      <div class="sn-authors">${escapeHtml(authors)}</div>
+      <div class="sn-affil">${escapeHtml(affil)}</div>
+      <div class="sn-abstract"><b>Abstract</b>${escapeHtml(abstract)}</div>
+      <div class="sn-keywords"><b>Keywords:</b> ${escapeHtml(keywords)}</div>
+      <div class="sn-body">${bodyHtml || '<p>Your section content will render here in Springer Nature single-column style.</p>'}</div>
+      ${refsList.length ? `<div class="sn-refs"><h3 style="font-size:14px;">References</h3><ol>${refsList.map(r=>`<li>${escapeHtml(r)}</li>`).join('')}</ol></div>` : ''}
+    `;
+  }
+}
+renderPreview();
+
+function downloadHTML(){
+  const content = document.getElementById('paperPreview').innerHTML;
+  const fullDoc = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(document.getElementById('pTitle').value || 'Paper')}</title>
+  <style>body{font-family:'Times New Roman',serif; background:#F3ECDD; padding:40px;} ${document.querySelector('style').innerHTML}</style>
+  </head><body><div id="paperPreview" style="max-height:none; overflow:visible;">${content}</div></body></html>`;
+  const blob = new Blob([fullDoc], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = (document.getElementById('pTitle').value || 'paper').replace(/[^a-z0-9]/gi,'_') + '_' + currentTemplate + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------- Research repositories ----------
+const repos = [
+  { name: 'arXiv', desc: 'The largest free preprint archive — physics, CS, math, quantitative biology and more.', base: 'https://arxiv.org/abs/', search: 'https://arxiv.org/search/?query=' },
+  { name: 'Semantic Scholar', desc: 'AI-powered research tool with free full-text links and citation graphs across all fields.', search: 'https://www.semanticscholar.org/search?q=' },
+  { name: 'CORE', desc: "World's largest collection of open access research papers, aggregated from repositories worldwide.", search: 'https://core.ac.uk/search?q=' },
+  { name: 'PubMed Central', desc: 'Free full-text archive of biomedical and life sciences literature at the NIH.', search: 'https://www.ncbi.nlm.nih.gov/pmc/?term=' },
+  { name: 'DOAJ', desc: 'Directory of Open Access Journals — thousands of peer-reviewed, fully open-access journals.', search: 'https://doaj.org/search/articles?source=%7B%22query%22%3A%7B%22query_string%22%3A%7B%22query%22%3A%22' , suffix: '%22%7D%7D%7D'},
+  { name: 'Google Scholar', desc: 'Broad academic search across publishers — look for the "PDF" link alongside results for free versions.', search: 'https://scholar.google.com/scholar?q=' },
+  { name: 'BASE', desc: 'Bielefeld Academic Search Engine — one of the largest search engines for academic open access content.', search: 'https://www.base-search.net/Search/Results?lookfor=' },
+  { name: 'Unpaywall / OA.mg', desc: 'Finds free, legal full-text versions of paywalled papers by DOI or title.', search: 'https://oa.mg/search?q=' },
+  { name: 'ResearchGate', desc: 'Many authors upload free copies of their own papers here — worth checking directly.', search: 'https://www.researchgate.net/search?q=' }
+];
+
+const repoGrid = document.getElementById('repoGrid');
+function renderRepos(query){
+  repoGrid.innerHTML = '';
+  repos.forEach(r => {
+    const q = encodeURIComponent(query || '');
+    const url = r.search + q + (r.suffix || '');
+    const card = document.createElement('a');
+    card.className = 'repo-card';
+    card.href = query ? url : r.search;
+    card.target = '_blank';
+    card.rel = 'noopener noreferrer';
+    card.innerHTML = `
+      <div class="repo-name">${r.name}</div>
+      <div class="repo-desc">${r.desc}</div>
+      <div class="repo-tag">${query ? 'Search this →' : 'Browse →'}</div>
+    `;
+    repoGrid.appendChild(card);
+  });
+}
+renderRepos('');
+document.getElementById('scholarQuery').addEventListener('input', (e) => renderRepos(e.target.value));
+
+// ============ WRITING POLISH ============
+const FILLER_WORDS = [
+  'very','really','basically','actually','just','quite','literally',
+  'in order to','due to the fact that','at this point in time','a lot of',
+  'kind of','sort of','somewhat','rather','totally','definitely','clearly',
+  'obviously','simply'
+];
+
+const FORMAL_MAP = {
+  'a lot of': 'numerous',
+  'get': 'obtain',
+  'big': 'substantial',
+  'show': 'demonstrate',
+  'find out': 'determine',
+  'look at': 'examine',
+  'start': 'commence',
+  'end': 'conclude',
+  'help': 'facilitate',
+  'so': 'therefore',
+  'also': 'additionally',
+  'but': 'however',
+  'about': 'approximately',
+  'because': 'as',
+  'use': 'utilize'
+};
+
+let lastSuggestions = [];
+let lastOriginalText = '';
+
+function escapePolish(str){
+  return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function countWords(text){
+  return (text.match(/\b[a-zA-Z']+\b/g) || []).length;
+}
+function splitSentences(text){
+  return (text.match(/[^.!?]+[.!?]+/g) || [text]).map(s => s.trim()).filter(s => s.length > 0);
+}
+
+function analyzePolish(){
+  const raw = document.getElementById('polishInput').value.trim();
+  if(!raw){
+    document.getElementById('annotatedText').innerHTML = '<div class="empty-note">Paste some text first.</div>';
+    document.getElementById('suggestionsList').innerHTML = '<div class="empty-note">No suggestions yet.</div>';
+    document.getElementById('statsBar').innerHTML = '';
+    return;
+  }
+  lastOriginalText = raw;
+
+  const sentences = splitSentences(raw);
+  const wordCount = countWords(raw);
+  const avgLen = sentences.length ? Math.round(wordCount / sentences.length) : 0;
+
+  // Passive voice heuristic: be-verb + word ending in -ed/-en
+  const passiveRegex = /\b(am|is|are|was|were|be|been|being)\s+\w+(ed|en)\b/gi;
+  const passiveMatches = raw.match(passiveRegex) || [];
+
+  // Filler word detection
+  const fillerRegex = new RegExp('\\b(' + FILLER_WORDS.map(f=>f.replace(/ /g,'\\s+')).join('|') + ')\\b', 'gi');
+  const fillerMatches = raw.match(fillerRegex) || [];
+
+  // Build annotated HTML: escape then wrap fillers, then wrap passive phrases
+  let annotated = escapePolish(raw);
+  annotated = annotated.replace(fillerRegex, m => `<span class="flag-filler" title="Filler word — consider removing">${m}</span>`);
+  annotated = annotated.replace(passiveRegex, m => `<span class="flag-passive" title="Possible passive voice — consider an active construction">${m}</span>`);
+
+  document.getElementById('annotatedText').innerHTML = annotated;
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-chip">Words: <b>${wordCount}</b></div>
+    <div class="stat-chip">Sentences: <b>${sentences.length}</b></div>
+    <div class="stat-chip">Avg length: <b>${avgLen} words</b></div>
+    <div class="stat-chip">Filler words: <b>${fillerMatches.length}</b></div>
+    <div class="stat-chip">Passive instances: <b>${passiveMatches.length}</b></div>
+  `;
+
+  // Build formal-word suggestions (deduplicated, max 20)
+  lastSuggestions = [];
+  const seen = new Set();
+  Object.keys(FORMAL_MAP).forEach(word => {
+    const re = new RegExp('\\b' + word.replace(/ /g,'\\s+') + '\\b', 'i');
+    if(re.test(raw) && !seen.has(word)){
+      seen.add(word);
+      lastSuggestions.push({ original: word, replacement: FORMAL_MAP[word] });
+    }
+  });
+
+  const listEl = document.getElementById('suggestionsList');
+  if(lastSuggestions.length === 0){
+    listEl.innerHTML = '<div class="empty-note">No obvious informal terms found — nice and clean.</div>';
+  } else {
+    listEl.innerHTML = lastSuggestions.map((s, i) => `
+      <div class="suggestion-row">
+        <input type="checkbox" id="sugg-${i}" checked>
+        <label for="sugg-${i}"><del>${escapePolish(s.original)}</del> <span class="arrow">→</span> <ins>${escapePolish(s.replacement)}</ins></label>
+      </div>
+    `).join('');
+  }
+}
+
+function applySuggestions(){
+  if(!lastOriginalText){ return; }
+  let finalText = lastOriginalText;
+  lastSuggestions.forEach((s, i) => {
+    const checkbox = document.getElementById('sugg-' + i);
+    if(checkbox && checkbox.checked){
+      const re = new RegExp('\\b' + s.original.replace(/ /g,'\\s+') + '\\b', 'gi');
+      finalText = finalText.replace(re, s.replacement);
+    }
+  });
+  document.getElementById('finalPolished').value = finalText;
+}
+
+function copyFinal(){
+  const el = document.getElementById('finalPolished');
+  el.select();
+  navigator.clipboard.writeText(el.value).catch(()=>{ document.execCommand('copy'); });
+}
+
+function clearPolish(){
+  document.getElementById('polishInput').value = '';
+  document.getElementById('annotatedText').innerHTML = '<div class="empty-note">Your annotated text will appear here after analysis.</div>';
+  document.getElementById('suggestionsList').innerHTML = '<div class="empty-note">No suggestions yet.</div>';
+  document.getElementById('statsBar').innerHTML = '';
+  document.getElementById('finalPolished').value = '';
+  lastSuggestions = [];
+  lastOriginalText = '';
+}
+</script>
+</body>
+</html>
