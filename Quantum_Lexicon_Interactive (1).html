@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Lexicon — Vikash Patel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#04050a;
+    --panel:#0b0e18;
+    --line: rgba(199,210,232,0.12);
+    --cyan:#5ee7ff;
+    --violet:#a06bff;
+    --gold:#ffcf6b;
+    --mist:#c7d2e8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{ background:var(--void); color:var(--mist); font-family:'Rajdhani', sans-serif; }
+  body{ overflow-x:hidden; }
+
+  canvas#bg{
+    position:fixed; inset:0; width:100%; height:100%; z-index:0;
+  }
+  .vignette{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background:
+      radial-gradient(ellipse 140% 90% at 50% 45%, transparent 45%, rgba(2,3,7,0.55) 100%);
+  }
+  .grain{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    opacity:0.045; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  main{ position:relative; z-index:1; }
+
+  .hero{
+    min-height:56vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:60px 20px 30px;
+  }
+  .eyebrow{
+    font-family:'Orbitron', sans-serif; font-size:0.68rem; letter-spacing:0.32em;
+    color:var(--cyan); opacity:0.85; margin-bottom:20px;
+  }
+  h1.title{
+    font-family:'Orbitron', sans-serif; font-weight:900;
+    font-size:clamp(2rem, 7vw, 3.6rem); line-height:1.1;
+    background:linear-gradient(180deg, #ffffff 0%, var(--cyan) 55%, var(--violet) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 60px rgba(94,231,255,0.2);
+    margin-bottom:16px;
+  }
+  .hero p{
+    max-width:620px; color:var(--mist); font-size:clamp(1rem,2.2vw,1.2rem); line-height:1.6;
+  }
+  .hero p b{ color:var(--gold); font-weight:600; }
+
+  section.category{
+    max-width:980px; margin:0 auto; padding:56px 24px;
+    border-top:1px solid var(--line);
+  }
+  .cat-head{
+    display:flex; flex-direction:column; align-items:center; text-align:center;
+    margin-bottom:32px;
+  }
+  .cat-label{
+    font-family:'Orbitron', sans-serif; font-size:0.66rem; letter-spacing:0.28em;
+    color:var(--violet); margin-bottom:10px;
+  }
+  .cat-title{
+    font-family:'Orbitron', sans-serif; font-size:clamp(1.2rem,3vw,1.6rem);
+    color:var(--mist); font-weight:700;
+  }
+  .cat-desc{
+    max-width:560px; margin-top:10px; color:rgba(199,210,232,0.75); font-size:0.95rem; line-height:1.6;
+  }
+
+  .tagcloud{
+    display:flex; flex-wrap:wrap; justify-content:center; gap:12px;
+  }
+  .tag{
+    font-family:'Orbitron', sans-serif;
+    font-size:0.78rem;
+    letter-spacing:0.02em;
+    color:var(--mist);
+    background: rgba(199,210,232,0.04);
+    border:1px solid var(--line);
+    padding:11px 18px;
+    border-radius:999px;
+    cursor:pointer;
+    transition: all 0.25s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tag:hover, .tag:focus-visible{
+    border-color: var(--accent, var(--cyan));
+    color:#fff;
+    box-shadow: 0 0 22px rgba(94,231,255,0.18);
+    transform: translateY(-2px);
+  }
+
+  footer.credit{
+    position:relative; z-index:1; text-align:center; padding:50px 20px 70px;
+    font-family:'Orbitron', sans-serif; font-size:0.68rem; letter-spacing:0.2em;
+    color:rgba(199,210,232,0.5);
+  }
+  footer.credit .name{ color:var(--cyan); }
+
+  /* ---------------- Modal ---------------- */
+  .overlay{
+    position:fixed; inset:0; z-index:20;
+    background: rgba(3,4,8,0.86);
+    backdrop-filter: blur(6px);
+    display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none;
+    transition: opacity 0.35s ease;
+    padding:24px;
+  }
+  .overlay.open{ opacity:1; pointer-events:auto; }
+
+  .card{
+    width:100%; max-width:560px;
+    background: linear-gradient(180deg, rgba(15,19,32,0.95), rgba(9,11,18,0.98));
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:36px 32px 32px;
+    text-align:center;
+    transform: translateY(18px) scale(0.98);
+    transition: transform 0.4s ease;
+    max-height:88vh;
+    overflow-y:auto;
+  }
+  .overlay.open .card{ transform: translateY(0) scale(1); }
+
+  .card-close{
+    position:absolute; top:22px; right:26px;
+    background:none; border:none; color:var(--mist);
+    font-size:1.4rem; cursor:pointer; line-height:1;
+    opacity:0.6; transition:opacity 0.2s ease;
+  }
+  .card-close:hover{ opacity:1; }
+
+  .card-cat{
+    font-family:'Orbitron', sans-serif; font-size:0.62rem; letter-spacing:0.25em;
+    color: var(--accent, var(--violet)); margin-bottom:14px;
+  }
+  .card-title{
+    font-family:'Orbitron', sans-serif; font-weight:800;
+    font-size:clamp(1.3rem, 4vw, 1.9rem);
+    color:#fff;
+    margin-bottom:22px;
+    text-shadow: 0 0 30px var(--accent-glow, rgba(94,231,255,0.3));
+  }
+  canvas.visual{
+    width:100%; max-width:360px; height:220px;
+    margin:0 auto 24px;
+    display:block;
+    border-radius:4px;
+  }
+  .card-text{
+    font-size:1.02rem; line-height:1.75; color:rgba(237,231,218,0.92);
+    text-align:left;
+  }
+  .card-hash{
+    margin-top:22px; font-family:'Orbitron', sans-serif; font-size:0.7rem;
+    letter-spacing:0.08em; color: var(--accent, var(--cyan)); opacity:0.85;
+  }
+
+  @media (max-width:480px){
+    .card{ padding:60px 20px 26px; }
+    canvas.visual{ height:180px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<main>
+  <section class="hero">
+    <div class="eyebrow">THE QUANTUM LEXICON</div>
+    <h1 class="title">TOUCH A TERM.<br>SEE IT COME ALIVE.</h1>
+    <p>Har keyword ke peeche ek <b>real cinematic visual</b> aur ek <b>seedhi explanation</b> hai —
+      quantum foam se lekar parallel universes tak. Kisi bhi tag ko touch karo.</p>
+  </section>
+
+  <section class="category" id="cat-foam">
+    <div class="cat-head">
+      <div class="cat-label">SECTION 01</div>
+      <div class="cat-title">Quantum Foam &amp; Spacetime</div>
+      <p class="cat-desc">Reality ke sabse chhote scale par jhaanko — jahan spacetime khud smooth nahi rehta.</p>
+    </div>
+    <div class="tagcloud" data-category="foam"></div>
+  </section>
+
+  <section class="category" id="cat-multi">
+    <div class="cat-head">
+      <div class="cat-label">SECTION 02</div>
+      <div class="cat-title">Parallel Universes &amp; The Multiverse</div>
+      <p class="cat-desc">Kya hamari reality akeli hai? Physics ke kuch interpretations kehte hain — shayad nahi.</p>
+    </div>
+    <div class="tagcloud" data-category="multi"></div>
+  </section>
+
+  <section class="category" id="cat-academic">
+    <div class="cat-head">
+      <div class="cat-label">SECTION 03</div>
+      <div class="cat-title">Quantum Parallelism — The Technical Core</div>
+      <p class="cat-desc">Woh precise concepts jo quantum computing ko genuinely powerful banate hain.</p>
+    </div>
+    <div class="tagcloud" data-category="academic"></div>
+  </section>
+
+  <section class="category" id="cat-teleport">
+    <div class="cat-head">
+      <div class="cat-label">SECTION 04</div>
+      <div class="cat-title">Teleportation, Entanglement &amp; The Quantum Internet</div>
+      <p class="cat-desc">2024-25 ka sabse trending breakthrough — states transfer karna, bina matter bheje.</p>
+    </div>
+    <div class="tagcloud" data-category="teleport"></div>
+  </section>
+</main>
+
+<footer class="credit">CURATED BY <span class="name">VIKASH PATEL</span></footer>
+
+<!-- ---------------- Modal ---------------- -->
+<div class="overlay" id="overlay">
+  <div class="card" id="card">
+    <button class="card-close" id="cardClose" aria-label="Close">✕</button>
+    <div class="card-cat" id="cardCat"></div>
+    <h2 class="card-title" id="cardTitle"></h2>
+    <canvas class="visual" id="visualCanvas" width="360" height="220"></canvas>
+    <p class="card-text" id="cardText"></p>
+    <div class="card-hash" id="cardHash"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   DATA — every keyword, its category, its visual "mode",
+   its accent color, and its Hinglish cinematic explanation.
+   ========================================================= */
+const TERMS = [
+  // ---- Section 1: Quantum Foam & Spacetime ----
+  { tag:"#QuantumFoam", title:"Quantum Foam", cat:"foam", catLabel:"QUANTUM FOAM & SPACETIME",
+    mode:"foam", accent:"94,231,255",
+    text:"Planck scale par, spacetime khud smooth nahi rehta — woh ek boiling foam ki tarah bubble karta hai, jahan tiny wormholes aur virtual particles ek pal ke liye paida hoke khatam ho jaate hain. Yeh universe ka sabse chhota, sabse violent canvas hai." },
+  { tag:"#SpacetimeFabric", title:"Spacetime Fabric", cat:"foam", catLabel:"QUANTUM FOAM & SPACETIME",
+    mode:"grid", accent:"160,107,255",
+    text:"Einstein ne dikhaya ki gravity koi force nahi, balki spacetime ka khud jhukna hai — jaise ek trampoline pe rakha bhari ball chaadar ko neeche dabaata hai. Har mass, har star, apne aas-paas ki fabric ko mod deta hai." },
+  { tag:"#PlanckScale", title:"Planck Scale", cat:"foam", catLabel:"QUANTUM FOAM & SPACETIME",
+    mode:"zoom", accent:"255,207,107",
+    text:"10^-35 meters — is scale ke neeche, hamari physics ki normal rules kaam karna band kar dete hain. Yahi woh boundary hai jahan quantum mechanics aur gravity ek doosre se seedha takrate hain." },
+  { tag:"#QuantumFluctuations", title:"Quantum Fluctuations", cat:"foam", catLabel:"QUANTUM FOAM & SPACETIME",
+    mode:"wave", accent:"120,255,180",
+    text:"Empty space kabhi sach mein 'khaali' nahi hota — har pal, energy random tareeke se upar-neeche hoti rehti hai, chhote-chhote particles pop in aur pop out karte rehte hain. Yehi fluctuations shayad poore universe ki shuruaat ki wajah thi." },
+  { tag:"#VacuumEnergy", title:"Vacuum Energy", cat:"foam", catLabel:"QUANTUM FOAM & SPACETIME",
+    mode:"pairpop", accent:"255,150,90",
+    text:"Sabse 'empty' jagah bhi energy se bhari hai. Virtual particle pairs — ek matter, ek antimatter — lagataar paida hokar turant annihilate ho jaate hain, jisse vacuum khud ek zero na hoke, ek jeevit, dhadakta hua field ban jaata hai." },
+  { tag:"#QuantumGravity", title:"Quantum Gravity", cat:"foam", catLabel:"QUANTUM FOAM & SPACETIME",
+    mode:"grid", accent:"255,120,180",
+    text:"General relativity bada scale sambhalta hai, quantum mechanics chhota scale — lekin jab dono ko ek saath jodne ki koshish karte hain, physics toot jaati hai. Quantum gravity is sadi ka sabse bada unsolved sawaal hai." },
+
+  // ---- Section 2: Parallel Universe & Multiverse ----
+  { tag:"#ParallelUniverse", title:"Parallel Universe", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"split", accent:"160,107,255",
+    text:"Kya har decision ek naya universe bana deta hai? Kya kahin ek 'aap' hai jisne different raasta chuna? Physics ke kuch interpretations ke mutabik, jawaab shayad 'haan' hai." },
+  { tag:"#Multiverse", title:"Multiverse", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"bubbles", accent:"94,231,255",
+    text:"Ek universe kaafi nahi — kuch cosmologists maante hain ki hamara Big Bang sirf ek hai anant bulbon mein se, har bubble apne alag physical constants ke saath apna khud ka universe hai." },
+  { tag:"#QuantumRealm", title:"Quantum Realm", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"zoom", accent:"120,255,180",
+    text:"Jab tum itna chhote ho jaate ho ki atoms bhi bade lagte hain — wahan classical physics ke rules toot jaate hain, aur particles ek saath do jagah, do states mein exist kar sakte hain." },
+  { tag:"#AlternateReality", title:"Alternate Reality", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"split", accent:"255,150,90",
+    text:"Ek chhoti si quantum event, ek alag outcome — aur poori history badal sakti thi. Alternate reality ka idea kehta hai ki har 'kya hota agar' apne aap mein kahin sach ho sakta hai." },
+  { tag:"#ManyWorldsInterpretation", title:"Many Worlds Interpretation", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"tree", accent:"255,207,107",
+    text:"Hugh Everett ne 1957 mein propose kiya: jab bhi ek quantum measurement hota hai, universe split ho jaata hai — har possible outcome apni khud ki reality mein hoti hai, hamesha ke liye." },
+  { tag:"#Wormhole", title:"Wormhole", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"wormhole", accent:"94,231,255",
+    text:"Spacetime ka ek shortcut — do bilkul door jagahon ko jodta hua ek tunnel. Abhi tak sirf math mein exist karta hai, lekin Einstein-Rosen bridge ke equations ise possible batate hain." },
+  { tag:"#Cosmos", title:"Cosmos", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"spiral", accent:"255,120,180",
+    text:"13.8 billion saal purana, kharabon galaxies se bhara, aur abhi bhi expand ho raha hai — cosmos woh sabse bada canvas hai jispe physics ki har theory test hoti hai." },
+  { tag:"#TimeTravelers", title:"Time Travelers", cat:"multi", catLabel:"PARALLEL UNIVERSES & MULTIVERSE",
+    mode:"clock", accent:"160,107,255",
+    text:"General relativity technically time travel ko allow karti hai — kam se kam future ki taraf. Kisi black hole ke paas thoda samay bitao, aur Earth par wapas aake dekho ki saalon beet chuke hain." },
+
+  // ---- Section 3: Quantum Parallelism (Academic) ----
+  { tag:"#QuantumParallelism", title:"Quantum Parallelism", cat:"academic", catLabel:"QUANTUM PARALLELISM",
+    mode:"speedlines", accent:"94,231,255",
+    text:"Ek classical bit, ek waqt mein sirf ek path check karta hai. Ek qubit, superposition ki wajah se, ek saath saare possible paths check kar sakta hai — yehi quantum parallelism ki taaqat hai." },
+  { tag:"#Superposition", title:"Superposition", cat:"academic", catLabel:"QUANTUM PARALLELISM",
+    mode:"superpos", accent:"255,207,107",
+    text:"Jab tak measure nahi karte, ek qubit sirf 0 ya sirf 1 nahi hota — woh dono hota hai, ek saath, ek probability cloud mein. Measurement hi usse ek definite state mein 'collapse' karta hai." },
+  { tag:"#QuantumSpeedup", title:"Quantum Speedup", cat:"academic", catLabel:"QUANTUM PARALLELISM",
+    mode:"speedlines", accent:"120,255,180",
+    text:"Jo problem classical computer mein exponentially lambi lagti hai, wahi problem quantum computer ke liye sirf polynomial time le sakti hai — yehi farak hai jo quantum speedup banata hai." },
+  { tag:"#QuantumAlgorithms", title:"Quantum Algorithms", cat:"academic", catLabel:"QUANTUM PARALLELISM",
+    mode:"network", accent:"160,107,255",
+    text:"Shor's algorithm factoring todta hai, Grover's algorithm search ko turbocharge karta hai — quantum algorithms wahi rules follow nahi karte jo classical code follow karta hai." },
+  { tag:"#QuantumSupremacy", title:"Quantum Supremacy", cat:"academic", catLabel:"QUANTUM PARALLELISM",
+    mode:"peak", accent:"255,150,90",
+    text:"2019 mein, Google ke Sycamore processor ne ek calculation 200 seconds mein ki jo — Google ke dawe ke mutabik — us waqt ke sabse powerful supercomputer ko hazaaron saal legti. Yehi pehla 'quantum supremacy' moment tha, aur yeh dawa baad mein vigyanikon ke beech behas ka vishay bhi bana." },
+  { tag:"#QuantumAdvantage", title:"Quantum Advantage", cat:"academic", catLabel:"QUANTUM PARALLELISM",
+    mode:"peak", accent:"255,120,180",
+    text:"Supremacy sirf ek proof-of-concept thi. Quantum advantage ka matlab hai — jab quantum computer kisi real, useful problem ko classical computers se genuinely behtar solve kare, sirf ek artificial benchmark par nahi." },
+
+  // ---- Section 4: Teleportation / Entanglement / Networking ----
+  { tag:"#QuantumTeleportation", title:"Quantum Teleportation", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"teleport", accent:"94,231,255",
+    text:"Koi matter teleport nahi hota — sirf quantum STATE transfer hoti hai, entanglement ke through, instantly, chahe do particles kitni bhi door kyun na hon. Yehi quantum internet ki neev hai." },
+  { tag:"#QuantumEntanglement", title:"Quantum Entanglement", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"entangle", accent:"160,107,255",
+    text:"Einstein isse 'spooky action at a distance' kehte the. Do entangled particles itne connected ho jaate hain ki ek ko measure karte hi, doosre ki state turant pata chal jaati hai — chahe woh galaxies door ho." },
+  { tag:"#QuantumInternet", title:"Quantum Internet", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"network", accent:"255,207,107",
+    text:"Aisa network jahan information hacking-proof hoti hai, kyunki koi bhi eavesdropper quantum state ko measure karte hi use disturb kar deta hai, aur pakda jaata hai. Yeh future ka sabse secure communication layer ban sakta hai." },
+  { tag:"#EPRPair", title:"EPR Pair", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"entangle", accent:"120,255,180",
+    text:"Einstein, Podolsky aur Rosen ne 1935 mein isse ek paradox ke roop mein present kiya — do particles jo itne entangled hain ki unhe alag treat karna hi galat lagta hai. Aaj yehi EPR pair quantum computing ki building block hai." },
+  { tag:"#BellState", title:"Bell State", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"entangle", accent:"255,150,90",
+    text:"Char specific quantum states jo maximum entanglement represent karte hain. Bell states hi woh 'language' hain jisme quantum teleportation aur quantum cryptography likhi jaati hai." },
+  { tag:"#QuantumCommunication", title:"Quantum Communication", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"network", accent:"255,120,180",
+    text:"Normal internet packets copy ho sakte hain, intercept ho sakte hain, chupke se padhe ja sakte hain. Quantum communication mein, koi bhi interception khud ko reveal kar deta hai — coding ki wajah se nahi, physics ki wajah se." },
+  { tag:"#QuantumNetworking", title:"Quantum Networking", cat:"teleport", catLabel:"TELEPORTATION & THE QUANTUM INTERNET",
+    mode:"network", accent:"94,231,255",
+    text:"Sirf do computers ko connect karna kaafi nahi — quantum networking ka goal hai poori duniya ko entangled nodes ke ek web se jodna, jahan security khud universe ke rules se aati hai." },
+];
+
+/* =========================================================
+   Render tag clouds into each section
+   ========================================================= */
+document.querySelectorAll('.tagcloud').forEach(container => {
+  const cat = container.dataset.category;
+  TERMS.filter(t => t.cat === cat).forEach(term => {
+    const btn = document.createElement('button');
+    btn.className = 'tag';
+    btn.textContent = term.tag;
+    btn.style.setProperty('--accent', `rgb(${term.accent})`);
+    btn.addEventListener('click', () => openCard(term));
+    container.appendChild(btn);
+  });
+});
+
+/* =========================================================
+   Modal open/close
+   ========================================================= */
+const overlay = document.getElementById('overlay');
+const card = document.getElementById('card');
+const cardClose = document.getElementById('cardClose');
+const cardCat = document.getElementById('cardCat');
+const cardTitle = document.getElementById('cardTitle');
+const cardText = document.getElementById('cardText');
+const cardHash = document.getElementById('cardHash');
+const visualCanvas = document.getElementById('visualCanvas');
+const vctx = visualCanvas.getContext('2d');
+
+let currentMode = null;
+let visualRAF = null;
+let vt = 0;
+
+function openCard(term){
+  cardCat.textContent = term.catLabel;
+  cardTitle.textContent = term.title;
+  cardText.textContent = term.text;
+  cardHash.textContent = term.tag;
+  card.style.setProperty('--accent', `rgb(${term.accent})`);
+  card.style.setProperty('--accent-glow', `rgba(${term.accent},0.35)`);
+  currentMode = { mode: term.mode, accent: term.accent };
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  startVisual();
+}
+
+function closeCard(){
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+  stopVisual();
+}
+
+cardClose.addEventListener('click', closeCard);
+overlay.addEventListener('click', (e) => { if(e.target === overlay) closeCard(); });
+window.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeCard(); });
+
+/* =========================================================
+   Per-term visual engine (canvas, procedural, no images)
+   ========================================================= */
+function fitCanvas(cv){
+  const rect = cv.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = rect.width * dpr;
+  cv.height = rect.height * dpr;
+  vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w: rect.width, h: rect.height };
+}
+
+function startVisual(){
+  vt = 0;
+  const { w, h } = fitCanvas(visualCanvas);
+  function loop(){
+    vt += 1;
+    vctx.clearRect(0, 0, w, h);
+    vctx.fillStyle = '#05070d';
+    vctx.fillRect(0, 0, w, h);
+    draw(currentMode.mode, currentMode.accent, w, h, vt);
+    visualRAF = requestAnimationFrame(loop);
+  }
+  loop();
+}
+function stopVisual(){
+  if(visualRAF) cancelAnimationFrame(visualRAF);
+  visualRAF = null;
+}
+
+function rgba(accent, a){ return `rgba(${accent},${a})`; }
+
+function draw(mode, accent, w, h, t){
+  const cx = w / 2, cy = h / 2;
+  switch(mode){
+
+    case 'foam': {
+      for(let i = 0; i < 46; i++){
+        const seed = i * 97.13;
+        const x = (Math.sin(seed) * 0.5 + 0.5) * w;
+        const y = (Math.cos(seed * 1.7) * 0.5 + 0.5) * h;
+        const phase = (t * 0.03 + i * 0.21) % (Math.PI * 2);
+        const r = (Math.sin(phase) * 0.5 + 0.5) * 4 + 1;
+        const a = Math.max(0, Math.sin(phase));
+        vctx.beginPath();
+        vctx.fillStyle = rgba(accent, a * 0.8);
+        vctx.arc(x, y, r, 0, Math.PI * 2);
+        vctx.fill();
+      }
+      break;
+    }
+
+    case 'grid': {
+      const rows = 10, cols = 14;
+      const warp = 26;
+      vctx.strokeStyle = rgba(accent, 0.35);
+      vctx.lineWidth = 1;
+      for(let r = 0; r <= rows; r++){
+        vctx.beginPath();
+        for(let c = 0; c <= cols; c++){
+          const x = (c / cols) * w;
+          const y0 = (r / rows) * h;
+          const dx = x - cx, dy = y0 - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy) + 1;
+          const pull = (warp * (1 + 0.3 * Math.sin(t * 0.03))) / dist * 40;
+          const y = y0 - (dy / dist) * pull;
+          const xx = x - (dx / dist) * pull;
+          if(c === 0) vctx.moveTo(xx, y); else vctx.lineTo(xx, y);
+        }
+        vctx.stroke();
+      }
+      for(let c = 0; c <= cols; c++){
+        vctx.beginPath();
+        for(let r = 0; r <= rows; r++){
+          const y = (r / rows) * h;
+          const x0 = (c / cols) * w;
+          const dx = x0 - cx, dy = y - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy) + 1;
+          const pull = (warp * (1 + 0.3 * Math.sin(t * 0.03))) / dist * 40;
+          const x = x0 - (dx / dist) * pull;
+          const yy = y - (dy / dist) * pull;
+          if(r === 0) vctx.moveTo(x, yy); else vctx.lineTo(x, yy);
+        }
+        vctx.stroke();
+      }
+      break;
+    }
+
+    case 'zoom': {
+      const n = 6;
+      for(let i = 0; i < n; i++){
+        const phase = ((t * 0.012) + i / n) % 1;
+        const size = phase * Math.max(w, h) * 0.9;
+        const a = 1 - phase;
+        vctx.strokeStyle = rgba(accent, a * 0.8);
+        vctx.lineWidth = 1.5;
+        vctx.strokeRect(cx - size / 2, cy - size / 2, size, size);
+      }
+      break;
+    }
+
+    case 'wave': {
+      vctx.beginPath();
+      for(let x = 0; x <= w; x += 4){
+        const y = cy
+          + Math.sin(x * 0.05 + t * 0.06) * 14
+          + Math.sin(x * 0.13 + t * 0.11) * 8
+          + (Math.sin(x * 0.9 + t * 0.4 + Math.sin(x)) * 3);
+        if(x === 0) vctx.moveTo(x, y); else vctx.lineTo(x, y);
+      }
+      vctx.strokeStyle = rgba(accent, 0.9);
+      vctx.lineWidth = 2;
+      vctx.stroke();
+      break;
+    }
+
+    case 'pairpop': {
+      for(let i = 0; i < 22; i++){
+        const seed = i * 53.7;
+        const baseX = (Math.sin(seed) * 0.5 + 0.5) * w;
+        const baseY = (Math.cos(seed * 2.3) * 0.5 + 0.5) * h;
+        const phase = (t * 0.02 + i * 0.37) % 1;
+        if(phase < 0.55){
+          const r = phase * 22;
+          const a = Math.sin(phase * Math.PI / 0.55);
+          vctx.beginPath();
+          vctx.fillStyle = rgba(accent, a * 0.9);
+          vctx.arc(baseX - r, baseY, 2.2, 0, Math.PI * 2);
+          vctx.fill();
+          vctx.beginPath();
+          vctx.fillStyle = rgba('120,170,255', a * 0.9);
+          vctx.arc(baseX + r, baseY, 2.2, 0, Math.PI * 2);
+          vctx.fill();
+        }
+      }
+      break;
+    }
+
+    case 'bubbles': {
+      const n = 5;
+      for(let i = 0; i < n; i++){
+        const ang = t * 0.006 + i * (Math.PI * 2 / n);
+        const bx = cx + Math.cos(ang) * w * 0.28;
+        const by = cy + Math.sin(ang * 1.3) * h * 0.24;
+        const r = 26 + Math.sin(t * 0.02 + i) * 6;
+        vctx.beginPath();
+        vctx.fillStyle = rgba(accent, 0.10);
+        vctx.strokeStyle = rgba(accent, 0.55);
+        vctx.lineWidth = 1.5;
+        vctx.arc(bx, by, r, 0, Math.PI * 2);
+        vctx.fill();
+        vctx.stroke();
+      }
+      break;
+    }
+
+    case 'split': {
+      const glitch = Math.sin(t * 0.05) * 6;
+      vctx.fillStyle = rgba(accent, 0.10);
+      vctx.fillRect(0, 0, w / 2 + glitch, h);
+      vctx.fillStyle = rgba('255,255,255', 0.06);
+      vctx.fillRect(w / 2 + glitch, 0, w / 2 - glitch, h);
+      vctx.strokeStyle = rgba(accent, 0.9);
+      vctx.lineWidth = 2;
+      vctx.beginPath();
+      for(let y = 0; y <= h; y += 8){
+        const x = w / 2 + glitch + Math.sin(y * 0.3 + t * 0.1) * 5;
+        if(y === 0) vctx.moveTo(x, y); else vctx.lineTo(x, y);
+      }
+      vctx.stroke();
+      break;
+    }
+
+    case 'tree': {
+      function branch(x, y, angle, len, depth){
+        if(depth === 0 || len < 4) return;
+        const x2 = x + Math.cos(angle) * len;
+        const y2 = y + Math.sin(angle) * len;
+        vctx.strokeStyle = rgba(accent, 0.25 + depth * 0.12);
+        vctx.lineWidth = depth * 0.7;
+        vctx.beginPath();
+        vctx.moveTo(x, y);
+        vctx.lineTo(x2, y2);
+        vctx.stroke();
+        const wobble = Math.sin(t * 0.02 + depth) * 0.15;
+        branch(x2, y2, angle - 0.5 - wobble, len * 0.72, depth - 1);
+        branch(x2, y2, angle + 0.5 + wobble, len * 0.72, depth - 1);
+      }
+      branch(cx, h - 6, -Math.PI / 2, h * 0.28, 6);
+      break;
+    }
+
+    case 'wormhole': {
+      const rings = 10;
+      for(let i = 0; i < rings; i++){
+        const phase = ((t * 0.02) + i / rings) % 1;
+        const r = phase * Math.max(w, h) * 0.55;
+        const a = (1 - phase) * 0.7;
+        vctx.beginPath();
+        vctx.strokeStyle = rgba(accent, a);
+        vctx.lineWidth = 2;
+        vctx.ellipse(cx, cy, r, r * 0.4, 0, 0, Math.PI * 2);
+        vctx.stroke();
+      }
+      break;
+    }
+
+    case 'spiral': {
+      const arms = 3;
+      for(let a = 0; a < arms; a++){
+        vctx.beginPath();
+        for(let i = 0; i < 140; i++){
+          const angle = i * 0.18 + a * (Math.PI * 2 / arms) + t * 0.01;
+          const r = i * 1.1;
+          const x = cx + Math.cos(angle) * r * 0.5;
+          const y = cy + Math.sin(angle) * r * 0.22;
+          if(i === 0) vctx.moveTo(x, y); else vctx.lineTo(x, y);
+        }
+        vctx.strokeStyle = rgba(accent, 0.6);
+        vctx.lineWidth = 1.4;
+        vctx.stroke();
+      }
+      vctx.beginPath();
+      vctx.fillStyle = rgba('255,255,255', 0.9);
+      vctx.arc(cx, cy, 4, 0, Math.PI * 2);
+      vctx.fill();
+      break;
+    }
+
+    case 'clock': {
+      const R = Math.min(w, h) * 0.32;
+      vctx.beginPath();
+      vctx.strokeStyle = rgba(accent, 0.6);
+      vctx.lineWidth = 2;
+      vctx.arc(cx, cy, R, 0, Math.PI * 2);
+      vctx.stroke();
+      const a1 = t * 0.09;
+      const a2 = Math.sin(t * 0.02) * 6;
+      vctx.beginPath();
+      vctx.strokeStyle = rgba(accent, 0.9);
+      vctx.lineWidth = 3;
+      vctx.moveTo(cx, cy);
+      vctx.lineTo(cx + Math.cos(a1) * R * 0.6, cy + Math.sin(a1) * R * 0.6);
+      vctx.stroke();
+      vctx.beginPath();
+      vctx.strokeStyle = rgba('255,255,255', 0.7);
+      vctx.lineWidth = 2;
+      vctx.moveTo(cx, cy);
+      vctx.lineTo(cx + Math.cos(a2) * R * 0.85, cy + Math.sin(a2) * R * 0.85);
+      vctx.stroke();
+      break;
+    }
+
+    case 'speedlines': {
+      const tracks = 6;
+      for(let i = 0; i < tracks; i++){
+        const y = (i + 1) * (h / (tracks + 1));
+        vctx.strokeStyle = rgba(accent, 0.15);
+        vctx.beginPath();
+        vctx.moveTo(10, y);
+        vctx.lineTo(w - 10, y);
+        vctx.stroke();
+        const x = 10 + ((t * 3 + i * 14) % (w - 20));
+        vctx.beginPath();
+        vctx.fillStyle = rgba(accent, 0.95);
+        vctx.arc(x, y, 4, 0, Math.PI * 2);
+        vctx.fill();
+      }
+      const ySlow = h - 14;
+      vctx.strokeStyle = 'rgba(199,210,232,0.15)';
+      vctx.beginPath(); vctx.moveTo(10, ySlow); vctx.lineTo(w - 10, ySlow); vctx.stroke();
+      const xSlow = 10 + ((t * 0.5) % (w - 20));
+      vctx.beginPath();
+      vctx.fillStyle = 'rgba(199,210,232,0.7)';
+      vctx.arc(xSlow, ySlow, 3, 0, Math.PI * 2);
+      vctx.fill();
+      break;
+    }
+
+    case 'superpos': {
+      const orbit = 34;
+      const a1 = t * 0.05;
+      const x1 = cx + Math.cos(a1) * orbit, y1 = cy + Math.sin(a1) * orbit;
+      const x2 = cx - Math.cos(a1) * orbit, y2 = cy - Math.sin(a1) * orbit;
+      vctx.beginPath();
+      vctx.strokeStyle = rgba(accent, 0.35);
+      vctx.arc(cx, cy, orbit, 0, Math.PI * 2);
+      vctx.stroke();
+      vctx.beginPath();
+      vctx.fillStyle = rgba(accent, 0.85);
+      vctx.arc(x1, y1, 9, 0, Math.PI * 2);
+      vctx.fill();
+      vctx.fillStyle = '#05070d';
+      vctx.font = '10px Rajdhani';
+      vctx.textAlign = 'center';
+      vctx.fillText('0', x1, y1 + 3);
+      vctx.beginPath();
+      vctx.fillStyle = rgba('160,107,255', 0.85);
+      vctx.arc(x2, y2, 9, 0, Math.PI * 2);
+      vctx.fill();
+      vctx.fillStyle = '#05070d';
+      vctx.fillText('1', x2, y2 + 3);
+      break;
+    }
+
+    case 'network': {
+      const nodes = 9;
+      const pts = [];
+      for(let i = 0; i < nodes; i++){
+        const angle = i * (Math.PI * 2 / nodes) + t * 0.004;
+        const r = Math.min(w, h) * (i % 2 === 0 ? 0.34 : 0.2);
+        pts.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
+      }
+      vctx.strokeStyle = rgba(accent, 0.2);
+      for(let i = 0; i < nodes; i++){
+        for(let j = i + 1; j < nodes; j++){
+          vctx.beginPath();
+          vctx.moveTo(pts[i].x, pts[i].y);
+          vctx.lineTo(pts[j].x, pts[j].y);
+          vctx.stroke();
+        }
+      }
+      const pulseIdx = Math.floor(t * 0.05) % nodes;
+      pts.forEach((p, i) => {
+        vctx.beginPath();
+        vctx.fillStyle = rgba(accent, i === pulseIdx ? 1 : 0.6);
+        vctx.arc(p.x, p.y, i === pulseIdx ? 6 : 3.5, 0, Math.PI * 2);
+        vctx.fill();
+      });
+      break;
+    }
+
+    case 'peak': {
+      const thresholdX = w * 0.62;
+      vctx.strokeStyle = 'rgba(199,210,232,0.35)';
+      vctx.setLineDash([4, 4]);
+      vctx.beginPath();
+      vctx.moveTo(thresholdX, 10);
+      vctx.lineTo(thresholdX, h - 10);
+      vctx.stroke();
+      vctx.setLineDash([]);
+
+      const period = 160;
+      const phase = (t % period) / period;
+      vctx.beginPath();
+      for(let x = 0; x <= w * phase; x++){
+        const progress = x / w;
+        const y = h - 10 - Math.pow(progress, 3) * (h - 30);
+        if(x === 0) vctx.moveTo(x, y); else vctx.lineTo(x, y);
+      }
+      vctx.strokeStyle = rgba(accent, 0.95);
+      vctx.lineWidth = 2.5;
+      vctx.stroke();
+
+      if(phase > 0.62){
+        const burstA = 1 - (phase - 0.62) / 0.38;
+        vctx.beginPath();
+        vctx.fillStyle = rgba(accent, Math.max(0, burstA));
+        vctx.arc(thresholdX, h - 10 - Math.pow(0.62, 3) * (h - 30), 10 * (1 - burstA) + 3, 0, Math.PI * 2);
+        vctx.fill();
+      }
+      break;
+    }
+
+    case 'entangle': {
+      const swing = Math.sin(t * 0.05) * 18;
+      const x1 = w * 0.24, x2 = w * 0.76;
+      vctx.strokeStyle = rgba(accent, 0.5 + 0.3 * Math.sin(t * 0.08));
+      vctx.lineWidth = 1.5;
+      vctx.beginPath();
+      for(let i = 0; i <= 20; i++){
+        const x = x1 + (x2 - x1) * (i / 20);
+        const y = cy + Math.sin(i * 0.9 + t * 0.06) * 6;
+        if(i === 0) vctx.moveTo(x, y); else vctx.lineTo(x, y);
+      }
+      vctx.stroke();
+      [x1, x2].forEach((x, i) => {
+        const y = cy + swing * (i === 0 ? 1 : -1);
+        vctx.beginPath();
+        vctx.fillStyle = rgba(accent, 0.9);
+        vctx.arc(x, y, 10, 0, Math.PI * 2);
+        vctx.fill();
+        vctx.beginPath();
+        vctx.strokeStyle = rgba(accent, 0.4);
+        vctx.arc(x, y, 16, 0, Math.PI * 2);
+        vctx.stroke();
+      });
+      break;
+    }
+
+    case 'teleport': {
+      const period = 100;
+      const phase = (t % period) / period;
+      const xA = w * 0.24, xB = w * 0.76;
+      const aOut = phase < 0.5 ? 1 - phase * 2 : 0;
+      const aIn = phase >= 0.5 ? (phase - 0.5) * 2 : 0;
+      vctx.beginPath();
+      vctx.fillStyle = rgba(accent, aOut);
+      vctx.arc(xA, cy, 11, 0, Math.PI * 2);
+      vctx.fill();
+      vctx.beginPath();
+      vctx.fillStyle = rgba(accent, aIn);
+      vctx.arc(xB, cy, 11, 0, Math.PI * 2);
+      vctx.fill();
+      if(phase > 0.35 && phase < 0.65){
+        const beamA = 1 - Math.abs(phase - 0.5) / 0.15;
+        vctx.strokeStyle = rgba(accent, Math.max(0, beamA) * 0.8);
+        vctx.lineWidth = 2;
+        vctx.beginPath();
+        vctx.moveTo(xA, cy);
+        vctx.lineTo(xB, cy);
+        vctx.stroke();
+      }
+      break;
+    }
+
+    default: {
+      vctx.fillStyle = rgba(accent, 0.6);
+      vctx.beginPath();
+      vctx.arc(cx, cy, 20, 0, Math.PI * 2);
+      vctx.fill();
+    }
+  }
+}
+
+/* =========================================================
+   Ambient background starfield (page-level, lightweight)
+   ========================================================= */
+const bg = document.getElementById('bg');
+const bctx = bg.getContext('2d');
+let BW, BH;
+function resizeBg(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  BW = window.innerWidth; BH = document.documentElement.scrollHeight;
+  bg.width = BW * dpr; bg.height = Math.min(BH, window.innerHeight * 3) * dpr;
+  bg.style.height = Math.min(BH, window.innerHeight * 3) + 'px';
+  bctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeBg();
+window.addEventListener('resize', resizeBg);
+
+const bgStars = Array.from({ length: 180 }, () => ({
+  x: Math.random(), y: Math.random(), r: Math.random() * 1.3 + 0.3, phase: Math.random() * Math.PI * 2
+}));
+
+// slow-drifting nebula glows — gives the whole page a "quantum field" wash of color
+const nebulae = [
+  { cx:0.20, cy:0.10, r:0.55, color:'160,107,255', speed:0.15, phase:0 },
+  { cx:0.80, cy:0.35, r:0.60, color:'94,231,255',  speed:0.11, phase:2.1 },
+  { cx:0.45, cy:0.75, r:0.50, color:'255,207,107', speed:0.09, phase:4.4 },
+  { cx:0.85, cy:0.85, r:0.45, color:'255,120,180', speed:0.13, phase:1.3 },
+];
+
+// drifting "quantum particles" — when two pass near each other, a faint
+// entanglement line links them, like a field of particles briefly correlating
+const QP_COUNT = 70;
+const qparticles = Array.from({ length: QP_COUNT }, () => ({
+  x: Math.random(), y: Math.random(),
+  vx: (Math.random() - 0.5) * 0.00035,
+  vy: (Math.random() - 0.5) * 0.00035,
+  r: Math.random() * 1.6 + 0.8,
+  hue: Math.random() < 0.5 ? '94,231,255' : (Math.random() < 0.5 ? '160,107,255' : '255,207,107'),
+  pulse: Math.random() * Math.PI * 2,
+}));
+
+let bt = 0;
+function bgLoop(){
+  bt += 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const h = bg.height / dpr;
+
+  bctx.clearRect(0, 0, BW, h);
+  bctx.fillStyle = '#04050a';
+  bctx.fillRect(0, 0, BW, h);
+
+  // nebula wash
+  nebulae.forEach(n => {
+    const nx = (n.cx + Math.sin(bt * 0.0015 * n.speed + n.phase) * 0.05) * BW;
+    const ny = (n.cy + Math.cos(bt * 0.0012 * n.speed + n.phase) * 0.05) * h;
+    const nr = n.r * Math.max(BW, h);
+    const grad = bctx.createRadialGradient(nx, ny, 0, nx, ny, nr);
+    grad.addColorStop(0, `rgba(${n.color},0.10)`);
+    grad.addColorStop(0.5, `rgba(${n.color},0.04)`);
+    grad.addColorStop(1, 'rgba(4,5,10,0)');
+    bctx.fillStyle = grad;
+    bctx.fillRect(0, 0, BW, h);
+  });
+
+  // faint probability-wave lines drifting through the field
+  for(let w = 0; w < 3; w++){
+    const yBase = h * (0.2 + w * 0.32);
+    bctx.beginPath();
+    for(let x = 0; x <= BW; x += 10){
+      const y = yBase + Math.sin(x * 0.006 + bt * 0.006 + w * 2) * 40
+                        + Math.sin(x * 0.017 + bt * 0.012 + w) * 14;
+      if(x === 0) bctx.moveTo(x, y); else bctx.lineTo(x, y);
+    }
+    bctx.strokeStyle = w === 0 ? 'rgba(94,231,255,0.05)' : (w === 1 ? 'rgba(160,107,255,0.045)' : 'rgba(255,207,107,0.04)');
+    bctx.lineWidth = 1.4;
+    bctx.stroke();
+  }
+
+  // drifting quantum particles + transient entanglement links
+  qparticles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if(p.x < 0) p.x = 1; if(p.x > 1) p.x = 0;
+    if(p.y < 0) p.y = 1; if(p.y > 1) p.y = 0;
+  });
+  for(let i = 0; i < qparticles.length; i++){
+    for(let j = i + 1; j < qparticles.length; j++){
+      const a = qparticles[i], b = qparticles[j];
+      const dx = (a.x - b.x) * BW, dy = (a.y - b.y) * h;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const LINK = 95;
+      if(dist < LINK){
+        const alpha = (1 - dist / LINK) * 0.16;
+        bctx.beginPath();
+        bctx.strokeStyle = `rgba(199,210,232,${alpha})`;
+        bctx.lineWidth = 1;
+        bctx.moveTo(a.x * BW, a.y * h);
+        bctx.lineTo(b.x * BW, b.y * h);
+        bctx.stroke();
+      }
+    }
+  }
+  qparticles.forEach(p => {
+    const glow = 0.5 + 0.5 * Math.sin(bt * 0.03 + p.pulse);
+    bctx.beginPath();
+    bctx.fillStyle = `rgba(${p.hue},${0.35 + glow * 0.45})`;
+    bctx.arc(p.x * BW, p.y * h, p.r, 0, Math.PI * 2);
+    bctx.fill();
+  });
+
+  // twinkling stars on top
+  bgStars.forEach(s => {
+    const x = s.x * BW, y = s.y * h;
+    const tw = 0.4 + 0.5 * Math.sin(bt * 0.02 + s.phase);
+    bctx.beginPath();
+    bctx.fillStyle = `rgba(199,210,232,${0.25 + tw * 0.45})`;
+    bctx.arc(x, y, s.r, 0, Math.PI * 2);
+    bctx.fill();
+  });
+
+  requestAnimationFrame(bgLoop);
+}
+requestAnimationFrame(bgLoop);
+</script>
+</body>
+</html>
