@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI → AGI → ASI | Vikash Patel</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#02040b;color:#eef4ff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+body{overflow-x:hidden}
+#canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.overlay{position:fixed;inset:0;z-index:1;pointer-events:none;background:
+ radial-gradient(circle at 50% 42%,transparent 0 18%,rgba(3,8,25,.22) 48%,rgba(1,2,7,.82) 100%),
+ linear-gradient(180deg,rgba(2,4,12,.15),rgba(2,4,10,.72))}
+.page{position:relative;z-index:2;max-width:1100px;margin:auto;padding:72px 22px 90px}
+.hero{text-align:center;min-height:78vh;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.eyebrow{letter-spacing:.32em;text-transform:uppercase;font-size:11px;color:#8ca7d9;margin-bottom:20px}
+h1{font-size:clamp(48px,9vw,105px);line-height:.9;margin:0;font-weight:800;letter-spacing:-.055em;
+ text-shadow:0 0 25px rgba(84,151,255,.38)}
+h1 span{display:block;background:linear-gradient(90deg,#b9d7ff,#6da6ff,#d8b8ff);-webkit-background-clip:text;color:transparent}
+.subtitle{max-width:700px;font-size:clamp(17px,2.2vw,23px);line-height:1.6;color:#aebbd2;margin:28px 0 0}
+.name{margin-top:34px;font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:#dce7ff}
+.scroll{margin-top:55px;color:#6f85aa;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+.story{display:grid;gap:24px;margin-top:20px}
+.card{background:linear-gradient(135deg,rgba(10,18,40,.72),rgba(4,8,20,.56));border:1px solid rgba(135,170,235,.18);
+ border-radius:28px;padding:34px clamp(24px,5vw,55px);backdrop-filter:blur(16px);box-shadow:0 25px 80px rgba(0,0,0,.28)}
+.card h2{font-size:clamp(28px,4vw,46px);margin:0 0 14px;letter-spacing:-.03em}
+.card h2 small{font-size:12px;letter-spacing:.2em;color:#7f9bce;display:block;margin-bottom:10px}
+.card p{font-size:18px;line-height:1.9;color:#c3cee1;margin:10px 0}
+.quote{font-size:clamp(24px,4vw,42px)!important;line-height:1.35!important;color:#fff!important;font-weight:650;margin:28px 0!important}
+.ai{color:#80b5ff}.agi{color:#b997ff}.asi{color:#ff9dd7}
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:25px}
+.node{padding:24px;border:1px solid rgba(150,180,240,.16);border-radius:20px;background:rgba(255,255,255,.025)}
+.node b{font-size:24px}.node p{font-size:14px;line-height:1.6;color:#91a1bd}
+.final{text-align:center;padding:110px 20px 70px}
+.final h2{font-size:clamp(34px,6vw,70px);line-height:1.05;margin:0 auto 25px;max-width:850px}
+.final p{max-width:700px;margin:auto;color:#9eacc5;font-size:18px;line-height:1.8}
+.signature{margin-top:45px;color:#dbe7ff;letter-spacing:.2em;text-transform:uppercase;font-size:12px}
+@media(max-width:700px){.page{padding-top:35px}.hero{min-height:88vh}.timeline{grid-template-columns:1fr}.card{padding:27px 20px}.card p{font-size:16px}}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas><div class="overlay"></div>
+
+<main class="page">
+<section class="hero">
+  <div class="eyebrow">A thought about the intelligence of tomorrow</div>
+  <h1>AI <span>→ AGI → ASI</span></h1>
+  <div class="subtitle">What happens when artificial intelligence stops being just a tool… and starts becoming a new kind of intelligence?</div>
+  <div class="name">Vikash Patel</div>
+  <div class="scroll">Scroll to enter the thought experiment ↓</div>
+</section>
+
+<section class="story">
+  <article class="card">
+    <h2><small>01 / TODAY</small><span class="ai">AI — The Tool</span></h2>
+    <p>Kal khali baitha tha… aur ek ajeeb sa thought aaya.</p>
+    <p>Aaj hum <b>AI</b> bana rahe hain — systems jo language samajh sakte hain, images create kar sakte hain, code likh sakte hain aur specific problems solve kar sakte hain.</p>
+    <p class="quote">“Aaj AI humare liye kaam karti hai.”</p>
+  </article>
+
+  <article class="card">
+    <h2><small>02 / TOMORROW?</small><span class="agi">AGI — The General Mind</span></h2>
+    <p>Ab imagine karo… agar ek din AI sirf ek task tak limited na rahe.</p>
+    <p>Ek system jo naye subjects ko samjhe, knowledge ko connect kare, unfamiliar problems par reason kare aur different situations mein apni capability adapt kare.</p>
+    <p class="quote">“Tab AI sirf ek tool nahi… ek general problem-solver ban sakti hai.”</p>
+  </article>
+
+  <article class="card">
+    <h2><small>03 / THE BIG QUESTION</small><span class="asi">ASI — Beyond Human Intelligence</span></h2>
+    <p>Aur agar kabhi <b>Artificial Super Intelligence</b> develop hoti hai — ek aisi intelligence jo important cognitive tasks mein humans se dramatically better ho?</p>
+    <p>Toh meri prediction mein sabse bada change robots ka human ko replace karna nahi hoga.</p>
+    <p class="quote">“Sabse bada change hoga — intelligence ki value ka badal jaana.”</p>
+  </article>
+
+  <article class="card">
+    <h2><small>04 / MY THOUGHT</small>Human + Intelligence</h2>
+    <p>Aaj hum kehte hain: <b>“Jo sabse intelligent hai, woh sabse powerful hai.”</b></p>
+    <p>Kal equation shayad kuch aur ho:</p>
+    <p class="quote">Human + AI = Augmented Human</p>
+    <p>Hum problem define karenge. AI research karegi, possibilities explore karegi, plans banayegi, experiments simulate karegi aur solutions ko accelerate karegi.</p>
+    <div class="timeline">
+      <div class="node"><b class="ai">AI</b><p>Specific tasks, assistance, automation.</p></div>
+      <div class="node"><b class="agi">AGI</b><p>General reasoning and adaptation.</p></div>
+      <div class="node"><b class="asi">ASI</b><p>Potentially intelligence beyond human capability.</p></div>
+    </div>
+  </article>
+</section>
+
+<section class="final">
+  <h2>Maybe the most valuable skill of the future won't be knowing every answer.</h2>
+  <p>It might be knowing <b>which questions are worth asking.</b></p>
+  <p style="margin-top:22px">Aur ek question phir bhi rahega — agar machines humse better soch sakti hain, toh <b>human hone ki value kya hogi?</b></p>
+  <p style="margin-top:22px">Shayad answer technology ke paas nahi… humare consciousness, emotions, creativity aur purpose ke paas hoga.</p>
+  <div class="signature">A thought by Vikash Patel · Not a prediction, a possibility</div>
+</section>
+</main>
+
+<script>
+// Lightweight 3D quantum-inspired particle field — no external library required.
+const c=document.getElementById('canvas'),ctx=c.getContext('2d');
+let W,H,dpr,pts=[],mx=0,my=0,t=0;
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+ pts=Array.from({length:Math.min(260,Math.floor(W/4))},()=>({a:Math.random()*Math.PI*2,r:80+Math.random()*Math.min(W,H)*.42,z:Math.random()*2-1,s:.001+Math.random()*.003}));}
+function draw(){
+ t+=.01;ctx.clearRect(0,0,W,H);
+ const cx=W/2+mx*25,cy=H*.43+my*18;
+ // orbital rings
+ ctx.save();ctx.translate(cx,cy);ctx.rotate(t*.12);
+ for(let k=0;k<5;k++){ctx.beginPath();ctx.ellipse(0,0,90+k*55,35+k*28,k*.5,0,Math.PI*2);ctx.strokeStyle=`rgba(100,150,255,${.055+k*.012})`;ctx.stroke();}
+ ctx.restore();
+ // particles
+ for(const p of pts){
+   p.a+=p.s; const rr=p.r*(.78+.22*Math.sin(t+p.r));
+   const x=cx+Math.cos(p.a)*rr, y=cy+Math.sin(p.a)*rr*.42+p.z*80;
+   const z=(Math.sin(p.a)+1)/2, size=.7+2*z;
+   ctx.beginPath();ctx.arc(x,y,size,0,Math.PI*2);ctx.fillStyle=`rgba(150,195,255,${.16+.55*z})`;ctx.fill();
+ }
+ requestAnimationFrame(draw);
+}
+addEventListener('resize',resize);
+addEventListener('pointermove',e=>{mx=(e.clientX/W-.5);my=(e.clientY/H-.5)});
+resize();draw();
+</script>
+</body>
+</html>
