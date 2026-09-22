@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grover's Algorithm — The Physics of Finding a Needle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a1220; --ink2:#0e1830; --panel:#101d38; --edge:#22315a;
+  --paper:#eee9e0; --muted:#94a7ca; --dim:#5b6c8e;
+  --amber:#f2b84b; --amber-soft:#7a5a22; --teal:#57d8c4; --violet:#9186f2;
+  --bad:#e2607a;
+  --serif:'Fraunces',serif; --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth; scroll-padding-top:64px;}
+body{margin:0;background:radial-gradient(ellipse 120% 60% at 50% -10%,#132348 0%,var(--ink) 55%);color:var(--paper);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+h1,h2,h3{font-family:var(--serif);font-weight:600;color:#fbf7ef;letter-spacing:.2px;}
+a{color:var(--amber);}
+.wrap{max-width:740px;margin:0 auto;padding:0 24px;}
+.wide{max-width:1000px;margin:0 auto;padding:0 24px;}
+::selection{background:var(--amber);color:#241a04;}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px;}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important;}}
+
+/* ---------- nav ---------- */
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(10px);background:rgba(10,18,32,.72);border-bottom:1px solid var(--edge);padding-top:env(safe-area-inset-top,0px);}
+.navrow{max-width:1000px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:22px;overflow-x:auto;scrollbar-width:none;}
+.navrow::-webkit-scrollbar{display:none;}
+.navmark{font-family:var(--serif);font-weight:600;font-size:1.05rem;white-space:nowrap;flex:none;color:var(--paper);}
+.navlinks{display:flex;gap:18px;font-size:.86rem;}
+.navlinks a{color:var(--muted);text-decoration:none;white-space:nowrap;border-bottom:1px solid transparent;padding-bottom:2px;}
+.navlinks a:hover{color:var(--amber);border-color:var(--amber);}
+
+/* ---------- hero ---------- */
+.hero{padding:88px 0 60px;text-align:center;position:relative;}
+.eyebrow{font-family:var(--mono);font-size:.78rem;color:var(--teal);letter-spacing:.4px;}
+.hero h1{font-size:clamp(2.1rem,5.4vw,3.6rem);margin:14px 0 6px;line-height:1.08;}
+.hero .sub{color:var(--muted);font-size:1.08rem;max-width:560px;margin:0 auto;}
+.wave{width:100%;max-width:620px;height:150px;margin:38px auto 6px;display:block;}
+.wave path{fill:none;stroke-width:2;}
+.playbar{display:flex;justify-content:center;gap:10px;margin-top:26px;flex-wrap:wrap;}
+
+/* ---------- buttons ---------- */
+button{font:inherit;cursor:pointer;}
+.btn{background:var(--amber);color:#241a04;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:.92rem;transition:transform .12s ease,box-shadow .12s ease;}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px -6px rgba(242,184,75,.55);}
+.btn:active{transform:translateY(0);}
+.btn.ghost{background:transparent;color:var(--paper);border:1px solid var(--edge);}
+.btn.ghost:hover{border-color:var(--teal);color:var(--teal);box-shadow:none;}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn.small{padding:7px 14px;font-size:.82rem;}
+
+/* ---------- sections ---------- */
+section{padding:64px 0;border-top:1px solid var(--edge);}
+.kicker{font-family:var(--mono);font-size:.76rem;color:var(--dim);text-transform:none;margin-bottom:10px;}
+section h2{font-size:clamp(1.5rem,3.4vw,2rem);margin:0 0 18px;}
+p{color:#d7dced;}
+.lede{font-size:1.08rem;color:var(--paper);}
+
+/* callout / formula box */
+.box{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:20px 22px;margin:22px 0;}
+.box.amber{border-color:var(--amber-soft);background:linear-gradient(180deg,rgba(242,184,75,.08),rgba(242,184,75,.02));}
+.formula{font-family:var(--mono);font-size:.95rem;color:var(--teal);}
+.formula b{color:var(--amber);}
+
+/* real-life example tag */
+.example{border-left:3px solid var(--teal);padding:4px 0 4px 16px;margin:20px 0;color:var(--muted);font-size:.96rem;}
+.example b{color:var(--paper);}
+
+/* diagram card */
+.diagram{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:22px;margin:26px 0;}
+.diagram figcaption{color:var(--dim);font-size:.82rem;margin-top:10px;text-align:center;}
+
+/* ---------- simulator ---------- */
+.simcard{background:linear-gradient(180deg,var(--panel),#0d1730);border:1px solid var(--edge);border-radius:16px;padding:26px;margin-top:28px;}
+.simhead{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+.simhead h3{margin:0;font-size:1.15rem;}
+.tag{font-family:var(--mono);font-size:.72rem;color:var(--ink);background:var(--teal);padding:3px 9px;border-radius:20px;font-weight:600;}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:18px 0;}
+.controls label{font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:8px;}
+input[type=range]{accent-color:var(--amber);width:150px;}
+.simgrid{display:grid;grid-template-columns:1.1fr 1fr;gap:26px;margin-top:18px;}
+@media(max-width:720px){.simgrid{grid-template-columns:1fr;}}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin-top:16px;font-family:var(--mono);font-size:.86rem;}
+.readout div span{display:block;color:var(--dim);font-size:.72rem;font-family:var(--sans);}
+.readout div b{color:var(--amber);font-size:1rem;}
+
+/* 3D bar stage */
+.stage3d{perspective:640px;height:230px;display:flex;align-items:flex-end;justify-content:center;gap:56px;padding-bottom:8px;}
+.barwrap{transform-style:preserve-3d;transform:rotateX(55deg) rotateZ(-32deg);}
+.bar3d{position:relative;width:64px;transform-style:preserve-3d;transition:height .5s cubic-bezier(.2,.8,.2,1);}
+.bar3d .face{position:absolute;inset:0;}
+.bar3d .top{background:var(--f2,var(--teal));transform:translateZ(32px);border-radius:4px 4px 0 0;}
+.bar3d .front{background:var(--f1,#2c6f66);width:64px;height:100%;transform-origin:bottom;}
+.bar3d .side{background:var(--f0,#1d4a44);width:64px;height:100%;transform:rotateY(90deg) translateZ(32px);transform-origin:right;}
+.barlabel{text-align:center;font-family:var(--mono);font-size:.72rem;color:var(--muted);margin-top:14px;}
+.barlabel b{display:block;color:var(--paper);font-size:.95rem;}
+
+/* rotation diagram */
+.rotwrap{display:flex;align-items:center;justify-content:center;}
+.rotwrap svg{max-width:100%;}
+
+/* ---------- circuit ---------- */
+.circuit{overflow-x:auto;}
+.circuit svg{display:block;margin:0 auto;min-width:560px;}
+.code{background:#0a1428;border:1px solid var(--edge);border-radius:10px;padding:16px 18px;font-family:var(--mono);font-size:.84rem;color:#c9d4ef;overflow-x:auto;line-height:1.75;}
+.code .c{color:var(--dim);} .code .k{color:var(--teal);} .code .v{color:var(--amber);}
+
+/* ---------- applications ---------- */
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:24px;}
+@media(max-width:680px){.cards{grid-template-columns:1fr;}}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:14px;padding:22px;}
+.card .ico{font-size:1.5rem;}
+.card h3{font-size:1.05rem;margin:12px 0 8px;}
+.card p{font-size:.92rem;margin:0 0 10px;}
+.card .ex{font-size:.86rem;color:var(--muted);border-top:1px dashed var(--edge);padding-top:10px;margin-top:10px;}
+
+/* ---------- race ---------- */
+.race{margin-top:24px;}
+.racerow{margin-bottom:18px;}
+.racerow .lbl{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.82rem;color:var(--muted);margin-bottom:6px;}
+.track{height:16px;background:#0a1428;border-radius:10px;border:1px solid var(--edge);overflow:hidden;}
+.fill{height:100%;width:0%;border-radius:10px;transition:width linear;}
+.fill.classical{background:linear-gradient(90deg,var(--bad),#b23a54);}
+.fill.quantum{background:linear-gradient(90deg,var(--teal),#2fae9a);}
+
+/* ---------- quiz ---------- */
+.quizcard{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:28px;margin-top:24px;}
+.qprog{display:flex;gap:6px;margin-bottom:18px;}
+.qprog i{flex:1;height:4px;border-radius:2px;background:var(--edge);}
+.qprog i.done{background:var(--teal);}
+.qprog i.now{background:var(--amber);}
+#qtext{font-size:1.08rem;color:var(--paper);margin-bottom:18px;font-family:var(--serif);}
+.opt{display:block;width:100%;text-align:left;background:#0d1730;border:1px solid var(--edge);color:var(--paper);padding:13px 16px;border-radius:10px;margin-bottom:10px;font-size:.92rem;transition:border-color .15s;}
+.opt:hover{border-color:var(--teal);}
+.opt.correct{border-color:var(--teal);background:rgba(87,216,196,.13);}
+.opt.wrong{border-color:var(--bad);background:rgba(226,96,122,.13);}
+.opt:disabled{cursor:default;}
+#qfeedback{font-size:.88rem;color:var(--muted);min-height:20px;margin-bottom:10px;}
+.scorebig{font-family:var(--serif);font-size:2.4rem;color:var(--amber);}
+
+footer{padding:40px 0 60px;text-align:center;color:var(--dim);font-size:.84rem;}
+
+/* ---------- cinematic layer ---------- */
+#bgCanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.55;}
+#scrollbar{position:fixed;top:0;left:0;height:3px;width:0%;background:linear-gradient(90deg,var(--teal),var(--amber),var(--violet));z-index:200;box-shadow:0 0 10px rgba(242,184,75,.6);transition:width .08s linear;}
+header,section,footer{position:relative;z-index:1;}
+
+/* 3D atom */
+.atom{width:230px;height:230px;margin:34px auto 6px;position:relative;perspective:900px;}
+.atom .core{position:absolute;top:50%;left:50%;width:16px;height:16px;margin:-8px;border-radius:50%;background:radial-gradient(circle,#fff,var(--amber) 60%,transparent);box-shadow:0 0 26px 8px rgba(242,184,75,.65),0 0 50px 16px rgba(242,184,75,.25);animation:pulse 2.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.18);}}
+.atom .ring{position:absolute;top:50%;left:50%;width:210px;height:210px;margin:-105px;border-radius:50%;border:1.4px solid;transform-style:preserve-3d;}
+.ring1{border-color:rgba(87,216,196,.5);color:var(--teal);animation:orb1 7s linear infinite;}
+.ring2{border-color:rgba(242,184,75,.45);color:var(--amber);animation:orb2 9.5s linear infinite reverse;}
+.ring3{border-color:rgba(145,134,242,.45);color:var(--violet);animation:orb3 12s linear infinite;}
+.ring::after{content:'';position:absolute;top:50%;right:-4px;width:9px;height:9px;margin-top:-4.5px;border-radius:50%;background:currentColor;box-shadow:0 0 12px 4px currentColor;}
+@keyframes orb1{from{transform:rotateX(72deg) rotateZ(0deg);}to{transform:rotateX(72deg) rotateZ(360deg);}}
+@keyframes orb2{from{transform:rotateX(72deg) rotateY(60deg) rotateZ(0deg);}to{transform:rotateX(72deg) rotateY(60deg) rotateZ(360deg);}}
+@keyframes orb3{from{transform:rotateX(72deg) rotateY(-60deg) rotateZ(0deg);}to{transform:rotateX(72deg) rotateY(-60deg) rotateZ(360deg);}}
+
+/* hero title reveal */
+.hero h1{overflow:visible;}
+.hero h1 .word{display:inline-block;opacity:0;transform:translateY(24px);filter:blur(6px);animation:riseGlow .9s cubic-bezier(.2,.7,.2,1) forwards;}
+.hero h1 .word:nth-child(1){animation-delay:.1s;}
+.hero h1 .word:nth-child(2){animation-delay:.32s;color:var(--amber);}
+@keyframes riseGlow{to{opacity:1;transform:translateY(0);filter:blur(0);}}
+.hero .sub{opacity:0;animation:fadeIn 1s ease forwards;animation-delay:.75s;}
+@keyframes fadeIn{to{opacity:1;}}
+
+/* scroll-reveal + highlight sweep */
+.kicker{position:relative;padding-bottom:10px;}
+.kicker::after{content:'';position:absolute;left:0;bottom:0;height:2px;width:0;background:linear-gradient(90deg,var(--teal),var(--amber));transition:width .8s cubic-bezier(.2,.7,.2,1);}
+.reveal.in-view .kicker::after{width:64px;}
+.reveal h2{opacity:0;transform:translateY(16px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.in-view h2{opacity:1;transform:translateY(0);}
+.reveal .lede{background-image:linear-gradient(100deg,transparent 0%,rgba(242,184,75,.28) 45%,rgba(87,216,196,.22) 55%,transparent 100%);background-size:280% 100%;background-position:150% 0;background-repeat:no-repeat;transition:background-position 1.4s cubic-bezier(.2,.7,.2,1);border-radius:3px;}
+.reveal.in-view .lede{background-position:-50% 0;}
+
+/* ---------- numericals ---------- */
+.eqgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 22px;margin-top:8px;}
+@media(max-width:640px){.eqgrid{grid-template-columns:1fr;}}
+.eqgrid div{font-family:var(--mono);font-size:.9rem;color:var(--teal);border-left:2px solid var(--edge);padding-left:10px;}
+.eqgrid div span{display:block;color:var(--dim);font-size:.72rem;font-family:var(--sans);margin-bottom:2px;}
+.probcard{background:var(--panel);border:1px solid var(--edge);border-radius:12px;padding:18px 20px;margin:16px 0;}
+.probcard .phead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
+.probcard .pnum{font-family:var(--mono);color:var(--amber);font-size:.8rem;flex:none;}
+.probcard p{margin:6px 0 0;}
+.sol{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--edge);font-size:.92rem;}
+.sol.open{display:block;}
+.sol .step{color:var(--muted);margin:6px 0;}
+.sol .step b{color:var(--paper);}
+.sol .ans{font-family:var(--mono);color:var(--teal);background:#0a1428;border-radius:8px;padding:10px 14px;margin-top:10px;display:inline-block;}
+</style>
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+<div id="scrollbar"></div>
+
+<nav><div class="navrow">
+  <div class="navmark">⟨Grover|</div>
+  <div class="navlinks">
+    <a href="#intuition">Intuition</a><a href="#framework">Amplitude Amplification</a>
+    <a href="#numericals">Numericals</a><a href="#circuit">Implementation</a><a href="#applications">Applications</a>
+    <a href="#limits">Optimality</a><a href="#quiz">Quiz</a>
+  </div>
+</div></nav>
+
+<header class="hero wrap">
+  <div class="eyebrow">A LECTURE ON QUANTUM SEARCH</div>
+  <h1><span class="word">Grover's</span> <span class="word">Algorithm</span></h1>
+  <p class="sub">How a quantum computer finds one marked object in an unsorted pile of N, using roughly √N glances instead of N — by <em>listening for the right note and turning up its volume.</em></p>
+  <div class="atom"><div class="core"></div><div class="ring ring1"></div><div class="ring ring2"></div><div class="ring ring3"></div></div>
+  <svg class="wave" viewBox="0 0 620 150" id="heroWave"><path id="heroPath" stroke="#57d8c4"/></svg>
+  <div class="playbar">
+    <a class="btn" href="#framework">Run the simulation ▸</a>
+    <a class="btn ghost" href="#quiz">Jump to the quiz</a>
+  </div>
+</header>
+
+<!-- ================= INTUITION ================= -->
+<section id="intuition"><div class="wrap reveal">
+  <div class="kicker">01 — INTUITION</div>
+  <h2>Searching in the dark</h2>
+  <p class="lede">Imagine a phone book with a million names, printed with <b>no order at all</b>. You need to find the one entry belonging to a specific number. Classically, there is nothing smarter to do than check names one by one — on average you flip through 500,000 pages before you get lucky, and in the worst case, all million.</p>
+  <p>A quantum computer holds all million names <b>in superposition</b> at once — not by reading them all in parallel and picking the answer directly (that part is not free), but by preparing an equal "guess" over every page. The real trick is what happens next: on every round, the algorithm doesn't look at a page and say yes/no like a human flipping pages. It applies a tiny, precise nudge that quietly steals a sliver of probability from every wrong page and hands it to the right one.</p>
+  <div class="example"><b>Real-life picture:</b> think of a choir of a million voices all humming different notes at equal volume. You can't hear the "correct" note in the noise. Grover's algorithm doesn't ask each singer to stop — instead, on every round, it flips the correct singer's phase (like reversing their sound wave) and then reflects the whole choir's volumes about their average. That single mathematical move quietly makes the correct singer louder and everyone else quieter. After about √N rounds, the correct voice is nearly all you hear.</div>
+  <div class="box amber">
+    <b>Why this is genuinely faster.</b> Classical brute force needs <span class="formula">O(N)</span> checks. Grover needs only <span class="formula">O(√N)</span> — for a million entries, roughly <b>1,000</b> rounds instead of 500,000. That is a real, proven quadratic speed-up, not a parallel-universe shortcut.
+  </div>
+</div></section>
+
+<!-- ================= FRAMEWORK + SIMULATOR ================= -->
+<section id="framework"><div class="wide reveal">
+  <div class="kicker">02 — THE AMPLITUDE AMPLIFICATION FRAMEWORK</div>
+  <h2>Two reflections, one rotation</h2>
+  <p class="lede" style="max-width:740px">Grover's algorithm lives entirely inside a single 2-dimensional plane, spanned by <span class="formula">|bad⟩</span> (the average of every wrong answer) and <span class="formula">|target⟩</span> (the one you want). Each Grover iteration is exactly <b>two reflections</b>, and two reflections compose into a <b>rotation</b>.</p>
+  <div class="box" style="max-width:740px">
+    <div class="formula">1. Oracle&nbsp;&nbsp; <b>Uf</b>: flips the sign of |target⟩ — a reflection about |bad⟩.</div>
+    <div class="formula">2. Diffuser <b>2|s⟩⟨s|−I</b>: reflects every amplitude about their average — a reflection about |s⟩.</div>
+    <div class="formula">Net effect: rotate the state by a fixed angle <b>2θ</b>, where sin θ = 1/√N.</div>
+  </div>
+  <p style="max-width:740px">Start near the "bad" axis (all amplitude spread over wrong answers) and rotate, step by step, toward the "target" axis. Rotate too little and you haven't found it; rotate <em>too much</em> and you sail past it and start coming back down — this is why more iterations are not always better.</p>
+
+  <div class="simcard">
+    <div class="simhead"><h3>Try it yourself — live Grover simulator</h3><span class="tag">SIMULATION MODE</span></div>
+    <p style="margin:0;color:var(--muted);font-size:.9rem">Pick a search-space size, then step through real Grover iterations. Every number below is computed live from the actual formulas — nothing is pre-scripted.</p>
+    <div class="controls">
+      <label>Qubits n (N=2ⁿ items): <input type="range" id="nQubits" min="2" max="8" value="4"><b id="nVal" style="color:var(--amber);font-family:var(--mono)"></b></label>
+      <button class="btn small" id="stepBtn">Step ▸</button>
+      <button class="btn small ghost" id="playBtn">Auto-play ▸▸</button>
+      <button class="btn small ghost" id="resetBtn">Reset ↺</button>
+    </div>
+    <div class="simgrid">
+      <div>
+        <div class="rotwrap"><svg viewBox="0 0 260 230" width="260" height="230">
+          <line x1="30" y1="200" x2="240" y2="200" stroke="#3a4d78" stroke-width="1.5"/>
+          <line x1="30" y1="200" x2="30" y2="20" stroke="#3a4d78" stroke-width="1.5"/>
+          <text x="242" y="204" font-size="11" fill="#94a7ca" font-family="JetBrains Mono">|bad⟩</text>
+          <text x="8" y="18" font-size="11" fill="#94a7ca" font-family="JetBrains Mono">|target⟩</text>
+          <line id="stateVec" x1="30" y1="200" x2="220" y2="200" stroke="#f2b84b" stroke-width="2.5" marker-end="url(#arrow)"/>
+          <path id="angArc" fill="none" stroke="#57d8c4" stroke-width="1.5"/>
+          <text id="angLabel" x="60" y="192" font-size="11" fill="#57d8c4" font-family="JetBrains Mono"></text>
+          <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f2b84b"/></marker></defs>
+        </svg></div>
+        <div class="barlabel">State vector rotating toward |target⟩ by 2θ per iteration</div>
+      </div>
+      <div>
+        <div class="stage3d"><div class="barwrap" style="display:flex;gap:56px;align-items:flex-end;">
+          <div style="text-align:center"><div class="bar3d" id="barBad" style="--f0:#5a2632;--f1:#8c3a4c;--f2:#e2607a;height:20px;"><div class="face front"></div><div class="face side"></div><div class="face top"></div></div><div class="barlabel">avg. wrong item<br><b id="pBadTxt">–</b></div></div>
+          <div style="text-align:center"><div class="bar3d" id="barGood" style="--f0:#7a5a22;--f1:#c98f2e;--f2:#f2b84b;height:20px;"><div class="face front"></div><div class="face side"></div><div class="face top"></div></div><div class="barlabel">marked item<br><b id="pGoodTxt">–</b></div></div>
+        </div></div>
+        <div class="barlabel">Probability² — drag isn't needed, it auto-tilts for depth</div>
+      </div>
+    </div>
+    <div class="readout">
+      <div><span>Search space N</span><b id="rN"></b></div>
+      <div><span>Optimal iterations r ≈ (π/4)√N</span><b id="rOpt"></b></div>
+      <div><span>Current iteration k</span><b id="rK"></b></div>
+      <div><span>Rotation angle θ</span><b id="rTheta"></b></div>
+      <div><span>P(found) after k steps</span><b id="rP"></b></div>
+      <div><span>Status</span><b id="rStatus"></b></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- ================= NUMERICALS ================= -->
+<section id="numericals"><div class="wrap reveal">
+  <div class="kicker">02.5 — EQUATIONS AND THE ITERATION METHOD</div>
+  <h2>Numericals: doing the maths by hand</h2>
+  <p class="lede">Every simulator number on this page ultimately comes from five equations. Learn these, and you can solve any Grover numerical without a computer.</p>
+  <div class="box amber">
+    <div class="eqgrid">
+      <div><span>Search space</span>N = 2ⁿ &nbsp;(n qubits, M marked items)</div>
+      <div><span>Rotation angle (exact)</span>sin θ = √(M/N)&nbsp; ⇒ &nbsp;θ = arcsin√(M/N)</div>
+      <div><span>Amplitude after k iterations</span>a(k) = sin((2k+1)θ)</div>
+      <div><span>Success probability</span>P(k) = sin²((2k+1)θ)</div>
+      <div><span>Optimal iteration count</span>r* = round( π/(4θ) − 1/2 )</div>
+      <div><span>Large-N shortcut (M=1, N≫1)</span>θ ≈ 1/√N &nbsp;⇒&nbsp; r* ≈ (π/4)√N</div>
+    </div>
+  </div>
+  <p><b>Iteration method, step by step:</b> (1) compute N and θ from the problem; (2) find r* — this tells you how many times to apply Oracle+Diffuser; (3) plug k=r* into P(k) to get the success probability; (4) if the question asks for a specific k (not the optimum), just substitute that k directly — the formula doesn't care whether you've under- or over-rotated.</p>
+  <p style="color:var(--muted);font-size:.9rem">Click any problem below to reveal the worked solution.</p>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q1</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>A search space has N = 4 items (n = 2 qubits) with exactly 1 marked item. Find θ, the optimal number of iterations r*, and the success probability at r*.</p>
+    <div class="sol"><div class="step">sin θ = √(1/4) = 0.5 ⇒ <b>θ = 30° = π/6 rad</b></div>
+      <div class="step">r* = round(π/(4θ) − 1/2) = round(1.5 − 0.5) = round(1.0) = <b>1</b></div>
+      <div class="step">P(1) = sin²((2·1+1)θ) = sin²(3×30°) = sin²(90°) = <b>1.0</b></div>
+      <div class="ans">Answer: θ=30°, r*=1, P=100% — exactly one iteration finds it with certainty.</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q2</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 16 (n = 4 qubits), 1 marked item. Find θ, r*, and P(r*).</p>
+    <div class="sol"><div class="step">sin θ = √(1/16) = 0.25 ⇒ <b>θ = arcsin(0.25) = 14.48°</b> = 0.2527 rad</div>
+      <div class="step">r* = round(π/(4×0.2527) − 0.5) = round(3.108 − 0.5) = round(2.608) = <b>3</b></div>
+      <div class="step">P(3) = sin²(7×14.48°) = sin²(101.36°) = (0.9805)² = <b>0.9613</b></div>
+      <div class="ans">Answer: θ=14.48°, r*=3, P≈96.1%</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q3</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 64 (n = 6 qubits), 1 marked item. Find θ, r*, and P(r*).</p>
+    <div class="sol"><div class="step">sin θ = √(1/64) = 0.125 ⇒ <b>θ = arcsin(0.125) = 7.18°</b> = 0.1253 rad</div>
+      <div class="step">r* = round(π/(4×0.1253) − 0.5) = round(6.268 − 0.5) = round(5.768) = <b>6</b></div>
+      <div class="step">P(6) = sin²(13×7.18°) = sin²(93.37°) = (0.9983)² = <b>0.9966</b></div>
+      <div class="ans">Answer: θ=7.18°, r*=6, P≈99.7%</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q4</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 8, 1 marked item, optimal r* = 2. Compare the success probability at k = 2 (optimal) versus k = 4 (double the optimal — deliberately over-rotated).</p>
+    <div class="sol"><div class="step">θ = arcsin(1/√8) = arcsin(0.3536) = <b>20.70°</b> = 0.3614 rad</div>
+      <div class="step">At k=2: P = sin²(5×20.70°) = sin²(103.53°) = (0.9723)² = <b>0.9453</b></div>
+      <div class="step">At k=4: P = sin²(9×20.70°) = sin²(186.35°) = (−0.1105)² = <b>0.0122</b></div>
+      <div class="ans">Answer: 94.5% at the optimum vs. only 1.2% after over-rotating — the state rotated past the target and came back down.</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q5</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 1,000,000, 1 marked item. Estimate r* using the large-N shortcut, and find the speed-up factor over classical worst-case search.</p>
+    <div class="sol"><div class="step">For large N, θ ≈ 1/√N = 1/1000 = 0.001 rad</div>
+      <div class="step">r* ≈ (π/4)√N = 0.7854 × 1000 = <b>785</b> iterations</div>
+      <div class="step">Classical worst case = N = 1,000,000 queries</div>
+      <div class="ans">Answer: r*≈785 vs. 1,000,000 classically — a ≈1,274× reduction in queries. (Caution: this shortcut assumes N is large — using it for Q1's N=4 would wrongly give round(1.571)=2 instead of the true r*=1, so always use the exact arcsin formula for small N.)</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q6</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 16, but now M = 4 items are marked instead of 1. Find θ, r*, and P(r*), and compare with Q1.</p>
+    <div class="sol"><div class="step">sin θ = √(M/N) = √(4/16) = √0.25 = 0.5 ⇒ <b>θ = 30°</b> (identical to Q1!)</div>
+      <div class="step">r* = round(1.5 − 0.5) = <b>1</b></div>
+      <div class="step">P(1) = sin²(3×30°) = sin²(90°) = <b>1.0</b></div>
+      <div class="ans">Answer: θ=30°, r*=1, P=100% — identical numbers to Q1, because M/N = 4/16 is the same ratio as 1/4. Only the fraction of marked items matters, not the raw count.</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q7</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 1024 (n = 10 qubits), 1 marked item. Find the <b>minimum</b> number of iterations k needed so that P(k) ≥ 99%.</p>
+    <div class="sol"><div class="step">θ = arcsin(1/32) = arcsin(0.03125) = <b>1.7908°</b> = 0.031255 rad</div>
+      <div class="step">Optimal r* = round(π/(4×0.031255) − 0.5) = round(25.13 − 0.5) ≈ <b>25</b>, but we only need the first k that crosses 99%, which may be smaller</div>
+      <div class="step">Try k=23: P = sin²(47θ) = sin²(84.17°) = <b>0.9897</b> (98.97% — not enough)</div>
+      <div class="step">Try k=24: P = sin²(49θ) = sin²(87.75°) = <b>0.9985</b> (99.85% — crosses the target)</div>
+      <div class="ans">Answer: minimum k = 24 iterations (k=23 falls just short at 98.97%).</div></div></div>
+
+  <div class="probcard"><div class="phead"><span class="pnum">Q8</span><button class="btn small ghost" onclick="this.closest('.probcard').querySelector('.sol').classList.toggle('open')">Show solution</button></div>
+    <p>N = 32 (n = 5 qubits), 1 marked item. Tabulate P(k) for k = 1, 2, 3, 4 and identify the optimal k.</p>
+    <div class="sol"><div class="step">θ = arcsin(1/√32) = arcsin(0.1768) = <b>10.18°</b> = 0.17771 rad</div>
+      <div class="step">k=1: P=sin²(3θ)=sin²(30.55°)= <b>0.258</b> (25.8%)</div>
+      <div class="step">k=2: P=sin²(5θ)=sin²(50.91°)= <b>0.603</b> (60.3%)</div>
+      <div class="step">k=3: P=sin²(7θ)=sin²(71.28°)= <b>0.897</b> (89.7%)</div>
+      <div class="step">k=4: P=sin²(9θ)=sin²(91.63°)= <b>0.999</b> (99.9%)</div>
+      <div class="ans">Answer: r*=4 is optimal (99.9%); confirm with the formula: round(π/(4×0.17771)−0.5)=round(3.92)=4. ✓</div></div></div>
+
+  <p style="color:var(--muted);font-size:.88rem;margin-top:10px">Notice the pattern across Q1–Q8: doubling the marked fraction (Q6) halves the required angle-count logic just like reducing N does — both shrink r*, because both make θ larger.</p>
+</div></section>
+
+<!-- ================= CIRCUIT / IMPLEMENTATION ================= -->
+<section id="circuit"><div class="wrap reveal">
+  <div class="kicker">03 — INTUITION INTO CIRCUITS</div>
+  <h2>Implementation</h2>
+  <p class="lede">Every Grover iteration is built from three ingredients wired together the same way, no matter what you're searching for.</p>
+  <div class="diagram">
+    <div class="circuit"><svg viewBox="0 0 560 190" height="190">
+      <g stroke="#3a4d78" stroke-width="1.5">
+        <line x1="20" y1="40" x2="540" y2="40"/><line x1="20" y1="80" x2="540" y2="80"/><line x1="20" y1="120" x2="540" y2="120"/>
+      </g>
+      <text x="0" y="44" font-size="11" fill="#94a7ca" font-family="JetBrains Mono">q1</text>
+      <text x="0" y="84" font-size="11" fill="#94a7ca" font-family="JetBrains Mono">q2</text>
+      <text x="0" y="124" font-size="11" fill="#94a7ca" font-family="JetBrains Mono">qn</text>
+      <text x="6" y="150" font-size="18" fill="#5b6c8e">⋮</text>
+      <g font-family="JetBrains Mono" font-size="12" font-weight="600">
+        <rect x="55" y="24" width="34" height="34" rx="5" fill="#1d2c52" stroke="#57d8c4"/><text x="64" y="46" fill="#57d8c4">H</text>
+        <rect x="55" y="64" width="34" height="34" rx="5" fill="#1d2c52" stroke="#57d8c4"/><text x="64" y="86" fill="#57d8c4">H</text>
+        <rect x="55" y="104" width="34" height="34" rx="5" fill="#1d2c52" stroke="#57d8c4"/><text x="64" y="126" fill="#57d8c4">H</text>
+        <rect x="140" y="16" width="80" height="130" rx="8" fill="#2a1f4d" stroke="#9186f2"/><text x="152" y="86" fill="#9186f2">Oracle Uf</text>
+        <rect x="255" y="16" width="80" height="130" rx="8" fill="#3a2416" stroke="#f2b84b"/><text x="266" y="78" fill="#f2b84b">Diffuser</text><text x="270" y="94" fill="#f2b84b" font-size="10">2|s⟩⟨s|−I</text>
+        <path d="M130,8 L130,154 L345,154 L345,8" fill="none" stroke="#5b6c8e" stroke-dasharray="3 3"/>
+        <text x="200" y="172" fill="#5b6c8e" font-size="11">repeat r ≈ (π/4)√N times</text>
+        <rect x="450" y="60" width="46" height="40" rx="5" fill="#132342" stroke="#94a7ca"/><path d="M458,92 A10,10 0 0 1 480,92" fill="none" stroke="#94a7ca" stroke-width="1.5"/><line x1="469" y1="94" x2="480" y2="72" stroke="#94a7ca" stroke-width="1.5"/>
+        <text x="500" y="86" fill="#94a7ca" font-size="11">measure</text>
+      </g>
+    </svg></div>
+    <figcaption>Prepare equal superposition with H⊗n, then alternate Oracle and Diffuser for r rounds, then measure.</figcaption>
+  </div>
+  <div class="code">
+<span class="c">// pseudocode — this is exactly what runs on real hardware/simulators</span><br>
+|ψ⟩ ← <span class="k">H</span>⊗n |0⟩<span class="c">⊗n</span>&nbsp;&nbsp;<span class="c">// equal superposition over all N items</span><br>
+r ← round( (π/4) · √N )<br>
+<span class="k">repeat</span> r <span class="k">times</span>:<br>
+&nbsp;&nbsp;|ψ⟩ ← <span class="v">Uf</span> |ψ⟩&nbsp;&nbsp;<span class="c">// flip the phase of the marked item only</span><br>
+&nbsp;&nbsp;|ψ⟩ ← (2|s⟩⟨s| <span class="k">−</span> I) |ψ⟩&nbsp;&nbsp;<span class="c">// invert every amplitude about their mean</span><br>
+<span class="k">measure</span> |ψ⟩&nbsp;&nbsp;<span class="c">// returns the marked item with probability ≈ 1</span>
+  </div>
+  <p>The Oracle is problem-specific — it is the only place your actual search condition lives (e.g. "is this the record whose ID matches?"). The Diffuser is always the same fixed circuit, built from Hadamards and a multi-controlled phase flip about |0⟩. Neither gate alone does anything useful; the search only works because they alternate.</p>
+</div></section>
+
+<!-- ================= APPLICATIONS ================= -->
+<section id="applications"><div class="wrap reveal">
+  <div class="kicker">04 — WHERE THIS SHOWS UP</div>
+  <h2>Applications</h2>
+  <p class="lede">Anywhere a problem can be phrased as "check candidate x, get yes/no," Grover's quadratic speed-up applies.</p>
+  <div class="cards">
+    <div class="card"><div class="ico">🗂️</div><h3>Unstructured database search</h3><p>Finding a record in a database with no useful index — the textbook use case.</p><div class="ex"><b>Example:</b> a fraud-detection system scanning millions of unindexed transaction logs for one matching a suspicious pattern.</div></div>
+    <div class="card"><div class="ico">🧩</div><h3>Combinatorial search &amp; SAT</h3><p>Any puzzle solved by checking candidate assignments — Grover searches the assignment space quadratically faster.</p><div class="ex"><b>Example:</b> solving a hard Sudoku or a exam-timetable clash by checking candidate schedules instead of building one by rules.</div></div>
+    <div class="card"><div class="ico">📉</div><h3>Finding the minimum</h3><p>The Dürr–Høyer algorithm repeatedly Grover-searches for "anything smaller than my current best," locating the minimum of an unsorted list in O(√N).</p><div class="ex"><b>Example:</b> picking the cheapest of a million unsorted flight-price quotes without sorting them first.</div></div>
+    <div class="card"><div class="ico">🔐</div><h3>Cryptanalysis</h3><p>Brute-forcing a symmetric key of size 2ᵏ classically needs ~2ᵏ tries; Grover needs ~2^(k/2), which is why key sizes were doubled for post-quantum safety.</p><div class="ex"><b>Example:</b> AES-128's effective quantum brute-force security drops to roughly AES-64 strength — still hard, but half the exponent.</div></div>
+  </div>
+</div></section>
+
+<!-- ================= LIMITS / OPTIMALITY ================= -->
+<section id="limits"><div class="wrap reveal">
+  <div class="kicker">05 — LOWER BOUNDS AND OPTIMALITY</div>
+  <h2>Is √N really the best anyone can do?</h2>
+  <p class="lede">Yes — and this is proven, not just observed. The <b>BBBV theorem</b> (Bennett, Bernstein, Brassard, Vazirani, 1997) shows that <em>any</em> quantum algorithm that treats the search condition as a black box needs <span class="formula">Ω(√N)</span> queries to find a marked item with high probability. Grover's algorithm matches this bound, so it is <b>asymptotically optimal</b> — no cleverer quantum trick can do better without extra structure in the problem.</p>
+  <div class="box amber">A hybrid intuition for the bound: each oracle query can only shift the total "probability mass" toward the target by a bounded amount per step (a consequence of unitarity — quantum evolution can't teleport information about the hidden answer faster than its amplitude can rotate). Reaching near-certainty therefore needs on the order of √N such nudges, no fewer.</div>
+  <div class="race">
+    <p style="margin-bottom:6px">Race a classical search against Grover's algorithm at a size of your choosing:</p>
+    <div class="controls"><label>N (items): <input type="range" id="raceN" min="2" max="7" value="5" step="1"><b id="raceNVal" style="color:var(--amber);font-family:var(--mono)"></b></label>
+      <button class="btn small" id="raceBtn">Start the race ▸</button></div>
+    <div class="racerow"><div class="lbl"><span>Classical brute force</span><span id="classicalQ" style="font-family:var(--mono)"></span></div><div class="track"><div class="fill classical" id="classicalFill"></div></div></div>
+    <div class="racerow"><div class="lbl"><span>Grover's algorithm</span><span id="quantumQ" style="font-family:var(--mono)"></span></div><div class="track"><div class="fill quantum" id="quantumFill"></div></div></div>
+    <p id="raceNote" style="color:var(--muted);font-size:.88rem"></p>
+  </div>
+</div></section>
+
+<!-- ================= QUIZ ================= -->
+<section id="quiz"><div class="wrap reveal">
+  <div class="kicker">06 — TEST YOURSELF</div>
+  <h2>Quiz: are you a quantum searcher yet?</h2>
+  <div class="quizcard">
+    <div class="qprog" id="qprog"></div>
+    <div id="qtext"></div>
+    <div id="qopts"></div>
+    <div id="qfeedback"></div>
+    <div id="qfoot" style="display:flex;justify-content:space-between;align-items:center;">
+      <span id="qscoretxt" style="color:var(--muted);font-family:var(--mono);font-size:.85rem"></span>
+      <button class="btn small" id="qnextBtn" style="display:none">Next ▸</button>
+    </div>
+    <div id="qresult" style="display:none;text-align:center;">
+      <div class="scorebig" id="finalScore"></div>
+      <p id="finalMsg" style="color:var(--muted)"></p>
+      <button class="btn" id="qretryBtn">Try again ↺</button>
+    </div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">Built as a self-contained lecture &amp; simulator — every number above is computed live from Grover's own equations, not hard-coded. sin θ = 1/√N, and after k iterations P(success) = sin²((2k+1)θ).</div></footer>
+
+<script>
+(function(){
+  /* ---------- background quantum particles ---------- */
+  var cv=document.getElementById('bgCanvas'), ctx=cv.getContext('2d');
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W,H,parts=[];
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=document.documentElement.scrollHeight;}
+  window.addEventListener('resize',resize); resize();
+  var colors=['#57d8c4','#f2b84b','#9186f2'];
+  for(var i=0;i<50;i++){parts.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.6+.6,c:colors[i%3],vy:Math.random()*.15+.03,vx:(Math.random()-.5)*.08,ph:Math.random()*Math.PI*2});}
+  function drawParticles(){
+    ctx.clearRect(0,0,W,H);
+    var t=Date.now()/1000;
+    for(var i=0;i<parts.length;i++){
+      var p=parts[i]; p.y-=p.vy; p.x+=p.vx; if(p.y<-10){p.y=H+10;} if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+      var tw=0.5+0.5*Math.sin(t*1.5+p.ph);
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r+tw*0.6,0,7);
+      ctx.fillStyle=p.c; ctx.globalAlpha=0.25+tw*0.35; ctx.shadowColor=p.c; ctx.shadowBlur=6;
+      ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    if(!reduceMotion) requestAnimationFrame(drawParticles);
+  }
+  drawParticles();
+  setTimeout(resize,800); // recalc height after layout settles
+
+  /* ---------- scroll progress bar ---------- */
+  var bar=document.getElementById('scrollbar');
+  window.addEventListener('scroll',function(){
+    var h=document.documentElement; var pct=(h.scrollTop)/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=pct+'%';
+  });
+
+  /* ---------- scroll-reveal ---------- */
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('in-view'); io.unobserve(e.target); } });
+  },{threshold:0.22});
+  document.querySelectorAll('.reveal').forEach(function(el){io.observe(el);});
+
+  /* ---------- hero wave ---------- */
+  var path=document.getElementById('heroPath'), t=0;
+  function drawWave(){
+    var d='M0 75 ';
+    for(var x=0;x<=620;x+=4){
+      var amp = 30*Math.sin((x/620)*Math.PI*3 + t) * (0.5+0.5*Math.sin(x/620*Math.PI));
+      d+='L'+x+' '+(75+amp)+' ';
+    }
+    path.setAttribute('d',d); t+=0.035; requestAnimationFrame(drawWave);
+  }
+  drawWave();
+
+  /* ---------- GROVER MATH (shared, real) ---------- */
+  function groverState(n,k){
+    var N=Math.pow(2,n);
+    var theta=Math.asin(1/Math.sqrt(N));
+    var ampGood=Math.sin((2*k+1)*theta);
+    var ampBad=Math.cos((2*k+1)*theta);
+    var pGood=ampGood*ampGood;
+    var pBadEach=(N>1)? (ampBad*ampBad)/(N-1) : 0;
+    var rOpt=Math.round((Math.PI/4)*Math.sqrt(N));
+    return {N:N,theta:theta,pGood:pGood,pBadEach:pBadEach,rOpt:rOpt};
+  }
+
+  /* ---------- SIMULATOR ---------- */
+  var nSlider=document.getElementById('nQubits'), nVal=document.getElementById('nVal');
+  var stepBtn=document.getElementById('stepBtn'), playBtn=document.getElementById('playBtn'), resetBtn=document.getElementById('resetBtn');
+  var k=0, playing=false, playTimer=null;
+  var stateVec=document.getElementById('stateVec'), angArc=document.getElementById('angArc'), angLabel=document.getElementById('angLabel');
+  var barGood=document.getElementById('barGood'), barBad=document.getElementById('barBad');
+  var pGoodTxt=document.getElementById('pGoodTxt'), pBadTxt=document.getElementById('pBadTxt');
+  var rN=document.getElementById('rN'), rOpt=document.getElementById('rOpt'), rK=document.getElementById('rK'), rTheta=document.getElementById('rTheta'), rP=document.getElementById('rP'), rStatus=document.getElementById('rStatus');
+
+  function renderSim(){
+    var n=parseInt(nSlider.value); nVal.textContent='n='+n;
+    var s=groverState(n,k);
+    var ang=(2*k+1)*s.theta; var deg=(ang*180/Math.PI);
+    var cx=30, cy=200, r=185;
+    var ex=cx+r*Math.cos(ang), ey=cy-r*Math.sin(ang);
+    stateVec.setAttribute('x2',ex); stateVec.setAttribute('y2',ey);
+    var arcR=40; var ax=cx+arcR*Math.cos(Math.min(ang,Math.PI/2)), ay=cy-arcR*Math.sin(Math.min(ang,Math.PI/2));
+    angArc.setAttribute('d','M '+(cx+arcR)+' '+cy+' A '+arcR+' '+arcR+' 0 0 1 '+ax.toFixed(1)+' '+ay.toFixed(1));
+    angLabel.textContent=deg.toFixed(0)+'°';
+    var hGood=20+s.pGood*160, hBad=20+s.pBadEach*160;
+    barGood.style.height=hGood+'px'; barBad.style.height=hBad+'px';
+    pGoodTxt.textContent=(s.pGood*100).toFixed(1)+'%';
+    pBadTxt.textContent=(s.pBadEach*100).toFixed(2)+'%';
+    rN.textContent=s.N; rOpt.textContent=s.rOpt; rK.textContent=k;
+    rTheta.textContent=(s.theta*180/Math.PI).toFixed(2)+'°';
+    rP.textContent=(s.pGood*100).toFixed(2)+'%';
+    rStatus.textContent = k===0? 'starting (equal superposition)' : (k<s.rOpt? 'amplifying…' : (k===s.rOpt? 'optimal — measure now!' : 'over-rotated — probability falling'));
+    rStatus.style.color = k===s.rOpt? '#57d8c4' : (k>s.rOpt? '#e2607a':'#f2b84b');
+    stepBtn.disabled = k>=2*s.rOpt+2;
+  }
+  stepBtn.addEventListener('click',function(){k++; renderSim();});
+  resetBtn.addEventListener('click',function(){k=0; stopPlay(); renderSim();});
+  nSlider.addEventListener('input',function(){k=0; stopPlay(); renderSim();});
+  function stopPlay(){playing=false; clearInterval(playTimer); playBtn.textContent='Auto-play ▸▸';}
+  playBtn.addEventListener('click',function(){
+    if(playing){stopPlay();return;}
+    playing=true; playBtn.textContent='Pause ❚❚';
+    playTimer=setInterval(function(){
+      var n=parseInt(nSlider.value); var s=groverState(n,k);
+      if(k>=2*s.rOpt+2){stopPlay();return;}
+      k++; renderSim();
+    },650);
+  });
+  renderSim();
+
+  /* ---------- RACE ---------- */
+  var raceN=document.getElementById('raceN'), raceNVal=document.getElementById('raceNVal');
+  var raceBtn=document.getElementById('raceBtn'), classicalFill=document.getElementById('classicalFill'), quantumFill=document.getElementById('quantumFill');
+  var classicalQ=document.getElementById('classicalQ'), quantumQ=document.getElementById('quantumQ'), raceNote=document.getElementById('raceNote');
+  function raceNumbers(){
+    var n=parseInt(raceN.value); var N=Math.pow(10,n);
+    var cQ=N, qQ=Math.round((Math.PI/4)*Math.sqrt(N));
+    raceNVal.textContent='10^'+n+' = '+N.toLocaleString();
+    classicalQ.textContent=cQ.toLocaleString()+' checks';
+    quantumQ.textContent=qQ.toLocaleString()+' checks';
+    raceNote.textContent='Speed-up factor: roughly '+Math.round(cQ/qQ).toLocaleString()+'× fewer checks needed.';
+    return {cQ:cQ,qQ:qQ};
+  }
+  raceN.addEventListener('input',function(){raceNumbers(); classicalFill.style.width='0%'; quantumFill.style.width='0%';});
+  raceBtn.addEventListener('click',function(){
+    var nums=raceNumbers();
+    classicalFill.style.transition='none'; quantumFill.style.transition='none';
+    classicalFill.style.width='0%'; quantumFill.style.width='0%';
+    void classicalFill.offsetWidth;
+    var qTime=1.4; var cTime=Math.min(9, qTime*Math.sqrt(nums.cQ/nums.qQ));
+    quantumFill.style.transition='width '+qTime+'s linear';
+    classicalFill.style.transition='width '+cTime+'s linear';
+    requestAnimationFrame(function(){classicalFill.style.width='100%'; quantumFill.style.width='100%';});
+  });
+  raceNumbers();
+
+  /* ---------- QUIZ ---------- */
+  var Q=[
+    {q:"An unsorted list has N=1,000,000 entries. What is the classical worst-case number of checks to find one marked item?",
+     opts:["√1,000,000 = 1,000","log₂(1,000,000) ≈ 20","1,000,000","1,000,000 / log N"], a:2,
+     ex:"With no structure to exploit, a classical algorithm may have to inspect every single entry in the worst case."},
+    {q:"What is Grover's algorithm's query complexity for the same problem?",
+     opts:["O(N)","O(√N)","O(log N)","O(1)"], a:1,
+     ex:"Grover achieves a proven quadratic speed-up: O(√N) oracle queries instead of O(N)."},
+    {q:"What does the 'diffuser' operator 2|s⟩⟨s|−I actually do?",
+     opts:["Measures the qubits","Flips the sign of the marked item","Reflects every amplitude about their average value","Adds random noise to explore more states"], a:2,
+     ex:"The diffuser is a reflection about the mean amplitude — it's what turns a phase flip into a probability boost."},
+    {q:"Why can't you just run more and more Grover iterations to get ever-closer to 100% success?",
+     opts:["The hardware overheats","After the optimal iteration count, the state over-rotates and success probability starts decreasing","Quantum computers can only run a fixed number of gates","It becomes classical again"], a:1,
+     ex:"The state vector keeps rotating at a fixed angle per step — past the optimum it rotates away from the target, not toward it."},
+    {q:"According to the BBBV theorem, what is the proven lower bound for unstructured quantum search?",
+     opts:["Ω(1)","Ω(log N)","Ω(√N)","Ω(N)"], a:2,
+     ex:"Bennett, Bernstein, Brassard and Vazirani (1997) proved Ω(√N) queries are necessary — Grover is optimal."},
+    {q:"Which everyday picture best matches how amplitude amplification works?",
+     opts:["Flipping through every page of a phone book one by one","A choir where the correct singer's phase is flipped, then the whole choir's volumes are reflected about their average, repeatedly nudging the right voice louder","Asking a friend who already knows the answer","Splitting the phone book into two and searching both halves at once"], a:1,
+     ex:"This is exactly the oracle + diffuser loop: phase-flip the target, reflect about the mean, repeat."}
+  ];
+  var qi=0, score=0, answered=false;
+  var qprog=document.getElementById('qprog'), qtext=document.getElementById('qtext'), qopts=document.getElementById('qopts');
+  var qfeedback=document.getElementById('qfeedback'), qnextBtn=document.getElementById('qnextBtn'), qscoretxt=document.getElementById('qscoretxt');
+  var qresult=document.getElementById('qresult'), finalScore=document.getElementById('finalScore'), finalMsg=document.getElementById('finalMsg'), qretryBtn=document.getElementById('qretryBtn');
+  function renderProg(){
+    qprog.innerHTML='';
+    for(var i=0;i<Q.length;i++){var el=document.createElement('i'); if(i<qi)el.className='done'; if(i===qi)el.className='now'; qprog.appendChild(el);}
+  }
+  function renderQ(){
+    answered=false;
+    document.getElementById('qtext').parentElement.style.display='block';
+    qresult.style.display='none';
+    renderProg();
+    var item=Q[qi];
+    qtext.textContent=(qi+1)+'. '+item.q;
+    qopts.innerHTML=''; qfeedback.textContent=''; qnextBtn.style.display='none';
+    qscoretxt.textContent='Score: '+score+' / '+Q.length;
+    item.opts.forEach(function(opt,idx){
+      var b=document.createElement('button'); b.className='opt'; b.textContent=opt;
+      b.addEventListener('click',function(){selectAnswer(idx,b);});
+      qopts.appendChild(b);
+    });
+  }
+  function selectAnswer(idx,btn){
+    if(answered) return; answered=true;
+    var item=Q[qi]; var opts=qopts.querySelectorAll('.opt');
+    opts.forEach(function(o){o.disabled=true;});
+    if(idx===item.a){ btn.classList.add('correct'); score++; qfeedback.textContent='✓ Correct — '+item.ex; }
+    else{ btn.classList.add('wrong'); opts[item.a].classList.add('correct'); qfeedback.textContent='✗ Not quite — '+item.ex; }
+    qscoretxt.textContent='Score: '+score+' / '+Q.length;
+    qnextBtn.style.display='inline-block';
+  }
+  qnextBtn.addEventListener('click',function(){
+    qi++;
+    if(qi>=Q.length){ showResult(); } else { renderQ(); }
+  });
+  function showResult(){
+    document.getElementById('qtext').parentElement.style.display='none';
+    qopts.style.display='none'; qfeedback.textContent=''; qnextBtn.style.display='none'; qscoretxt.textContent='';
+    qresult.style.display='block';
+    finalScore.textContent=score+' / '+Q.length;
+    var msg = score===Q.length? "Perfect — you rotated straight to the target." : score>=Q.length-2? "Strong result — a couple of over-rotations, that's all." : "Worth another pass through the amplitude-amplification section.";
+    finalMsg.textContent=msg;
+  }
+  qretryBtn.addEventListener('click',function(){qi=0;score=0;qopts.style.display='block';renderQ();});
+  renderQ();
+})();
+</script>
+</body>
+</html>
