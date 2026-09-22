@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Operating Systems — Process, Scheduling &amp; Threads</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #123049;
+  --bg-deep: #0D2438;
+  --panel: #163A58;
+  --line: #6FA0C4;
+  --line-dim: #3C6D8F;
+  --paper: #F1ECDC;
+  --paper-dim: #E6DFC9;
+  --ink: #1B2733;
+  --ink-dim: #4A5A68;
+  --accent: #E3A23D;
+  --accent-dim: #B9822F;
+  --rust: #C15A45;
+  --green: #6FA88A;
+  --white: #F6F4EC;
+  --radius: 3px;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sans: 'Space Grotesk', ui-sans-serif, sans-serif;
+  --serif: 'Source Serif 4', Georgia, serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root[data-theme="dark"] {
+  --bg: #0A1E30;
+  --bg-deep: #071523;
+  --panel: #102B44;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--white);
+  font-family: var(--serif);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+::selection { background: var(--accent); color: var(--bg-deep); }
+
+/* ---------- Blueprint grid texture ---------- */
+.blueprint-bg {
+  background-image:
+    linear-gradient(var(--line-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line-dim) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.12;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+a { color: var(--accent); }
+h1, h2, h3, h4 { font-family: var(--sans); font-weight: 600; margin: 0 0 .5em; color: var(--white); letter-spacing: -0.01em; }
+p { max-width: 68ch; color: #DCE6EE; }
+.paper p, .paper li, .paper td, .paper th { color: var(--ink); }
+code, .mono { font-family: var(--mono); }
+
+/* ---------- Layout shell ---------- */
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100%;
+}
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line-dim);
+  padding: 28px 20px 40px;
+  background: var(--bg-deep);
+}
+.sidebar .tag {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: .04em;
+  margin-bottom: 4px;
+}
+.sidebar h1 {
+  font-size: 19px;
+  line-height: 1.25;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-dim);
+}
+.navgroup { margin-bottom: 18px; }
+.navgroup > a.top {
+  display: block;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--white);
+  text-decoration: none;
+  padding: 6px 0;
+  border-left: 2px solid transparent;
+  padding-left: 10px;
+}
+.navgroup > a.top:hover, .navgroup > a.top.active { border-left-color: var(--accent); color: var(--accent); }
+.navgroup .sub { padding-left: 20px; }
+.navgroup .sub a {
+  display: block;
+  font-size: 12.5px;
+  color: #9FB6C7;
+  text-decoration: none;
+  padding: 3px 0 3px 10px;
+  border-left: 1px solid var(--line-dim);
+}
+.navgroup .sub a:hover, .navgroup .sub a.active { color: var(--accent); border-left-color: var(--accent); }
+
+.main { position: relative; min-width: 0; }
+section.page { padding: 0 56px 70px; max-width: 980px; }
+.section-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+  letter-spacing: .05em;
+  margin-bottom: 10px;
+}
+h2.title { font-size: 34px; margin-bottom: 14px; }
+h3.sub { font-size: 22px; margin-top: 46px; border-top: 1px solid var(--line-dim); padding-top: 32px; }
+h4.minor { font-size: 17px; color: var(--accent); margin-top: 28px; }
+
+.lede { font-size: 17px; color: #C7D8E4; max-width: 66ch; }
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  padding: 90px 56px 70px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line-dim);
+}
+.hero .eyebrow { font-family: var(--mono); color: var(--accent); font-size: 13px; letter-spacing: .06em; margin-bottom: 18px; }
+.hero h1 {
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 1.05;
+  max-width: 15ch;
+  margin-bottom: 20px;
+}
+.hero p.lede { font-size: 18px; margin-bottom: 10px; }
+.hero-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center; position: relative; z-index: 1; }
+@media (max-width: 900px) { .hero-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Cards / panels ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line-dim);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+}
+.paper {
+  background: var(--paper);
+  border: 1px solid #C9BF9E;
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  color: var(--ink);
+}
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 760px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+/* ---------- Tables ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 14px 0; }
+table.data th, table.data td { border: 1px solid var(--line-dim); padding: 8px 10px; text-align: left; font-family: var(--mono); font-size: 13px; }
+table.data th { background: var(--bg-deep); color: var(--accent); }
+.paper table.data th, .paper table.data td { border-color: #C9BF9E; }
+.paper table.data th { background: #E6DFC9; color: var(--ink); }
+table.cmp td, table.cmp th { padding: 10px 12px; border-bottom: 1px solid var(--line-dim); font-size: 14px; }
+table.cmp th { text-align: left; color: var(--accent); font-family: var(--sans); }
+
+/* ---------- Diagram frame ---------- */
+.diagram {
+  background: var(--bg-deep);
+  border: 1px solid var(--line-dim);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin: 18px 0;
+}
+.diagram svg { width: 100%; height: auto; display: block; }
+.diagram .caption { font-family: var(--mono); font-size: 12px; color: #8FA9BE; margin-top: 10px; text-align: center; }
+
+/* ---------- Pills / badges ---------- */
+.pill { display: inline-block; font-family: var(--mono); font-size: 11px; padding: 3px 9px; border: 1px solid var(--line-dim); border-radius: 20px; color: var(--accent); margin-right: 6px; }
+
+/* ---------- Buttons / controls ---------- */
+button.ctl {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 13.5px;
+  background: var(--accent);
+  color: var(--bg-deep);
+  border: none;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+button.ctl:hover { background: var(--white); }
+button.ctl.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+button.ctl.ghost:hover { background: var(--accent); color: var(--bg-deep); }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+input[type="number"], select {
+  font-family: var(--mono);
+  background: var(--bg-deep);
+  border: 1px solid var(--line-dim);
+  color: var(--white);
+  padding: 7px 9px;
+  border-radius: var(--radius);
+  width: 100%;
+}
+
+/* ---------- Sim table ---------- */
+.sim-wrap { margin-top: 18px; }
+.proc-row { display: grid; grid-template-columns: 70px 1fr 1fr 1fr 30px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.proc-row .pid-chip {
+  font-family: var(--mono); font-weight: 700; font-size: 13px;
+  background: var(--bg-deep); color: var(--accent);
+  border: 1px solid var(--line-dim); border-radius: var(--radius);
+  padding: 7px 0; text-align: center;
+}
+.remove-row { background: transparent; border: none; color: var(--rust); cursor: pointer; font-size: 16px; }
+.field-label { font-family: var(--mono); font-size: 10.5px; color: #8FA9BE; margin-bottom: 3px; }
+
+/* ---------- Gantt ---------- */
+.gantt { display: flex; align-items: stretch; overflow-x: auto; border: 1px solid var(--line-dim); border-radius: var(--radius); background: var(--bg-deep); margin: 16px 0 4px; }
+.gantt-block {
+  position: relative;
+  min-width: 34px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12.5px; font-weight: 700;
+  color: var(--bg-deep);
+  border-right: 1px solid var(--bg-deep);
+  height: 52px;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: growblock .4s ease forwards;
+}
+@keyframes growblock { to { transform: scaleX(1); } }
+.gantt-block.idle { background: repeating-linear-gradient(45deg, #29506B, #29506B 6px, #1D3E56 6px, #1D3E56 12px); color: #7FA9C4; }
+.gantt-ticks { display: flex; font-family: var(--mono); font-size: 10.5px; color: #8FA9BE; }
+.gantt-ticks span { min-width: 34px; text-align: left; }
+
+/* ---------- Results ---------- */
+.stat-row { display: flex; gap: 22px; flex-wrap: wrap; margin: 16px 0; }
+.stat { background: var(--bg-deep); border: 1px solid var(--line-dim); border-radius: var(--radius); padding: 12px 18px; min-width: 140px; }
+.stat .n { font-family: var(--mono); font-size: 22px; color: var(--accent); font-weight: 700; }
+.stat .l { font-family: var(--mono); font-size: 11px; color: #8FA9BE; margin-top: 2px; }
+
+/* ---------- Footer ---------- */
+footer { border-top: 1px solid var(--line-dim); padding: 30px 56px 60px; font-family: var(--mono); font-size: 12px; color: #6E8AA0; }
+
+/* ---------- Mobile ---------- */
+.nav-toggle { display: none; }
+@media (max-width: 880px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar {
+    position: sticky; top: 0; height: auto; max-height: none;
+    z-index: 40; padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  }
+  .sidebar h1 { display: none; }
+  .sidebar .navlist { display: none; position: fixed; top: 56px; left: 0; right: 0; bottom: 0; background: var(--bg-deep); overflow-y: auto; padding: 20px; z-index: 50; }
+  .sidebar .navlist.open { display: block; }
+  .nav-toggle { display: block; background: var(--panel); border: 1px solid var(--line-dim); color: var(--white); font-family: var(--mono); font-size: 12px; padding: 8px 12px; border-radius: var(--radius); }
+  section.page { padding: 0 20px 56px; }
+  .hero { padding: 50px 20px 40px; }
+  .grid2, .grid3 { gap: 14px; }
+  .proc-row { grid-template-columns: 56px 1fr 1fr 1fr 24px; }
+}
+
+.reveal { opacity: 0; transform: translateY(10px); transition: opacity .5s ease, transform .5s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <button class="nav-toggle" id="navToggle">Contents ▾</button>
+    <div class="navlist" id="navList">
+      <div class="tag">CS · OPERATING SYSTEMS</div>
+      <h1>Process, Scheduling<br>&amp; Threads</h1>
+
+      <div class="navgroup">
+        <a href="#process-management" class="top">1 · Process Management</a>
+        <div class="sub">
+          <a href="#process-concept">Process &amp; states</a>
+          <a href="#pcb">Process Control Block</a>
+          <a href="#schedulers">Schedulers</a>
+        </div>
+      </div>
+
+      <div class="navgroup">
+        <a href="#cpu-scheduling" class="top">2 · CPU Scheduling</a>
+        <div class="sub">
+          <a href="#sched-basics">Preemptive vs non</a>
+          <a href="#fcfs">FCFS</a>
+          <a href="#sjf">SJF</a>
+          <a href="#srtf">SRTF</a>
+          <a href="#priority">Priority scheduling</a>
+          <a href="#rr">Round Robin</a>
+          <a href="#mlq">Multilevel Queue</a>
+          <a href="#mlfq">Multilevel Feedback Queue</a>
+          <a href="#simulator">Live simulator</a>
+        </div>
+      </div>
+
+      <div class="navgroup">
+        <a href="#threads" class="top">3 · Threads</a>
+        <div class="sub">
+          <a href="#process-vs-thread">Process vs thread</a>
+          <a href="#thread-states">Thread states</a>
+          <a href="#thread-benefits">Benefits</a>
+          <a href="#thread-types">User vs kernel threads</a>
+          <a href="#mt-models">Multithreading models</a>
+          <a href="#hyperthreading">Hyper-threading</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <header class="hero">
+      <div class="blueprint-bg"></div>
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow">LECTURE NOTES — UNIT · PROCESS &amp; CPU SCHEDULING</div>
+          <h1>How an operating system decides who runs next</h1>
+          <p class="lede">A process is born, waits its turn, runs, sometimes waits again, and dies — and every one of those transitions is a decision the kernel has to make, thousands of times a second. These notes walk through that decision machinery: processes and their control blocks, the schedulers that move work between queues, the classic CPU-scheduling algorithms with worked numericals, and how threads let a single process do more than one thing at once.</p>
+        </div>
+        <div class="diagram" style="margin:0;">
+          <svg id="heroDiagram" viewBox="0 0 360 300" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="caption">the five-state process lifecycle — watch it run</div>
+        </div>
+      </div>
+    </header>
+    <section class="page" id="process-management">
+      <div class="section-label">01 / PROCESS MANAGEMENT</div>
+      <h2 class="title">What a process is, and how the kernel tracks it</h2>
+      <p class="lede">A program is a passive file sitting on disk — instructions and data, nothing more. The moment you run it, the OS loads it into memory, gives it a private address space and a process ID, and it becomes a <em>process</em>: a program in execution, with a state that changes constantly as the CPU is handed around.</p>
+
+      <h3 class="sub" id="process-concept">The process and its address space</h3>
+      <p>Every process owns a logical address space divided into four regions. Reading from the low addresses upward:</p>
+      <div class="diagram">
+        <svg viewBox="0 0 500 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="150" y="10" width="200" height="45" fill="#2A5678" stroke="#6FA0C4"/>
+          <text x="250" y="27" text-anchor="middle" fill="#E3A23D" font-family="JetBrains Mono" font-size="12" font-weight="700">STACK</text>
+          <text x="250" y="42" text-anchor="middle" fill="#C7D8E4" font-family="JetBrains Mono" font-size="9">local vars · function frames · grows ↓</text>
+
+          <rect x="150" y="60" width="200" height="30" fill="none" stroke="#3C6D8F" stroke-dasharray="4 3"/>
+          <text x="250" y="79" text-anchor="middle" fill="#6E8AA0" font-family="JetBrains Mono" font-size="9">unused / free space</text>
+
+          <rect x="150" y="95" width="200" height="45" fill="#2A5678" stroke="#6FA0C4"/>
+          <text x="250" y="112" text-anchor="middle" fill="#E3A23D" font-family="JetBrains Mono" font-size="12" font-weight="700">HEAP</text>
+          <text x="250" y="127" text-anchor="middle" fill="#C7D8E4" font-family="JetBrains Mono" font-size="9">dynamic memory · grows ↑</text>
+
+          <rect x="150" y="145" width="200" height="35" fill="#20475F" stroke="#6FA0C4"/>
+          <text x="250" y="167" text-anchor="middle" fill="#E3A23D" font-family="JetBrains Mono" font-size="11" font-weight="700">DATA (globals / static)</text>
+
+          <rect x="150" y="185" width="200" height="30" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="250" y="204" text-anchor="middle" fill="#E3A23D" font-family="JetBrains Mono" font-size="11" font-weight="700">TEXT (code, read-only)</text>
+        </svg>
+        <div class="caption">Text is fixed at load time; the stack and heap grow toward each other at run time.</div>
+      </div>
+
+      <div class="grid2" style="margin-top:18px;">
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Text section</h4>
+          <p style="margin:0;">The compiled instructions of the program. Shared and read-only, so two users running the same binary can share one copy in memory.</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Data &amp; heap</h4>
+          <p style="margin:0;">Data holds global/static variables fixed at compile time. The heap is memory the program requests at run time (<code>malloc</code>, <code>new</code>) and must release itself.</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Stack</h4>
+          <p style="margin:0;">Holds temporary data per function call: parameters, return address, local variables. Pushed on call, popped on return.</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Program counter &amp; registers</h4>
+          <p style="margin:0;">Not part of the address space, but part of the process's <em>execution context</em> — where it is in the code, and what its CPU registers hold right now.</p>
+        </div>
+      </div>
+
+      <h4 class="minor">The five-state transition diagram</h4>
+      <p>At any instant a process is in exactly one of five states. Press play to step a process through a realistic lifecycle — each move is explained as it happens.</p>
+      <div class="diagram">
+        <svg id="stateDiagram" viewBox="0 0 640 320" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:12px; flex-wrap:wrap;">
+          <div class="caption" id="stateExplain" style="text-align:left; margin:0; min-height:34px;">Press "Run lifecycle" to animate a process moving through New → Ready → Running → Waiting → Ready → Running → Terminated.</div>
+          <div style="display:flex; gap:8px;">
+            <button class="ctl" id="playState">▶ Run lifecycle</button>
+            <button class="ctl ghost" id="resetState">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <table class="data">
+        <tr><th>State</th><th>Meaning</th></tr>
+        <tr><td>New</td><td>Process is being created — OS is allocating a PCB and address space, but it isn't in the ready queue yet.</td></tr>
+        <tr><td>Ready</td><td>Loaded in main memory, waiting only for the CPU. Sits in the ready queue.</td></tr>
+        <tr><td>Running</td><td>Instructions are actually being executed on the CPU. Only one process per core can be here.</td></tr>
+        <tr><td>Waiting / Blocked</td><td>Paused for an event — I/O completion, a signal, a resource — that isn't CPU time.</td></tr>
+        <tr><td>Terminated</td><td>Execution finished (or was killed). PCB is kept briefly for exit status, then deallocated.</td></tr>
+      </table>
+
+      <h3 class="sub" id="pcb">Process Control Block (PCB)</h3>
+      <p>The PCB is the data structure the kernel keeps <em>per process</em> — a repository of everything the OS needs to know to pause it and resume it later exactly where it left off. Every context switch is really the kernel saving one PCB and loading another.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="10" width="500" height="360" fill="#183A50" stroke="#6FA0C4" rx="3"/>
+          <text x="260" y="34" text-anchor="middle" fill="#E3A23D" font-family="Space Grotesk" font-size="14" font-weight="700">PROCESS CONTROL BLOCK</text>
+          <line x1="10" y1="46" x2="510" y2="46" stroke="#3C6D8F"/>
+          <g font-family="JetBrains Mono" font-size="12">
+            <text x="28" y="72" fill="#F6F4EC" font-weight="700">Process ID (PID)</text>
+            <text x="28" y="88" fill="#8FA9BE" font-size="10.5">unique identifier for this process</text>
+
+            <text x="28" y="114" fill="#F6F4EC" font-weight="700">Process state</text>
+            <text x="28" y="130" fill="#8FA9BE" font-size="10.5">new / ready / running / waiting / terminated</text>
+
+            <text x="28" y="156" fill="#F6F4EC" font-weight="700">Program counter</text>
+            <text x="28" y="172" fill="#8FA9BE" font-size="10.5">address of the next instruction to execute</text>
+
+            <text x="28" y="198" fill="#F6F4EC" font-weight="700">CPU registers</text>
+            <text x="28" y="214" fill="#8FA9BE" font-size="10.5">accumulators, index/stack registers, condition codes</text>
+
+            <text x="28" y="240" fill="#F6F4EC" font-weight="700">CPU scheduling info</text>
+            <text x="28" y="256" fill="#8FA9BE" font-size="10.5">priority, pointers to scheduling queues</text>
+
+            <text x="28" y="282" fill="#F6F4EC" font-weight="700">Memory-management info</text>
+            <text x="28" y="298" fill="#8FA9BE" font-size="10.5">base/limit registers, page or segment tables</text>
+
+            <text x="28" y="324" fill="#F6F4EC" font-weight="700">Accounting info</text>
+            <text x="28" y="340" fill="#8FA9BE" font-size="10.5">CPU used, time limits, job/process numbers</text>
+
+            <text x="270" y="72" fill="#F6F4EC" font-weight="700">I/O status info</text>
+            <text x="270" y="88" fill="#8FA9BE" font-size="10.5">open file list, allocated I/O devices</text>
+
+            <text x="270" y="114" fill="#F6F4EC" font-weight="700">Parent / child links</text>
+            <text x="270" y="130" fill="#8FA9BE" font-size="10.5">process hierarchy pointers</text>
+          </g>
+        </svg>
+        <div class="caption">On a context switch the kernel writes the outgoing process's live register values into its PCB, then reloads the incoming process's PCB into the registers.</div>
+      </div>
+
+      <h3 class="sub" id="schedulers">Long-term, mid-term and short-term schedulers</h3>
+      <p>A process crosses several queues on its way to the CPU. Three different schedulers control those crossings, and they run at very different frequencies.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 700 260" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="105" width="90" height="40" fill="#20475F" stroke="#6FA0C4" rx="3"/>
+          <text x="55" y="129" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">New jobs</text>
+
+          <path d="M100 125 H150" stroke="#E3A23D" stroke-width="2" marker-end="url(#ah1)"/>
+          <text x="125" y="115" text-anchor="middle" fill="#E3A23D" font-family="JetBrains Mono" font-size="9.5">long-term</text>
+
+          <rect x="150" y="95" width="130" height="60" fill="none" stroke="#6FA0C4" stroke-dasharray="4 3" rx="3"/>
+          <text x="215" y="115" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9.5">Job pool (disk)</text>
+          <rect x="165" y="122" width="100" height="22" fill="#2A5678"/>
+          <text x="215" y="137" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="9.5">Ready queue</text>
+
+          <path d="M280 125 H330" stroke="#E3A23D" stroke-width="2" marker-end="url(#ah1)"/>
+          <text x="305" y="115" text-anchor="middle" fill="#E3A23D" font-family="JetBrains Mono" font-size="9.5">short-term</text>
+
+          <rect x="330" y="105" width="100" height="40" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+          <text x="380" y="129" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">CPU (running)</text>
+
+          <path d="M430 118 H470" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ah1)"/>
+          <text x="450" y="108" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9">exit</text>
+          <rect x="470" y="105" width="90" height="30" fill="#183A50" stroke="#6FA0C4" rx="3"/>
+          <text x="515" y="124" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="10">Terminated</text>
+
+          <path d="M380 145 V190 H215 V155" stroke="#C15A45" stroke-width="2" fill="none" marker-end="url(#ah2)"/>
+          <text x="300" y="205" text-anchor="middle" fill="#C15A45" font-family="JetBrains Mono" font-size="9.5">I/O or event wait → back to ready</text>
+
+          <path d="M380 145 V225 H215" stroke="#6FA88A" stroke-width="2" fill="none"/>
+          <path d="M215 225 V155" stroke="#6FA88A" stroke-width="2" fill="none" marker-end="url(#ah3)"/>
+          <text x="300" y="240" text-anchor="middle" fill="#6FA88A" font-family="JetBrains Mono" font-size="9.5">medium-term: swap out → suspended, swap back in</text>
+
+          <defs>
+            <marker id="ah1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#E3A23D"/></marker>
+            <marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#C15A45"/></marker>
+            <marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6FA88A"/></marker>
+          </defs>
+        </svg>
+        <div class="caption">Long-term admits jobs, short-term picks who runs next, medium-term swaps processes out to ease memory pressure.</div>
+      </div>
+
+      <div class="grid3">
+        <div class="panel">
+          <div class="pill">RUNS RARELY</div>
+          <h4 class="minor" style="margin-top:10px;">Long-term scheduler</h4>
+          <p style="margin:0;">Also called the <strong>job scheduler</strong>. Selects which jobs are admitted from the disk job pool into the ready queue, controlling the <em>degree of multiprogramming</em>. Runs seconds-to-minutes apart, so it can afford to be slow and careful — it decides the process mix (CPU-bound vs I/O-bound).</p>
+        </div>
+        <div class="panel">
+          <div class="pill">RUNS OCCASIONALLY</div>
+          <h4 class="minor" style="margin-top:10px;">Medium-term scheduler</h4>
+          <p style="margin:0;">Handles <strong>swapping</strong>: temporarily removes a process from memory to disk to reduce the degree of multiprogramming, then reintroduces it later. Improves the process mix and frees memory under pressure.</p>
+        </div>
+        <div class="panel">
+          <div class="pill">RUNS CONSTANTLY</div>
+          <h4 class="minor" style="margin-top:10px;">Short-term scheduler</h4>
+          <p style="margin:0;">Also called the <strong>CPU scheduler</strong>. Picks one process from the ready queue and dispatches it to the CPU — invoked every few milliseconds, so it must be extremely fast. This is the scheduler the rest of this page is about.</p>
+        </div>
+      </div>
+    </section>
+    <section class="page" id="cpu-scheduling">
+      <div class="section-label">02 / CPU SCHEDULING</div>
+      <h2 class="title">Choosing who runs next</h2>
+      <p class="lede">Whenever the CPU goes idle, the short-term scheduler must pick a process from the ready queue. The algorithm it uses changes everything: average wait time, responsiveness, and whether short jobs get stuck behind long ones. Every algorithm below uses the same two derived numbers, so pin these down first.</p>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="n mono" style="font-family:var(--mono); color:var(--accent); font-size:13px;">TURNAROUND TIME</div>
+          <p style="margin:6px 0 0;">Completion time − Arrival time. Total time a process spends in the system, from arrival to finish — including all its waiting.</p>
+        </div>
+        <div class="panel">
+          <div class="n mono" style="font-family:var(--mono); color:var(--accent); font-size:13px;">WAITING TIME</div>
+          <p style="margin:6px 0 0;">Turnaround time − Burst time. Time spent sitting in the ready queue, not actually executing.</p>
+        </div>
+      </div>
+
+      <h3 class="sub" id="sched-basics">Preemptive vs non-preemptive</h3>
+      <div class="grid2">
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Non-preemptive</h4>
+          <p style="margin:0;">Once a process is given the CPU, it keeps it until it finishes or voluntarily blocks for I/O. The scheduler only acts when the running process leaves the CPU on its own. Simple, low overhead — but a long process can make everything behind it wait (the <em>convoy effect</em>).</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Preemptive</h4>
+          <p style="margin:0;">The scheduler can forcibly suspend a running process — e.g. because a newly arrived process is "more urgent" — and give the CPU to someone else. Fairer and more responsive, but every switch costs a context-switch overhead, and shared data needs careful synchronization.</p>
+        </div>
+      </div>
+
+      <h3 class="sub" id="fcfs">First Come, First Served (FCFS)</h3>
+      <p><span class="pill">NON-PREEMPTIVE</span> Processes are served strictly in arrival order, using a plain FIFO queue. It's the simplest possible policy — and the one most vulnerable to the convoy effect: one long CPU-bound process at the front makes every short process behind it wait far longer than its own burst time would suggest.</p>
+      <div class="paper">
+        <strong>Numerical.</strong> Three processes arrive together at t = 0.
+        <table class="data" style="margin-top:10px;">
+          <tr><th>Process</th><th>Arrival</th><th>Burst</th></tr>
+          <tr><td>P1</td><td>0</td><td>24</td></tr>
+          <tr><td>P2</td><td>0</td><td>3</td></tr>
+          <tr><td>P3</td><td>0</td><td>3</td></tr>
+        </table>
+        <div class="gantt-static" data-blocks='[{"l":"P1","w":24,"c":"#2A5678"},{"l":"P2","w":3,"c":"#3C6D8F"},{"l":"P3","w":3,"c":"#20475F"}]' data-marks="0,24,27,30"></div>
+        <p style="margin-top:10px;">Waiting time: P1 = 0, P2 = 24, P3 = 27 → <strong>average = 17</strong>. Turnaround: 24, 27, 30 → <strong>average = 27</strong>. Notice P2 and P3 each need only 3 units of CPU but sit behind P1's 24 — that's the convoy effect in miniature. Simply reordering to P2, P3, P1 (which is exactly what SJF does below) would have dropped the average waiting time to 3.</p>
+      </div>
+
+      <h3 class="sub" id="sjf">Shortest Job First (SJF)</h3>
+      <p><span class="pill">NON-PREEMPTIVE</span> Among the processes currently in the ready queue, always pick the one with the smallest CPU burst. SJF is provably optimal for minimizing average waiting time when all jobs are available together — but it needs to know burst times in advance, which in practice means predicting them (e.g. by exponential averaging of past bursts), and it can starve long processes if short ones keep arriving.</p>
+      <div class="paper">
+        <strong>Numerical.</strong> Same three processes as above, now scheduled shortest-first.
+        <div class="gantt-static" data-blocks='[{"l":"P2","w":3,"c":"#3C6D8F"},{"l":"P3","w":3,"c":"#20475F"},{"l":"P1","w":24,"c":"#2A5678"}]' data-marks="0,3,6,30"></div>
+        <p style="margin-top:10px;">Waiting time: P2 = 0, P3 = 3, P1 = 6 → <strong>average = 3</strong>. Turnaround: 3, 6, 30 → <strong>average = 13</strong>. Same processes, same total work — but average waiting fell from 17 to 3 purely by reordering.</p>
+      </div>
+
+      <h3 class="sub" id="srtf">Shortest Remaining Time First (SRTF)</h3>
+      <p><span class="pill">PREEMPTIVE</span> The preemptive cousin of SJF. Whenever a new process arrives, compare its burst time against the <em>remaining</em> time of the process currently running — if the newcomer is shorter, preempt immediately. This reacts well to short jobs arriving late but adds context-switch overhead and can still starve long jobs.</p>
+      <div class="paper">
+        <strong>Numerical.</strong> Arrivals are staggered this time, so preemption can actually happen.
+        <table class="data" style="margin-top:10px;">
+          <tr><th>Process</th><th>Arrival</th><th>Burst</th></tr>
+          <tr><td>P1</td><td>0</td><td>8</td></tr>
+          <tr><td>P2</td><td>1</td><td>4</td></tr>
+          <tr><td>P3</td><td>2</td><td>9</td></tr>
+          <tr><td>P4</td><td>3</td><td>5</td></tr>
+        </table>
+        <div class="gantt-static" data-blocks='[{"l":"P1","w":1,"c":"#2A5678"},{"l":"P2","w":4,"c":"#3C6D8F"},{"l":"P4","w":5,"c":"#4E86A8"},{"l":"P1","w":7,"c":"#2A5678"},{"l":"P3","w":9,"c":"#20475F"}]' data-marks="0,1,5,10,17,26"></div>
+        <p style="margin-top:10px;">Walk-through: P1 starts at t = 0. At t = 1, P2 arrives with burst 4 &lt; P1's remaining 7, so P2 preempts. P2 keeps running (P3's burst 9 and P4's burst 5 are both longer than P2's shrinking remainder) until it finishes at t = 5. At t = 5, P1 has 7 remaining and P4 has 5 remaining — P4 runs next, uninterrupted, finishing at t = 10. Only P1 (7) and P3 (9) are left, so P1 finishes its remaining 7 units by t = 17, then P3 runs alone to t = 26.</p>
+        <p>Completion: P1 = 17, P2 = 5, P3 = 26, P4 = 10. Waiting = completion − arrival − burst: P1 = 9, P2 = 0, P3 = 15, P4 = 2 → <strong>average = 6.5</strong>. Turnaround average = <strong>13</strong>.</p>
+      </div>
+
+      <h3 class="sub" id="priority">Priority Scheduling</h3>
+      <p>Each process carries a priority number (by convention, <strong>lower number = higher priority</strong>); the CPU goes to the highest-priority ready process. It comes in both flavours:</p>
+      <div class="grid2">
+        <div class="panel">
+          <div class="pill">NON-PREEMPTIVE</div>
+          <p style="margin:8px 0 0;">Priorities are only compared when the CPU is free — a running process is never interrupted even if something more urgent arrives.</p>
+        </div>
+        <div class="panel">
+          <div class="pill">PREEMPTIVE</div>
+          <p style="margin:8px 0 0;">A newly arrived process with higher priority immediately preempts whatever is running, exactly like SRTF but comparing priority instead of remaining time.</p>
+        </div>
+      </div>
+      <p>Both variants share a real weakness: <strong>indefinite blocking (starvation)</strong> — a low-priority process can wait forever if a steady stream of higher-priority work keeps arriving. The standard fix is <strong>aging</strong>: gradually raise the priority of a process the longer it waits, guaranteeing it eventually becomes the highest priority in the queue.</p>
+
+      <div class="paper">
+        <strong>Numerical — non-preemptive priority.</strong> All five arrive at t = 0.
+        <table class="data" style="margin-top:10px;">
+          <tr><th>Process</th><th>Burst</th><th>Priority</th></tr>
+          <tr><td>P1</td><td>10</td><td>3</td></tr>
+          <tr><td>P2</td><td>1</td><td>1</td></tr>
+          <tr><td>P3</td><td>2</td><td>4</td></tr>
+          <tr><td>P4</td><td>1</td><td>5</td></tr>
+          <tr><td>P5</td><td>5</td><td>2</td></tr>
+        </table>
+        <div class="gantt-static" data-blocks='[{"l":"P2","w":1,"c":"#3C6D8F"},{"l":"P5","w":5,"c":"#4E86A8"},{"l":"P1","w":10,"c":"#2A5678"},{"l":"P3","w":2,"c":"#20475F"},{"l":"P4","w":1,"c":"#183A50"}]' data-marks="0,1,6,16,18,19"></div>
+        <p style="margin-top:10px;">Sorted purely by priority (1 is most urgent): P2, P5, P1, P3, P4. Waiting: 0, 1, 6, 16, 18 → <strong>average = 8.2</strong>. Turnaround average = <strong>12</strong>.</p>
+      </div>
+
+      <div class="paper">
+        <strong>Numerical — preemptive priority.</strong> Staggered arrivals let higher-priority latecomers cut the queue.
+        <table class="data" style="margin-top:10px;">
+          <tr><th>Process</th><th>Arrival</th><th>Burst</th><th>Priority</th></tr>
+          <tr><td>P1</td><td>0</td><td>10</td><td>3</td></tr>
+          <tr><td>P2</td><td>1</td><td>1</td><td>1</td></tr>
+          <tr><td>P3</td><td>2</td><td>2</td><td>4</td></tr>
+          <tr><td>P4</td><td>3</td><td>1</td><td>5</td></tr>
+        </table>
+        <div class="gantt-static" data-blocks='[{"l":"P1","w":1,"c":"#2A5678"},{"l":"P2","w":1,"c":"#3C6D8F"},{"l":"P1","w":9,"c":"#2A5678"},{"l":"P3","w":2,"c":"#20475F"},{"l":"P4","w":1,"c":"#183A50"}]' data-marks="0,1,2,11,13,14"></div>
+        <p style="margin-top:10px;">P2 (priority 1) preempts P1 the instant it arrives at t = 1, since 1 is more urgent than P1's 3. Nothing after that beats P1's priority, so P1 resumes at t = 2 and runs to completion; P3 and P4 simply queue behind it in priority order. Waiting: P1 = 1, P2 = 0, P3 = 9, P4 = 10 → <strong>average = 5</strong>. Turnaround average = <strong>8.5</strong>.</p>
+      </div>
+
+      <h3 class="sub" id="rr">Round Robin (RR)</h3>
+      <p><span class="pill">PREEMPTIVE</span> Designed for time-sharing systems. Every process gets a fixed slice of CPU time — the <strong>time quantum</strong> — in a circular queue; if it hasn't finished when the quantum expires, it's preempted and sent to the back of the queue. No process waits more than <code>(n−1) × quantum</code> for its next turn, which makes RR excellent for responsiveness. The quantum is a real trade-off: too large and it degenerates into FCFS; too small and context-switch overhead dominates.</p>
+      <div class="paper">
+        <strong>Numerical.</strong> Quantum = 4, all arrive at t = 0.
+        <table class="data" style="margin-top:10px;">
+          <tr><th>Process</th><th>Burst</th></tr>
+          <tr><td>P1</td><td>24</td></tr>
+          <tr><td>P2</td><td>3</td></tr>
+          <tr><td>P3</td><td>3</td></tr>
+        </table>
+        <div class="gantt-static" data-blocks='[{"l":"P1","w":4,"c":"#2A5678"},{"l":"P2","w":3,"c":"#3C6D8F"},{"l":"P3","w":3,"c":"#20475F"},{"l":"P1","w":20,"c":"#2A5678"}]' data-marks="0,4,7,10,30"></div>
+        <p style="margin-top:10px;">P1 uses its full quantum (4) and is preempted with 20 remaining. P2 and P3 both finish inside their first quantum, so they never return to the queue. With the queue now empty except P1, it simply runs the rest of its 20 units uninterrupted. Waiting: P1 = 6, P2 = 4, P3 = 7 → <strong>average ≈ 5.67</strong>. Turnaround average ≈ <strong>15.67</strong>.</p>
+      </div>
+
+      <h3 class="sub" id="mlq">Multilevel Queue Scheduling</h3>
+      <p>Real systems often have process categories that genuinely need different treatment — an interactive foreground process versus a batch background job. Multilevel queue scheduling partitions the ready queue into several separate queues, each with <em>its own scheduling algorithm</em>, and processes are permanently assigned to one queue based on a property like process type or priority.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 620 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="20" y="28" fill="#E3A23D" font-family="JetBrains Mono" font-size="11" font-weight="700">HIGHEST PRIORITY</text>
+          <rect x="20" y="38" width="220" height="34" fill="#2A5678" stroke="#6FA0C4"/>
+          <text x="30" y="59" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">System processes — RR</text>
+
+          <rect x="20" y="82" width="220" height="34" fill="#26506E" stroke="#6FA0C4"/>
+          <text x="30" y="103" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Interactive processes — RR</text>
+
+          <rect x="20" y="126" width="220" height="34" fill="#20475F" stroke="#6FA0C4"/>
+          <text x="30" y="147" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Interactive editing — RR</text>
+
+          <rect x="20" y="170" width="220" height="34" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="30" y="191" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Batch processes — FCFS</text>
+          <text x="20" y="216" fill="#8FA9BE" font-family="JetBrains Mono" font-size="10">LOWEST PRIORITY — runs only when all queues above are empty</text>
+
+          <path d="M240 55 H320" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ahq)"/>
+          <path d="M240 99 H320" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ahq)"/>
+          <path d="M240 143 H320" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ahq)"/>
+          <path d="M240 187 H320" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ahq)"/>
+          <rect x="330" y="90" width="90" height="40" fill="#E3A23D" stroke="#E3A23D" rx="3"/>
+          <text x="375" y="114" text-anchor="middle" fill="#0D2438" font-family="Space Grotesk" font-size="12" font-weight="700">CPU</text>
+          <defs><marker id="ahq" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6FA0C4"/></marker></defs>
+        </svg>
+        <div class="caption">Between-queue scheduling is usually strict priority (a lower queue runs only when every queue above it is empty), sometimes with time slicing across queues.</div>
+      </div>
+      <p>The weakness is rigidity: a process assigned to the batch queue stays there forever, even if its behaviour changes — it can starve indefinitely if higher queues are never empty.</p>
+
+      <h3 class="sub" id="mlfq">Multilevel Feedback Queue Scheduling</h3>
+      <p>MLFQ fixes that rigidity by letting processes <strong>move between queues</strong> based on observed behaviour. It's the closest a scheduler gets to learning about a process:</p>
+      <ul style="max-width:66ch; color:#DCE6EE;">
+        <li>A new process enters the topmost queue, which has the smallest time quantum.</li>
+        <li>If it uses its whole quantum without finishing (behaves like a CPU-bound job), it's demoted to a lower queue with a longer quantum.</li>
+        <li>If it blocks for I/O before its quantum expires (behaves like an interactive job), it's kept at the same level or promoted.</li>
+        <li>To prevent starvation, processes are periodically promoted back up if they've been waiting too long — the scheduler's own version of aging.</li>
+      </ul>
+      <div class="diagram">
+        <svg viewBox="0 0 560 240" xmlns="http://www.w3.org/2000/svg">
+          <rect x="30" y="15" width="220" height="36" fill="#2A5678" stroke="#6FA0C4"/>
+          <text x="42" y="38" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Queue 0 — quantum 4ms</text>
+          <rect x="30" y="88" width="220" height="36" fill="#20475F" stroke="#6FA0C4"/>
+          <text x="42" y="111" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Queue 1 — quantum 8ms</text>
+          <rect x="30" y="161" width="220" height="36" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="42" y="184" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Queue 2 — FCFS, no limit</text>
+
+          <path d="M140 51 V88" stroke="#C15A45" stroke-width="2" marker-end="url(#ahd)"/>
+          <text x="150" y="72" fill="#C15A45" font-family="JetBrains Mono" font-size="9.5">quantum used up → demote</text>
+          <path d="M140 124 V161" stroke="#C15A45" stroke-width="2" marker-end="url(#ahd)"/>
+          <text x="150" y="146" fill="#C15A45" font-family="JetBrains Mono" font-size="9.5">quantum used up → demote</text>
+
+          <path d="M280 170 C 340 170, 340 30, 260 30" stroke="#6FA88A" stroke-width="2" fill="none" marker-end="url(#ahp)"/>
+          <text x="345" y="105" fill="#6FA88A" font-family="JetBrains Mono" font-size="9.5" transform="rotate(90 345 105)">aging: promote after long wait</text>
+          <defs>
+            <marker id="ahd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#C15A45"/></marker>
+            <marker id="ahp" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6FA88A"/></marker>
+          </defs>
+        </svg>
+        <div class="caption">A short interactive burst never leaves Queue 0; a long CPU-bound job sinks toward FCFS — but aging pulls it back up before it starves.</div>
+      </div>
+      <p>MLFQ is defined by its parameters: the number of queues, the quantum at each level, the promotion/demotion rule, and how a process is initially assigned. Because it reacts to observed behaviour instead of a fixed label, it's the most general scheduling algorithm — and the one most real operating systems (including Windows and historically Solaris) actually approximate.</p>
+
+      <h3 class="sub" id="simulator">Live scheduler simulator</h3>
+      <p>Build your own process table, pick an algorithm, and watch the Gantt chart, waiting time and turnaround time get computed and animated in real time.</p>
+
+      <div class="panel">
+        <div class="field-label" style="margin-bottom:8px;">PROCESS TABLE</div>
+        <div class="proc-row" style="margin-bottom:4px;">
+          <div class="field-label">PID</div><div class="field-label">Arrival</div><div class="field-label">Burst</div><div class="field-label">Priority</div><div></div>
+        </div>
+        <div id="procRows"></div>
+        <button class="ctl ghost" id="addRow" style="margin-top:6px;">+ Add process</button>
+
+        <div class="grid2" style="margin-top:22px; align-items:end;">
+          <div>
+            <div class="field-label">ALGORITHM</div>
+            <select id="algoSelect">
+              <option value="fcfs">FCFS — First Come First Served</option>
+              <option value="sjf">SJF — Shortest Job First (non-preemptive)</option>
+              <option value="srtf">SRTF — Shortest Remaining Time First</option>
+              <option value="pnp">Priority Scheduling (non-preemptive)</option>
+              <option value="pp">Priority Scheduling (preemptive)</option>
+              <option value="rr">Round Robin</option>
+            </select>
+          </div>
+          <div id="quantumWrap" style="display:none;">
+            <div class="field-label">TIME QUANTUM</div>
+            <input type="number" id="quantumInput" value="4" min="1">
+          </div>
+        </div>
+        <button class="ctl" id="runSim" style="margin-top:18px;">▶ Run simulation</button>
+      </div>
+
+      <div class="sim-wrap" id="simResults"></div>
+    </section>
+    <section class="page" id="threads">
+      <div class="section-label">03 / THREADS</div>
+      <h2 class="title">One process, many threads</h2>
+      <p class="lede">A process is the unit of resource ownership — its address space, open files, and permissions. A <strong>thread</strong> is the unit of CPU scheduling within that process: its own program counter, register set, and stack, but sharing the process's address space and resources with every other thread in it.</p>
+
+      <h3 class="sub" id="process-vs-thread">Process vs thread</h3>
+      <div class="diagram">
+        <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="520" height="180" fill="#183A50" stroke="#6FA0C4" rx="3"/>
+          <text x="280" y="42" text-anchor="middle" fill="#E3A23D" font-family="Space Grotesk" font-size="13" font-weight="700">ONE PROCESS — shared code, data, files, address space</text>
+          <g>
+            <rect x="45" y="60" width="130" height="120" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+            <text x="110" y="80" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="10.5" font-weight="700">Thread 1</text>
+            <rect x="60" y="90" width="100" height="16" fill="#183A50"/><text x="110" y="102" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">registers</text>
+            <rect x="60" y="112" width="100" height="16" fill="#183A50"/><text x="110" y="124" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">program counter</text>
+            <rect x="60" y="134" width="100" height="34" fill="#183A50"/><text x="110" y="154" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">own stack</text>
+          </g>
+          <g>
+            <rect x="215" y="60" width="130" height="120" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+            <text x="280" y="80" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="10.5" font-weight="700">Thread 2</text>
+            <rect x="230" y="90" width="100" height="16" fill="#183A50"/><text x="280" y="102" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">registers</text>
+            <rect x="230" y="112" width="100" height="16" fill="#183A50"/><text x="280" y="124" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">program counter</text>
+            <rect x="230" y="134" width="100" height="34" fill="#183A50"/><text x="280" y="154" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">own stack</text>
+          </g>
+          <g>
+            <rect x="385" y="60" width="130" height="120" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+            <text x="450" y="80" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="10.5" font-weight="700">Thread 3</text>
+            <rect x="400" y="90" width="100" height="16" fill="#183A50"/><text x="450" y="102" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">registers</text>
+            <rect x="400" y="112" width="100" height="16" fill="#183A50"/><text x="450" y="124" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">program counter</text>
+            <rect x="400" y="134" width="100" height="34" fill="#183A50"/><text x="450" y="154" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="8.5">own stack</text>
+          </g>
+        </svg>
+        <div class="caption">Threads duplicate only what must be private (registers, stack, PC); everything else in the process is shared automatically.</div>
+      </div>
+      <table class="cmp">
+        <tr><th>Property</th><th>Process</th><th>Thread</th></tr>
+        <tr><td>Address space</td><td>Own, private</td><td>Shared with sibling threads</td></tr>
+        <tr><td>Creation cost</td><td>Heavy — OS allocates full context</td><td>Light — reuses parent's resources</td></tr>
+        <tr><td>Context switch</td><td>Expensive — memory map changes</td><td>Cheap — same address space</td></tr>
+        <tr><td>Communication</td><td>Needs IPC (pipes, sockets, shared memory)</td><td>Direct — shared variables</td></tr>
+        <tr><td>Fault isolation</td><td>One process crashing doesn't affect others</td><td>One thread crashing can take down the whole process</td></tr>
+        <tr><td>Independence</td><td>Fully independent</td><td>Dependent — part of a parent process</td></tr>
+      </table>
+
+      <h3 class="sub" id="thread-states">Thread states</h3>
+      <p>A thread's lifecycle mirrors a process's, minus the memory-allocation weight of New/Terminated:</p>
+      <div class="diagram">
+        <svg viewBox="0 0 560 140" xmlns="http://www.w3.org/2000/svg">
+          <g font-family="JetBrains Mono" font-size="10.5" fill="#F6F4EC">
+            <rect x="10" y="45" width="90" height="40" fill="#20475F" stroke="#6FA0C4" rx="20"/><text x="55" y="69" text-anchor="middle">New</text>
+            <rect x="140" y="45" width="100" height="40" fill="#2A5678" stroke="#6FA0C4" rx="20"/><text x="190" y="69" text-anchor="middle">Runnable</text>
+            <rect x="280" y="45" width="100" height="40" fill="#E3A23D" stroke="#E3A23D" rx="20"/><text x="330" y="69" text-anchor="middle" fill="#0D2438">Running</text>
+            <rect x="420" y="0" width="110" height="40" fill="#183A50" stroke="#6FA0C4" rx="20"/><text x="475" y="24" text-anchor="middle" font-size="10">Blocked / Waiting</text>
+            <rect x="420" y="90" width="110" height="40" fill="#0D2438" stroke="#6FA0C4" rx="20"/><text x="475" y="114" text-anchor="middle">Terminated</text>
+          </g>
+          <path d="M100 65 H140" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ath)"/>
+          <path d="M240 65 H280" stroke="#6FA0C4" stroke-width="2" marker-end="url(#ath)"/>
+          <path d="M380 55 C 400 40, 400 30, 420 25" stroke="#C15A45" stroke-width="2" fill="none" marker-end="url(#ath2)"/>
+          <path d="M420 30 C 260 -10, 200 45, 240 60" stroke="#6FA88A" stroke-width="2" fill="none" marker-end="url(#ath3)"/>
+          <path d="M380 75 C 400 90, 400 100, 420 108" stroke="#6FA0C4" stroke-width="2" fill="none" marker-end="url(#ath)"/>
+          <defs>
+            <marker id="ath" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6FA0C4"/></marker>
+            <marker id="ath2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#C15A45"/></marker>
+            <marker id="ath3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6FA88A"/></marker>
+          </defs>
+        </svg>
+        <div class="caption">Runnable → Running is the scheduler's doing; Running → Blocked happens when the thread requests I/O or waits on a lock; Blocked → Runnable happens when that event completes.</div>
+      </div>
+
+      <h3 class="sub" id="thread-benefits">Why bother with threads</h3>
+      <div class="grid2">
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Responsiveness</h4><p style="margin:0;">An application can keep responding to the user even while part of it is blocked — e.g. a UI thread stays interactive while a background thread loads a file.</p></div>
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Resource sharing</h4><p style="margin:0;">Threads share the address space by default, so passing data between them is just accessing shared memory — no IPC needed.</p></div>
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Economy</h4><p style="margin:0;">Creating and context-switching a thread is far cheaper than doing the same for a whole process, since most of the state is already shared.</p></div>
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Scalability</h4><p style="margin:0;">On a multicore machine, threads of one process can genuinely run in parallel on different cores, not just interleaved on one.</p></div>
+      </div>
+
+      <h3 class="sub" id="thread-types">User-level vs kernel-level threads</h3>
+      <div class="grid2">
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">User-level threads</h4>
+          <p>Managed entirely by a thread library in user space; the kernel doesn't know they exist — it sees one process. Creation and switching are fast (no system call), but if one thread makes a blocking system call, the <em>entire process</em> blocks, and they can't be scheduled onto separate cores.</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Kernel-level threads</h4>
+          <p>Managed and scheduled directly by the OS kernel, which is aware of each one individually. A blocking call in one thread doesn't stall the others, and they can run in true parallel across cores — at the cost of higher creation/switching overhead, since each op needs a system call.</p>
+        </div>
+      </div>
+
+      <h3 class="sub" id="mt-models">Multithreading models</h3>
+      <p>These describe how user-level threads are mapped onto kernel-level threads.</p>
+      <div class="grid3">
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Many-to-One</h4>
+          <div class="diagram" style="padding:10px; margin:8px 0;">
+            <svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="20" r="12" fill="#4E86A8"/><circle cx="80" cy="20" r="12" fill="#4E86A8"/><circle cx="125" cy="20" r="12" fill="#4E86A8"/>
+              <path d="M35 32 L80 85" stroke="#6FA0C4"/><path d="M80 32 V85" stroke="#6FA0C4"/><path d="M125 32 L80 85" stroke="#6FA0C4"/>
+              <circle cx="80" cy="95" r="14" fill="#E3A23D"/>
+              <text x="80" y="120" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9">1 kernel thread</text>
+            </svg>
+          </div>
+          <p style="margin:0;">Many user threads map to a single kernel thread. Fast, portable — but one blocking call freezes every thread, and there's no real parallelism.</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">One-to-One</h4>
+          <div class="diagram" style="padding:10px; margin:8px 0;">
+            <svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35" cy="20" r="12" fill="#4E86A8"/><circle cx="80" cy="20" r="12" fill="#4E86A8"/><circle cx="125" cy="20" r="12" fill="#4E86A8"/>
+              <path d="M35 32 V85" stroke="#6FA0C4"/><path d="M80 32 V85" stroke="#6FA0C4"/><path d="M125 32 V85" stroke="#6FA0C4"/>
+              <circle cx="35" cy="95" r="12" fill="#E3A23D"/><circle cx="80" cy="95" r="12" fill="#E3A23D"/><circle cx="125" cy="95" r="12" fill="#E3A23D"/>
+              <text x="80" y="120" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9">1:1 kernel threads</text>
+            </svg>
+          </div>
+          <p style="margin:0;">Each user thread gets its own kernel thread. True parallelism, one block doesn't stall the rest — but creating a thread means creating a kernel thread too, so it's heavier. Used by Linux and modern Windows.</p>
+        </div>
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Many-to-Many</h4>
+          <div class="diagram" style="padding:10px; margin:8px 0;">
+            <svg viewBox="0 0 160 130" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="20" cy="20" r="11" fill="#4E86A8"/><circle cx="55" cy="20" r="11" fill="#4E86A8"/><circle cx="90" cy="20" r="11" fill="#4E86A8"/><circle cx="125" cy="20" r="11" fill="#4E86A8"/>
+              <path d="M20 31 L55 85" stroke="#6FA0C4"/><path d="M55 31 L55 85" stroke="#6FA0C4"/><path d="M90 31 L100 85" stroke="#6FA0C4"/><path d="M125 31 L100 85" stroke="#6FA0C4"/>
+              <circle cx="55" cy="95" r="12" fill="#E3A23D"/><circle cx="100" cy="95" r="12" fill="#E3A23D"/>
+              <text x="80" y="120" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9">fewer/equal kernel threads</text>
+            </svg>
+          </div>
+          <p style="margin:0;">Many user threads multiplex over a smaller or equal number of kernel threads — the OS can create as many kernel threads as needed. Combines the flexibility of many-to-one with real parallelism.</p>
+        </div>
+      </div>
+
+      <h3 class="sub" id="hyperthreading">Hyper-Threading</h3>
+      <p>Hyper-Threading (Intel's name for simultaneous multithreading, SMT) lets one <strong>physical</strong> core present itself to the OS as two <strong>logical</strong> processors. It duplicates only the architectural state needed to track two independent instruction streams — registers, program counter — while the core's actual execution units, caches, and pipeline are shared and interleaved between them.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 440 170" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="400" height="130" fill="#183A50" stroke="#6FA0C4" rx="4"/>
+          <text x="220" y="42" text-anchor="middle" fill="#E3A23D" font-family="Space Grotesk" font-size="13" font-weight="700">ONE PHYSICAL CORE</text>
+          <rect x="45" y="55" width="150" height="80" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+          <text x="120" y="78" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Logical CPU 0</text>
+          <text x="120" y="98" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9">own registers + PC</text>
+          <rect x="245" y="55" width="150" height="80" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+          <text x="320" y="78" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">Logical CPU 1</text>
+          <text x="320" y="98" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9">own registers + PC</text>
+          <text x="220" y="145" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9.5">shared: execution units · cache · pipeline</text>
+        </svg>
+        <div class="caption">The OS scheduler sees two CPUs and can run two threads "at once" — but they're still sharing one core's actual execution hardware.</div>
+      </div>
+      <p>The payoff: while one logical thread stalls waiting on memory (a cache miss), the core's execution units aren't idle — they can issue instructions from the other logical thread instead. It improves throughput on mixed workloads, typically by roughly 15–30% in practice, but it is <em>not</em> the same as having two real cores — if both threads are heavily competing for the same execution units or cache, the gain shrinks or can even go negative.</p>
+    </section>
+
+    <footer>
+      OPERATING SYSTEMS · PROCESS MANAGEMENT / CPU SCHEDULING / THREADS — lecture notes with live simulation
+    </footer>
+
+  </main>
+</div>
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- Mobile nav ---------------- */
+  var navToggle = document.getElementById('navToggle');
+  var navList = document.getElementById('navList');
+  if (navToggle) {
+    navToggle.addEventListener('click', function(){
+      navList.classList.toggle('open');
+      navToggle.textContent = navList.classList.contains('open') ? 'Contents ▴' : 'Contents ▾';
+    });
+    navList.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){ navList.classList.remove('open'); navToggle.textContent='Contents ▾'; });
+    });
+  }
+
+  /* ---------------- Scroll spy ---------------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.navgroup a'));
+  var targets = navLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  function onScroll(){
+    var y = window.scrollY + 140;
+    var current = null;
+    targets.forEach(function(t){ if (t.offsetTop <= y) current = t; });
+    navLinks.forEach(function(a){ a.classList.remove('active'); });
+    if (current) {
+      navLinks.forEach(function(a){ if (a.getAttribute('href') === '#'+current.id) a.classList.add('active'); });
+    }
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  /* ---------------- Reveal on scroll ---------------- */
+  document.querySelectorAll('.panel, .paper, .diagram').forEach(function(el){ el.classList.add('reveal'); });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold: .12});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  /* ================= Static Gantt renderer ================= */
+  function renderStaticGantt(el){
+    var blocks = JSON.parse(el.dataset.blocks);
+    var total = blocks.reduce(function(s,b){ return s+b.w; }, 0);
+    var scale = Math.max(6, Math.min(20, 560/total));
+    var widths = blocks.map(function(b){ return Math.max(Math.round(b.w*scale), 26); });
+    var marksAttr = el.dataset.marks ? el.dataset.marks.split(',').map(Number) : null;
+
+    var gantt = document.createElement('div'); gantt.className='gantt';
+    blocks.forEach(function(b,i){
+      var d = document.createElement('div');
+      d.className='gantt-block';
+      d.style.width = widths[i]+'px';
+      d.style.minWidth = widths[i]+'px';
+      d.style.background = b.c;
+      d.style.animationDelay = (i*0.1)+'s';
+      d.textContent = b.l;
+      gantt.appendChild(d);
+    });
+    var ticks = document.createElement('div'); ticks.className='gantt-ticks';
+    var cum = 0;
+    blocks.forEach(function(b,i){
+      var span = document.createElement('span');
+      span.style.minWidth = widths[i]+'px';
+      span.textContent = marksAttr ? marksAttr[i] : cum;
+      cum += b.w;
+      ticks.appendChild(span);
+    });
+    var last = document.createElement('span');
+    last.style.minWidth='24px';
+    last.textContent = marksAttr ? marksAttr[marksAttr.length-1] : cum;
+    ticks.appendChild(last);
+    el.appendChild(gantt);
+    el.appendChild(ticks);
+  }
+  document.querySelectorAll('.gantt-static').forEach(renderStaticGantt);
+})();
+</script>
+<script>
+  /* ================= Process state diagram (interactive) ================= */
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs){
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  var statePositions = {
+    New: {x:60, y:160}, Ready: {x:250, y:160}, Running: {x:440, y:160},
+    Terminated: {x:600, y:160}, Waiting: {x:345, y:270}
+  };
+  var stateColors = { New:'#3C6D8F', Ready:'#2A5678', Running:'#E3A23D', Waiting:'#C15A45', Terminated:'#183A50' };
+
+  function buildStateDiagram(svg){
+    svg.innerHTML = '';
+    svg.appendChild(svgEl('defs', {})).appendChild(svgEl('marker', {id:'arrowS', markerWidth:8, markerHeight:8, refX:6, refY:3, orient:'auto'})).appendChild(svgEl('path', {d:'M0,0 L6,3 L0,6 Z', fill:'#6FA0C4'}));
+
+    function edge(a, b, curve, color, label, labelOffset){
+      var p1 = statePositions[a], p2 = statePositions[b];
+      var path;
+      if (curve) {
+        var mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2 + curve;
+        path = 'M'+p1.x+','+p1.y+' Q'+mx+','+my+' '+p2.x+','+p2.y;
+      } else {
+        path = 'M'+p1.x+','+p1.y+' L'+p2.x+','+p2.y;
+      }
+      svg.appendChild(svgEl('path', {d:path, stroke: color||'#6FA0C4', 'stroke-width':2, fill:'none', 'marker-end':'url(#arrowS)'}));
+      if (label) {
+        var mx2 = (p1.x+p2.x)/2, my2 = (p1.y+p2.y)/2 + (labelOffset||0);
+        var t = svgEl('text', {x:mx2, y:my2, 'text-anchor':'middle', fill: color||'#8FA9BE', 'font-family':'JetBrains Mono', 'font-size':9.5});
+        t.textContent = label;
+        svg.appendChild(t);
+      }
+    }
+
+    edge('New','Ready', 0, '#6FA0C4', 'admitted', -10);
+    edge('Ready','Running', 0, '#6FA0C4', 'dispatch', -10);
+    edge('Running','Terminated', 0, '#6FA0C4', 'exit', -10);
+    edge('Running','Ready', -70, '#C15A45', 'interrupt (quantum expires)', -78);
+    edge('Running','Waiting', 0, '#C15A45', 'I/O or event wait', 16);
+    edge('Waiting','Ready', 0, '#6FA88A', 'event completed', 24);
+
+    Object.keys(statePositions).forEach(function(name){
+      var p = statePositions[name];
+      var r = name === 'New' || name === 'Terminated' ? 34 : 38;
+      svg.appendChild(svgEl('circle', {cx:p.x, cy:p.y, r:r, fill: stateColors[name], stroke:'#0D2438', 'stroke-width':2, id:'node-'+name}));
+      var t = svgEl('text', {x:p.x, y:p.y+4, 'text-anchor':'middle', fill: name==='Running' ? '#0D2438' : '#F6F4EC', 'font-family':'JetBrains Mono', 'font-size':11, 'font-weight':700});
+      t.textContent = name;
+      svg.appendChild(t);
+    });
+
+    var token = svgEl('circle', {cx:statePositions.New.x, cy:statePositions.New.y, r:9, fill:'#F6F4EC', stroke:'#E3A23D', 'stroke-width':2, id:'token'});
+    svg.appendChild(token);
+    return token;
+  }
+
+  var stateSvg = document.getElementById('stateDiagram');
+  var stateToken = stateSvg ? buildStateDiagram(stateSvg) : null;
+
+  var lifecycle = [
+    {state:'New', text:'The process is created: the OS allocates a PCB and address space for it.'},
+    {state:'Ready', text:'Admitted into the ready queue — loaded in memory, waiting only for the CPU.'},
+    {state:'Running', text:'The short-term scheduler dispatches it — instructions now execute on the CPU.'},
+    {state:'Waiting', text:'It requests I/O and blocks — moved out of the CPU until that event completes.'},
+    {state:'Ready', text:'The I/O finishes — back to the ready queue, waiting for the CPU again.'},
+    {state:'Running', text:'Dispatched again and resumes execution from exactly where it left off (PCB restored).'},
+    {state:'Terminated', text:'Execution finishes — the OS reclaims its memory and deallocates the PCB.'}
+  ];
+
+  function tween(token, from, to, duration, onDone){
+    if (reduceMotion) { token.setAttribute('cx', to.x); token.setAttribute('cy', to.y); onDone && onDone(); return; }
+    var start = null;
+    function step(ts){
+      if (!start) start = ts;
+      var p = Math.min((ts-start)/duration, 1);
+      var ease = p<.5 ? 2*p*p : -1+(4-2*p)*p;
+      token.setAttribute('cx', from.x + (to.x-from.x)*ease);
+      token.setAttribute('cy', from.y + (to.y-from.y)*ease);
+      if (p < 1) requestAnimationFrame(step); else onDone && onDone();
+    }
+    requestAnimationFrame(step);
+  }
+
+  var playBtn = document.getElementById('playState');
+  var resetBtn = document.getElementById('resetState');
+  var explainEl = document.getElementById('stateExplain');
+  var playing = false;
+
+  function resetLifecycle(){
+    if (!stateToken) return;
+    stateToken.setAttribute('cx', statePositions.New.x);
+    stateToken.setAttribute('cy', statePositions.New.y);
+    explainEl.textContent = 'Press "Run lifecycle" to animate a process moving through New → Ready → Running → Waiting → Ready → Running → Terminated.';
+  }
+
+  function runLifecycle(){
+    if (playing || !stateToken) return;
+    playing = true;
+    playBtn.textContent = '… running';
+    var i = 0;
+    explainEl.textContent = lifecycle[0].text;
+    function next(){
+      if (i >= lifecycle.length-1) { playing = false; playBtn.textContent = '▶ Run lifecycle'; return; }
+      var from = statePositions[lifecycle[i].state];
+      var to = statePositions[lifecycle[i+1].state];
+      i++;
+      tween(stateToken, from, to, 750, function(){
+        explainEl.textContent = lifecycle[i].text;
+        setTimeout(next, 550);
+      });
+    }
+    setTimeout(next, 400);
+  }
+
+  playBtn && playBtn.addEventListener('click', runLifecycle);
+  resetBtn && resetBtn.addEventListener('click', function(){ playing=false; playBtn.textContent='▶ Run lifecycle'; resetLifecycle(); });
+
+  /* ================= Hero ambient loop diagram ================= */
+  var heroSvg = document.getElementById('heroDiagram');
+  if (heroSvg) {
+    var heroPos = { New:{x:60,y:40}, Ready:{x:180,y:110}, Running:{x:180,y:220}, Waiting:{x:60,y:260}, Terminated:{x:300,y:260} };
+    heroSvg.innerHTML = '';
+    var defs = svgEl('defs', {});
+    var mk = svgEl('marker', {id:'arrowH', markerWidth:8, markerHeight:8, refX:6, refY:3, orient:'auto'});
+    mk.appendChild(svgEl('path', {d:'M0,0 L6,3 L0,6 Z', fill:'#6FA0C4'}));
+    defs.appendChild(mk); heroSvg.appendChild(defs);
+    var seq = ['New','Ready','Running','Waiting','Ready','Running','Terminated'];
+    function heroEdge(a,b){
+      var p1=heroPos[a], p2=heroPos[b];
+      heroSvg.appendChild(svgEl('path', {d:'M'+p1.x+','+p1.y+' L'+p2.x+','+p2.y, stroke:'#3C6D8F', 'stroke-width':2, fill:'none', 'marker-end':'url(#arrowH)'}));
+    }
+    heroEdge('New','Ready'); heroEdge('Ready','Running'); heroEdge('Running','Waiting');
+    heroEdge('Waiting','Ready'); heroEdge('Running','Terminated');
+    Object.keys(heroPos).forEach(function(name){
+      var p = heroPos[name];
+      heroSvg.appendChild(svgEl('circle', {cx:p.x, cy:p.y, r:26, fill: stateColors[name], stroke:'#0D2438', 'stroke-width':2}));
+      var t = svgEl('text', {x:p.x, y:p.y+4, 'text-anchor':'middle', fill: name==='Running' ? '#0D2438':'#F6F4EC', 'font-family':'JetBrains Mono', 'font-size':9.5, 'font-weight':700});
+      t.textContent = name;
+      heroSvg.appendChild(t);
+    });
+    var heroToken = svgEl('circle', {cx:heroPos.New.x, cy:heroPos.New.y, r:7, fill:'#F6F4EC', stroke:'#E3A23D', 'stroke-width':2});
+    heroSvg.appendChild(heroToken);
+
+    if (!reduceMotion) {
+      var hi = 0;
+      function heroStep(){
+        var from = heroPos[seq[hi % seq.length]];
+        var to = heroPos[seq[(hi+1) % seq.length]];
+        hi++;
+        tween(heroToken, from, to, 900, function(){ setTimeout(heroStep, 500); });
+      }
+      setTimeout(heroStep, 600);
+    }
+  }
+</script>
+<script>
+(function(){
+  "use strict";
+  /* ================= Live CPU scheduling simulator ================= */
+  var procRowsEl = document.getElementById('procRows');
+  var rowCount = 0;
+  var palette = ['#4E86A8','#E3A23D','#6FA88A','#C15A45','#8B6FB0','#3C9AA0','#B08A4E','#6F8CB0'];
+
+  function addProcRow(at, bt, prio){
+    rowCount++;
+    var pid = 'P'+rowCount;
+    var row = document.createElement('div');
+    row.className = 'proc-row';
+    row.dataset.pid = pid;
+    row.innerHTML =
+      '<div class="pid-chip">'+pid+'</div>'+
+      '<input type="number" min="0" class="at-input" value="'+at+'">'+
+      '<input type="number" min="1" class="bt-input" value="'+bt+'">'+
+      '<input type="number" min="1" class="prio-input" value="'+prio+'">'+
+      '<button class="remove-row" title="Remove">✕</button>';
+    row.querySelector('.remove-row').addEventListener('click', function(){ row.remove(); });
+    procRowsEl.appendChild(row);
+  }
+
+  [[0,5,2],[1,3,1],[2,8,3],[3,6,2]].forEach(function(r){ addProcRow(r[0], r[1], r[2]); });
+
+  document.getElementById('addRow').addEventListener('click', function(){
+    addProcRow(0, 4, 1);
+  });
+
+  var algoSelect = document.getElementById('algoSelect');
+  var quantumWrap = document.getElementById('quantumWrap');
+  algoSelect.addEventListener('change', function(){
+    quantumWrap.style.display = algoSelect.value === 'rr' ? 'block' : 'none';
+  });
+
+  function readProcs(){
+    var rows = Array.prototype.slice.call(procRowsEl.querySelectorAll('.proc-row'));
+    return rows.map(function(row, i){
+      return {
+        pid: row.dataset.pid,
+        idx: i,
+        at: Math.max(0, parseInt(row.querySelector('.at-input').value, 10) || 0),
+        bt: Math.max(1, parseInt(row.querySelector('.bt-input').value, 10) || 1),
+        prio: parseInt(row.querySelector('.prio-input').value, 10) || (i+1)
+      };
+    });
+  }
+
+  function mergeBlocks(blocks){
+    var out = [];
+    blocks.forEach(function(b){
+      var last = out[out.length-1];
+      if (last && last.pid === b.pid && last.end === b.start) { last.end = b.end; }
+      else out.push({pid:b.pid, start:b.start, end:b.end});
+    });
+    return out;
+  }
+
+  function scheduleFCFS(procs){
+    var sorted = procs.slice().sort(function(a,b){ return a.at-b.at || a.idx-b.idx; });
+    var t = 0, blocks = [];
+    sorted.forEach(function(p){
+      if (t < p.at) { blocks.push({pid:'IDLE', start:t, end:p.at}); t = p.at; }
+      blocks.push({pid:p.pid, start:t, end:t+p.bt});
+      t += p.bt;
+    });
+    return blocks;
+  }
+
+  function scheduleNonPreemptive(procs, keyFn){
+    var n = procs.length, done = {}, t = 0, blocks = [], completedCount = 0;
+    while (completedCount < n) {
+      var avail = procs.filter(function(p){ return !done[p.pid] && p.at <= t; });
+      if (avail.length === 0) {
+        var nextAt = Math.min.apply(null, procs.filter(function(p){ return !done[p.pid]; }).map(function(p){ return p.at; }));
+        blocks.push({pid:'IDLE', start:t, end:nextAt});
+        t = nextAt;
+        continue;
+      }
+      avail.sort(function(a,b){ return keyFn(a)-keyFn(b) || a.at-b.at || a.idx-b.idx; });
+      var p = avail[0];
+      blocks.push({pid:p.pid, start:t, end:t+p.bt});
+      t += p.bt;
+      done[p.pid] = true;
+      completedCount++;
+    }
+    return blocks;
+  }
+
+  function schedulePreemptiveUnit(procs, keyFn){
+    var n = procs.length;
+    var remaining = {}; procs.forEach(function(p){ remaining[p.pid] = p.bt; });
+    var completed = 0, t = 0, timeline = [], guard = 0;
+    var maxGuard = (procs.reduce(function(s,p){return s+p.bt;},0) + Math.max.apply(null, procs.map(function(p){return p.at;})) + 5) * 4 + 50;
+    while (completed < n && guard < maxGuard) {
+      guard++;
+      var avail = procs.filter(function(p){ return p.at <= t && remaining[p.pid] > 0; });
+      if (avail.length === 0) { timeline.push({pid:'IDLE', start:t, end:t+1}); t++; continue; }
+      avail.sort(function(a,b){ return keyFn(a,remaining)-keyFn(b,remaining) || a.at-b.at || a.idx-b.idx; });
+      var p = avail[0];
+      timeline.push({pid:p.pid, start:t, end:t+1});
+      remaining[p.pid]--; t++;
+      if (remaining[p.pid] === 0) completed++;
+    }
+    return timeline;
+  }
+
+  function scheduleRR(procs, quantum){
+    var n = procs.length;
+    var sorted = procs.slice().sort(function(a,b){ return a.at-b.at || a.idx-b.idx; });
+    var remaining = {}; procs.forEach(function(p){ remaining[p.pid] = p.bt; });
+    var idx = 0, t = sorted[0].at, blocks = [], queue = [], completed = 0;
+    if (t > 0) blocks.push({pid:'IDLE', start:0, end:t});
+    function pullArrivals(upTo){
+      while (idx < n && sorted[idx].at <= upTo) { queue.push(sorted[idx]); idx++; }
+    }
+    pullArrivals(t);
+    var guard = 0, maxGuard = 10000;
+    while (completed < n && guard < maxGuard) {
+      guard++;
+      if (queue.length === 0) {
+        var nt = sorted[idx].at;
+        if (nt > t) blocks.push({pid:'IDLE', start:t, end:nt});
+        t = nt;
+        pullArrivals(t);
+        continue;
+      }
+      var p = queue.shift();
+      var run = Math.min(quantum, remaining[p.pid]);
+      var start = t; t += run; remaining[p.pid] -= run;
+      blocks.push({pid:p.pid, start:start, end:t});
+      pullArrivals(t);
+      if (remaining[p.pid] > 0) queue.push(p); else completed++;
+    }
+    return blocks;
+  }
+
+  function runSimulation(){
+    var procs = readProcs();
+    if (procs.length === 0) return;
+    var algo = algoSelect.value;
+    var blocks;
+    if (algo === 'fcfs') blocks = scheduleFCFS(procs);
+    else if (algo === 'sjf') blocks = scheduleNonPreemptive(procs, function(p){ return p.bt; });
+    else if (algo === 'pnp') blocks = scheduleNonPreemptive(procs, function(p){ return p.prio; });
+    else if (algo === 'srtf') blocks = mergeBlocks(schedulePreemptiveUnit(procs, function(p, rem){ return rem[p.pid]; }));
+    else if (algo === 'pp') blocks = mergeBlocks(schedulePreemptiveUnit(procs, function(p){ return p.prio; }));
+    else if (algo === 'rr') blocks = mergeBlocks(scheduleRR(procs, Math.max(1, parseInt(document.getElementById('quantumInput').value,10) || 4)));
+
+    var completion = {};
+    blocks.forEach(function(b){ if (b.pid !== 'IDLE') completion[b.pid] = b.end; });
+
+    var rows = procs.map(function(p){
+      var ct = completion[p.pid];
+      var tat = ct - p.at;
+      var wt = tat - p.bt;
+      return {pid:p.pid, at:p.at, bt:p.bt, ct:ct, tat:tat, wt:wt};
+    }).sort(function(a,b){ return a.pid.localeCompare(b.pid, undefined, {numeric:true}); });
+
+    var avgWt = rows.reduce(function(s,r){return s+r.wt;},0) / rows.length;
+    var avgTat = rows.reduce(function(s,r){return s+r.tat;},0) / rows.length;
+
+    renderSimResults(blocks, rows, avgWt, avgTat, procs);
+  }
+
+  function pidColor(pid, procs){
+    var i = procs.findIndex(function(p){ return p.pid === pid; });
+    return palette[i % palette.length];
+  }
+
+  function renderSimResults(blocks, rows, avgWt, avgTat, procs){
+    var el = document.getElementById('simResults');
+    el.innerHTML = '';
+
+    var title = document.createElement('div');
+    title.className = 'field-label';
+    title.style.marginBottom = '6px';
+    title.textContent = 'GANTT CHART';
+    el.appendChild(title);
+
+    var ganttHost = document.createElement('div');
+    ganttHost.dataset.blocks = JSON.stringify(blocks.map(function(b){
+      return { l: b.pid === 'IDLE' ? '' : b.pid, w: b.end-b.start, c: b.pid==='IDLE' ? null : pidColor(b.pid, procs), idle: b.pid==='IDLE' };
+    }));
+    var marks = [blocks[0].start];
+    blocks.forEach(function(b){ marks.push(b.end); });
+    ganttHost.dataset.marks = marks.join(',');
+    el.appendChild(ganttHost);
+    renderDynamicGantt(ganttHost);
+
+    var statRow = document.createElement('div');
+    statRow.className = 'stat-row';
+    statRow.innerHTML =
+      '<div class="stat"><div class="n">'+avgWt.toFixed(2)+'</div><div class="l">AVG WAITING TIME</div></div>'+
+      '<div class="stat"><div class="n">'+avgTat.toFixed(2)+'</div><div class="l">AVG TURNAROUND TIME</div></div>';
+    el.appendChild(statRow);
+
+    var table = document.createElement('table');
+    table.className = 'data';
+    var head = '<tr><th>Process</th><th>Arrival</th><th>Burst</th><th>Completion</th><th>Turnaround</th><th>Waiting</th></tr>';
+    var body = rows.map(function(r){
+      return '<tr><td>'+r.pid+'</td><td>'+r.at+'</td><td>'+r.bt+'</td><td>'+r.ct+'</td><td>'+r.tat+'</td><td>'+r.wt+'</td></tr>';
+    }).join('');
+    table.innerHTML = head + body;
+    el.appendChild(table);
+  }
+
+  function renderDynamicGantt(el){
+    var blocks = JSON.parse(el.dataset.blocks);
+    var total = blocks.reduce(function(s,b){ return s+b.w; }, 0);
+    var scale = Math.max(6, Math.min(24, 640/Math.max(total,1)));
+    var widths = blocks.map(function(b){ return Math.max(Math.round(b.w*scale), b.idle ? 16 : 30); });
+    var marksAttr = el.dataset.marks ? el.dataset.marks.split(',').map(Number) : null;
+
+    var gantt = document.createElement('div'); gantt.className='gantt';
+    blocks.forEach(function(b,i){
+      var d = document.createElement('div');
+      d.className = 'gantt-block' + (b.idle ? ' idle' : '');
+      d.style.width = widths[i]+'px';
+      d.style.minWidth = widths[i]+'px';
+      if (!b.idle) d.style.background = b.c;
+      d.style.animationDelay = (i*0.08)+'s';
+      d.textContent = b.idle ? '' : b.l;
+      gantt.appendChild(d);
+    });
+    var ticks = document.createElement('div'); ticks.className='gantt-ticks';
+    blocks.forEach(function(b,i){
+      var span = document.createElement('span');
+      span.style.minWidth = widths[i]+'px';
+      span.textContent = marksAttr ? marksAttr[i] : '';
+      ticks.appendChild(span);
+    });
+    var lastSpan = document.createElement('span');
+    lastSpan.style.minWidth = '24px';
+    lastSpan.textContent = marksAttr ? marksAttr[marksAttr.length-1] : '';
+    ticks.appendChild(lastSpan);
+    el.appendChild(gantt);
+    el.appendChild(ticks);
+  }
+
+  document.getElementById('runSim').addEventListener('click', runSimulation);
+  runSimulation();
+})();
+</script>
+</body>
+</html>
