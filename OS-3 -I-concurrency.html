@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Concurrency &amp; Process Synchronization — The Signal Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0f1c;
+  --bg2:#0e1526;
+  --panel:#131c30;
+  --panel2:#0f1728;
+  --line:#243149;
+  --brass:#c9a15f;
+  --brass-dim:#8a713f;
+  --amber:#f2a341;
+  --red:#e0503a;
+  --green:#3fae74;
+  --blue:#5b9dd9;
+  --ink:#eef1f6;
+  --ink-dim:#93a3bd;
+  --ink-faint:#5b6a86;
+  --mono:'JetBrains Mono', ui-monospace, monospace;
+  --disp:'Space Grotesk', sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth; scroll-padding-top:76px;}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--disp);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+::selection{background:var(--amber); color:#0a0f1c;}
+a{color:inherit;}
+img{max-width:100%;}
+.wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+.wrap-narrow{max-width:760px; margin:0 auto; padding:0 24px;}
+
+/* ---------- top nav ---------- */
+.topnav{
+  position:sticky; top:0; z-index:50;
+  background:rgba(10,15,28,.86); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px);
+}
+.topnav-inner{
+  max-width:1080px; margin:0 auto; padding:12px 24px;
+  display:flex; align-items:center; gap:18px; overflow-x:auto;
+  scrollbar-width:none;
+}
+.topnav-inner::-webkit-scrollbar{display:none;}
+.brand{
+  display:flex; align-items:center; gap:9px; font-family:var(--mono);
+  font-size:13px; color:var(--brass); white-space:nowrap; padding-right:8px;
+  border-right:1px solid var(--line);
+}
+.brand .dot{width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+.navlinks{display:flex; gap:2px; white-space:nowrap;}
+.navlinks a{
+  font-family:var(--mono); font-size:12.5px; color:var(--ink-dim);
+  text-decoration:none; padding:7px 11px; border-radius:5px; transition:color .15s, background .15s;
+}
+.navlinks a:hover{color:var(--ink); background:var(--panel);}
+
+/* ---------- hero ---------- */
+.hero{
+  position:relative; min-height:92vh; display:flex; flex-direction:column;
+  justify-content:center; align-items:center; text-align:center;
+  padding:110px 24px 80px; overflow:hidden;
+  background:
+    radial-gradient(ellipse 900px 500px at 50% 0%, #1a2540 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg) 0%, #060911 100%);
+}
+.hero::before{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size:42px 42px;
+  mask-image:radial-gradient(ellipse 700px 500px at 50% 30%, black, transparent);
+}
+.signal-rig{
+  position:relative; width:86px; margin:0 auto 34px; z-index:2;
+}
+.signal-pole{width:6px; height:64px; background:linear-gradient(180deg,var(--brass),var(--brass-dim)); margin:0 auto; border-radius:2px;}
+.signal-box{
+  width:52px; margin:0 auto; background:#0d1424; border:2px solid var(--brass-dim);
+  border-radius:10px; padding:8px 0; display:flex; flex-direction:column; gap:8px; align-items:center;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.signal-lamp{width:22px; height:22px; border-radius:50%; background:#241a12; box-shadow:inset 0 0 6px rgba(0,0,0,.6);}
+.signal-lamp.on-red{background:var(--red); box-shadow:0 0 22px 4px rgba(224,80,58,.75), inset 0 0 6px rgba(0,0,0,.3);}
+.signal-lamp.on-amber{background:var(--amber); box-shadow:0 0 22px 4px rgba(242,163,65,.75), inset 0 0 6px rgba(0,0,0,.3);}
+.signal-lamp.on-green{background:var(--green); box-shadow:0 0 22px 4px rgba(63,174,116,.75), inset 0 0 6px rgba(0,0,0,.3);}
+.eyebrow{
+  font-family:var(--mono); font-size:12.5px; letter-spacing:.02em; color:var(--brass);
+  margin-bottom:18px; z-index:2; position:relative;
+}
+h1.title{
+  font-size:clamp(2.4rem, 6vw, 4.4rem); line-height:1.04; margin:0 0 22px; font-weight:700;
+  max-width:920px; z-index:2; position:relative; letter-spacing:-.01em;
+}
+h1.title em{font-style:normal; color:var(--amber);}
+.hero-sub{
+  font-size:clamp(1rem,2vw,1.2rem); color:var(--ink-dim); max-width:620px; line-height:1.6;
+  z-index:2; position:relative; margin-bottom:36px;
+}
+.hero-cta{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; z-index:2; position:relative;}
+.btn{
+  font-family:var(--mono); font-size:13px; padding:12px 20px; border-radius:7px; border:1px solid var(--line);
+  background:var(--panel); color:var(--ink); cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:8px;
+  transition:transform .15s, border-color .15s, background .15s;
+}
+.btn:hover{border-color:var(--brass); transform:translateY(-1px);}
+.btn.primary{background:var(--amber); color:#1a1206; border-color:var(--amber); font-weight:700;}
+.btn.primary:hover{background:#ffb35b;}
+.btn.small{padding:8px 13px; font-size:12px;}
+.btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+.btn.danger{border-color:var(--red);}
+.btn.danger:hover{background:rgba(224,80,58,.12);}
+.btn.go{border-color:var(--green);}
+.btn.go:hover{background:rgba(63,174,116,.12);}
+
+/* ---------- sections ---------- */
+section{padding:88px 0;}
+section.alt{background:var(--bg2);}
+.section-head{margin-bottom:34px;}
+.kicker{
+  font-family:var(--mono); font-size:12px; color:var(--brass); letter-spacing:.03em;
+  display:flex; align-items:center; gap:10px; margin-bottom:12px;
+}
+.kicker .tag{
+  border:1px solid var(--brass-dim); padding:2px 8px; border-radius:4px; color:var(--brass);
+}
+h2{font-size:clamp(1.7rem,3.4vw,2.4rem); margin:0 0 14px; font-weight:700; letter-spacing:-.01em;}
+h3{font-size:1.25rem; margin:0 0 10px; font-weight:600;}
+p{line-height:1.7; color:#c7d1e3; font-size:1.02rem; margin:0 0 16px;}
+.lede{font-size:1.12rem; color:var(--ink-dim); max-width:640px;}
+
+.grid2{display:grid; grid-template-columns:1.1fr .9fr; gap:44px; align-items:start;}
+@media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+
+/* real life callout */
+.plaque{
+  background:linear-gradient(180deg,#1a2338,#141d30);
+  border:1px solid var(--line); border-left:3px solid var(--brass);
+  border-radius:8px; padding:18px 20px; margin:18px 0;
+}
+.plaque .lbl{font-family:var(--mono); font-size:11px; color:var(--brass); margin-bottom:8px; display:block;}
+.plaque p{margin:0; color:#d7deec; font-size:.98rem;}
+
+/* console/panel used for simulations */
+.console{
+  background:var(--panel); border:1px solid var(--line); border-radius:14px;
+  padding:22px; position:relative; box-shadow:0 20px 50px rgba(0,0,0,.35);
+}
+.console::before{
+  content:''; position:absolute; top:0; left:22px; right:22px; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,161,95,.5),transparent);
+}
+.console-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+.console-title{font-family:var(--mono); font-size:12.5px; color:var(--brass); display:flex; align-items:center; gap:8px;}
+.led{width:7px; height:7px; border-radius:50%; background:var(--ink-faint);}
+.led.live{background:var(--green); box-shadow:0 0 8px var(--green); animation:pulse 1.6s infinite;}
+.controls{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;}
+.readout-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+.readout{
+  font-family:var(--mono); background:var(--panel2); border:1px solid var(--line); border-radius:7px;
+  padding:9px 13px; font-size:12.5px; color:var(--ink-dim); flex:1; min-width:110px;
+}
+.readout b{display:block; font-size:1.35rem; color:var(--ink); font-weight:700; margin-top:3px;}
+.readout.red b{color:var(--red);} .readout.green b{color:var(--green);} .readout.amber b{color:var(--amber);}
+.stage{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:18px; min-height:120px;}
+.log{
+  font-family:var(--mono); font-size:12px; color:var(--ink-dim); max-height:150px; overflow-y:auto;
+  background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:10px 13px; margin-top:14px;
+}
+.log div{padding:2px 0; border-bottom:1px dashed rgba(255,255,255,.05);}
+.log div:last-child{border-bottom:none;}
+.log .ok{color:var(--green);} .log .bad{color:var(--red);} .log .info{color:var(--amber);}
+.hint{font-size:12.5px; color:var(--ink-faint); margin-top:10px; line-height:1.55;}
+
+/* generic pill / badge */
+.pill{font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:20px; border:1px solid var(--line); color:var(--ink-dim);}
+.pill.on{border-color:var(--green); color:var(--green);}
+.pill.off{border-color:var(--ink-faint); color:var(--ink-faint);}
+
+/* process lanes (peterson / alternation) */
+.lane{
+  display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:9px; margin-bottom:9px;
+  background:var(--panel2); border:1px solid var(--line); transition:border-color .3s, background .3s;
+}
+.lane.active{border-color:var(--green); background:rgba(63,174,116,.07);}
+.lane.waiting{border-color:var(--red); background:rgba(224,80,58,.07);}
+.lane-name{font-family:var(--mono); font-size:12.5px; width:34px; color:var(--brass); flex-shrink:0;}
+.lane-state{font-size:13px; color:var(--ink-dim); flex:1;}
+.lane-bar{width:120px; height:8px; background:#0b1120; border-radius:5px; overflow:hidden; flex-shrink:0;}
+.lane-bar i{display:block; height:100%; width:0%; background:var(--ink-faint); transition:width .4s, background .4s;}
+.lane.active .lane-bar i{background:var(--green);}
+.lane.waiting .lane-bar i{background:var(--red);}
+
+/* buffer boxes */
+.buffer-row{display:flex; gap:8px; flex-wrap:wrap;}
+.slot{
+  width:52px; height:52px; border-radius:8px; border:1px solid var(--line); background:var(--panel2);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; color:var(--ink-faint);
+  transition:all .35s;
+}
+.slot.filled{background:rgba(63,174,116,.14); border-color:var(--green); color:var(--green); font-weight:700;}
+
+/* ticket queue (bakery) */
+.ticket-row{display:flex; gap:10px; flex-wrap:wrap;}
+.ticket{
+  font-family:var(--mono); background:var(--panel2); border:1px solid var(--line); border-radius:8px;
+  padding:10px 14px; text-align:center; min-width:64px; transition:all .3s;
+}
+.ticket .n{font-size:1.1rem; font-weight:700; color:var(--amber);}
+.ticket .p{font-size:11px; color:var(--ink-dim);}
+.ticket.serving{border-color:var(--green); background:rgba(63,174,116,.12);}
+.ticket.serving .n{color:var(--green);}
+
+/* table sims (dining philosophers) */
+.table-wrap{position:relative; width:100%; max-width:400px; aspect-ratio:1/1; margin:0 auto;}
+.table-center{
+  position:absolute; inset:26%; border-radius:50%; background:radial-gradient(circle at 40% 35%,#22304e,#111a2e);
+  border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:11px; color:var(--ink-faint); text-align:center; padding:10px;
+}
+.phil{
+  position:absolute; width:58px; height:58px; margin:-29px 0 0 -29px; border-radius:50%;
+  background:var(--panel2); border:2px solid var(--ink-faint); display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:11px; color:var(--ink-dim); flex-direction:column; transition:all .4s; text-align:center;
+}
+.phil .st{font-size:9px; margin-top:2px;}
+.phil.thinking{border-color:var(--blue); color:var(--blue);}
+.phil.hungry{border-color:var(--amber); color:var(--amber);}
+.phil.eating{border-color:var(--green); color:var(--green); box-shadow:0 0 14px rgba(63,174,116,.5);}
+.phil.stuck{border-color:var(--red); color:var(--red); box-shadow:0 0 14px rgba(224,80,58,.5);}
+.fork{
+  position:absolute; width:26px; height:8px; margin:-4px 0 0 -13px; border-radius:3px; background:var(--ink-faint);
+  transition:all .3s;
+}
+.fork.held{background:var(--amber); box-shadow:0 0 8px rgba(242,163,65,.6);}
+
+/* barber shop */
+.shop{display:flex; gap:26px; align-items:flex-end; flex-wrap:wrap;}
+.chair-row{display:flex; gap:10px; flex-wrap:wrap;}
+.chair{
+  width:46px; height:46px; border-radius:8px; border:1px dashed var(--line); background:var(--panel2);
+  display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:16px; color:var(--ink-faint);
+  transition:all .3s;
+}
+.chair.occupied{border-style:solid; border-color:var(--amber); background:rgba(242,163,65,.12); color:var(--amber);}
+.barber-chair{
+  width:66px; height:66px; border-radius:10px; border:2px solid var(--ink-faint); background:var(--panel2);
+  display:flex; align-items:center; justify-content:center; font-size:24px; transition:all .3s;
+}
+.barber-chair.cutting{border-color:var(--green); background:rgba(63,174,116,.14); box-shadow:0 0 16px rgba(63,174,116,.4);}
+.barber-chair.sleeping{border-color:var(--blue); background:rgba(91,157,217,.1);}
+
+/* reader writer */
+.rw-zone{display:flex; gap:24px; flex-wrap:wrap; align-items:center;}
+.doc{
+  width:74px; height:90px; border-radius:6px; background:var(--panel2); border:2px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0; transition:all .3s;
+}
+.doc.reading{border-color:var(--blue); box-shadow:0 0 14px rgba(91,157,217,.4);}
+.doc.writing{border-color:var(--red); box-shadow:0 0 14px rgba(224,80,58,.5);}
+.person{
+  width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:var(--mono); font-size:11px; background:var(--panel2); border:1px solid var(--line); color:var(--ink-dim);
+}
+.person.r{border-color:var(--blue); color:var(--blue);}
+.person.w{border-color:var(--red); color:var(--red);}
+.person-row{display:flex; gap:8px; flex-wrap:wrap; min-height:38px;}
+
+/* two-col table for requirements etc */
+table{width:100%; border-collapse:collapse; margin:18px 0; font-size:.94rem;}
+th,td{text-align:left; padding:11px 13px; border-bottom:1px solid var(--line);}
+th{font-family:var(--mono); font-size:11.5px; color:var(--brass); font-weight:500; letter-spacing:.02em;}
+td{color:#cdd6e6;}
+
+.flow{display:flex; align-items:center; gap:0; flex-wrap:wrap; margin:22px 0;}
+.flow-step{
+  background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:12px 16px; font-size:.9rem;
+  color:var(--ink-dim); min-width:120px; text-align:center;
+}
+.flow-step b{display:block; color:var(--ink); font-size:.85rem; margin-bottom:3px; font-family:var(--mono);}
+.flow-arrow{color:var(--brass); padding:0 10px; font-size:18px;}
+@media(max-width:700px){.flow{flex-direction:column; align-items:stretch;} .flow-arrow{transform:rotate(90deg); align-self:center; padding:4px;}}
+
+.pcell{display:flex; align-items:center; gap:8px;}
+.dot-sm{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+
+footer{padding:60px 0 80px; border-top:1px solid var(--line); text-align:center;}
+footer p{color:var(--ink-faint); font-size:.9rem;}
+
+.toc-strip{display:flex; flex-wrap:wrap; gap:8px; margin-top:20px;}
+.toc-strip a{
+  font-family:var(--mono); font-size:11.5px; color:var(--ink-dim); text-decoration:none; border:1px solid var(--line);
+  padding:6px 11px; border-radius:20px; transition:all .15s;
+}
+.toc-strip a:hover{color:var(--brass); border-color:var(--brass);}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <div class="brand"><span class="dot"></span>OS&nbsp;LAB · CONCURRENCY</div>
+    <div class="navlinks">
+      <a href="#concurrency">Concurrency</a>
+      <a href="#race">Race Condition</a>
+      <a href="#critical">Critical Section</a>
+      <a href="#ipc">IPC</a>
+      <a href="#pc">Producer–Consumer</a>
+      <a href="#sync-tools">Sync Tools</a>
+      <a href="#semaphore">Semaphore</a>
+      <a href="#philosophers">Dining Philosophers</a>
+      <a href="#readerwriter">Reader–Writer</a>
+      <a href="#barber">Sleeping Barber</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="signal-rig">
+    <div class="signal-box">
+      <div class="signal-lamp" id="lampR">&nbsp;</div>
+      <div class="signal-lamp" id="lampA">&nbsp;</div>
+      <div class="signal-lamp" id="lampG">&nbsp;</div>
+    </div>
+    <div class="signal-pole"></div>
+  </div>
+  <div class="eyebrow">OPERATING SYSTEM (OS) · UNIT: CONCURRENCY &amp; PROCESS SYNCHRONIZATION</div>
+  <h1 class="title">Many processes, <em>one CPU.</em><br>How the Operating System stops the crash.</h1>
+  <p class="hero-sub">
+    A modern computer runs hundreds of <b>processes</b> that all want the CPU and shared memory at once —
+    like trains sharing one rail line. The <b>Operating System</b> is the signalman: it uses tools like
+    locks, semaphores, and monitors to guarantee <b>mutual exclusion</b> in the <b>critical section</b>. Every
+    OS concept below comes with a real-world example and a small working simulation you can operate yourself,
+    so you can watch a <b>race condition</b> happen — and watch the OS fix it.
+  </p>
+  <div class="hero-cta">
+    <a href="#concurrency" class="btn primary">Enter the signal room ↓</a>
+    <a href="#philosophers" class="btn">Jump to Dining Philosophers</a>
+  </div>
+</header>
+
+<!-- ================= CONCURRENCY INTRO ================= -->
+<section id="concurrency">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">01</span> Introduction to Concurrency</div>
+      <h2>What does it mean for things to happen "at the same time"?</h2>
+      <p class="lede">Concurrency is what happens when more than one process is alive and making progress during
+      the same stretch of time — even if, underneath, the CPU is secretly switching between them very fast.</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <p>On a single-core computer, only one instruction can actually execute at any instant. The operating
+        system creates the <em>illusion</em> of many things happening together by slicing time into tiny turns
+        and rapidly switching the CPU between processes — this is called <b>time-sharing</b>. On a multi-core
+        computer, genuinely different processes can run on different cores at the exact same instant — this is
+        <b>parallelism</b>. Concurrency is the broader idea that covers both: it is about <i>structure</i> —
+        many independent activities in progress — while parallelism is about physically doing them
+        simultaneously.</p>
+        <table>
+          <tr><th>Idea</th><th>What's really happening</th></tr>
+          <tr><td class="pcell"><span class="dot-sm" style="background:var(--amber)"></span>Concurrency</td><td>Multiple tasks make progress in overlapping time windows (may or may not be simultaneous)</td></tr>
+          <tr><td class="pcell"><span class="dot-sm" style="background:var(--green)"></span>Parallelism</td><td>Multiple tasks execute at the exact same physical instant, on separate cores</td></tr>
+        </table>
+      </div>
+      <div class="plaque">
+        <span class="lbl">REAL LIFE — ONE COUNTER, MANY CUSTOMERS</span>
+        <p>Think of a single railway ticket counter with one clerk. The clerk serves customer A for a few
+        seconds, pauses, switches to customer B, comes back to A — nobody actually waited in one unbroken
+        queue, yet by the end of the hour it <i>looks</i> like everyone was served "together." That's
+        concurrency on a single core. Now imagine the station opens a second counter with a second clerk —
+        now two customers really are being served at the same literal moment. That's parallelism.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:44px;">
+      <h3>Types of process</h3>
+      <div class="grid2">
+        <div class="plaque" style="border-left-color:var(--blue)">
+          <span class="lbl" style="color:var(--blue)">INDEPENDENT PROCESS</span>
+          <p>Does not share data with any other process, and its result does not depend on anyone else's
+          progress. Example: you opening a calculator app while music plays in the background — neither one
+          needs to know the other exists.</p>
+        </div>
+        <div class="plaque">
+          <span class="lbl">COOPERATING PROCESS</span>
+          <p>Shares data with other processes and can affect, or be affected by, them. Example: a video call
+          app has one process capturing your camera and another sending that data over the network — they
+          must constantly hand data to each other. Cooperating processes are exactly where concurrency
+          problems (like race conditions) are born.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RACE CONDITION ================= -->
+<section id="race" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">02</span> Race Condition</div>
+      <h2>When two processes race to touch the same variable</h2>
+      <p class="lede">A race condition happens when the final result depends on the unpredictable timing of
+      how two processes interleave — and different timings give different (wrong) answers.</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <p>Suppose two threads both run <span class="pill">balance = balance + 100</span>. That single line
+        is actually three CPU steps: <b>read</b> the current balance, <b>add</b> 100 to it, then <b>write</b>
+        it back. If Thread A reads the balance, and before it writes back, Thread B also reads the same
+        (still old) balance — both threads compute from the same starting number. One update quietly
+        overwrites the other, and 100 rupees vanish into thin air.</p>
+        <div class="plaque">
+          <span class="lbl">REAL LIFE — THE SHARED BANK BALANCE</span>
+          <p>Two ATM machines both read your balance as ₹1,000 at nearly the same second. Each adds a ₹100
+          deposit and writes ₹1,100 back. You deposited ₹200 total, but your balance shows only ₹1,100
+          instead of ₹1,200 — one deposit was lost because neither ATM knew about the other's half-finished
+          work.</p>
+        </div>
+      </div>
+
+      <div class="console">
+        <div class="console-head">
+          <div class="console-title"><span class="led" id="raceLed"></span> LIVE SIM — SHARED COUNTER</div>
+          <span class="pill" id="raceLockPill">LOCK: OFF</span>
+        </div>
+        <div class="controls">
+          <button class="btn primary small" id="raceRun">Run 500 increments × 2 threads</button>
+          <button class="btn small" id="raceToggleLock">Toggle lock</button>
+          <button class="btn small" id="raceReset">Reset</button>
+        </div>
+        <div class="readout-row">
+          <div class="readout">Expected result<b>1000</b></div>
+          <div class="readout" id="raceActualBox">Actual result<b id="raceActual">0</b></div>
+        </div>
+        <div class="stage" style="text-align:center; padding:26px 10px;">
+          <div style="font-family:var(--mono); font-size:12px; color:var(--ink-dim); margin-bottom:10px;">Thread A and Thread B both racing to update <b>total</b></div>
+          <div class="buffer-row" style="justify-content:center;">
+            <div class="slot" id="raceSlotA">A</div>
+            <div class="slot" id="raceSlotB">B</div>
+          </div>
+        </div>
+        <div class="log" id="raceLog"><div class="info">Ready. Press run with lock OFF, then try it again with lock ON.</div></div>
+        <p class="hint">With the lock OFF, refresh a few times — you'll often see the actual result fall short of 1000. With the lock ON, each thread finishes its full read→add→write turn before the other may start, so the count always lands exactly on 1000.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CRITICAL SECTION ================= -->
+<section id="critical">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">03</span> Critical Section</div>
+      <h2>The one room only one process may enter</h2>
+      <p class="lede">The critical section is the part of a program's code that touches shared data. To avoid
+      races, an OS must guarantee that only one process is ever inside it at a time.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step"><b>Entry section</b>asks permission to enter</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Critical section</b>touches the shared data</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Exit section</b>announces it is leaving</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><b>Remainder section</b>everything else, no sharing</div>
+    </div>
+    <div class="grid2">
+      <div>
+        <p>Any correct solution to the critical-section problem must satisfy three rules:</p>
+        <table>
+          <tr><th>Requirement</th><th>Meaning</th></tr>
+          <tr><td>Mutual exclusion</td><td>If one process is inside the critical section, no other process may enter</td></tr>
+          <tr><td>Progress</td><td>If no one is inside, and some processes want to enter, the decision of who goes next cannot be postponed forever</td></tr>
+          <tr><td>Bounded waiting</td><td>There is a limit on how many times other processes may enter before a waiting process gets its turn</td></tr>
+        </table>
+      </div>
+      <div class="plaque">
+        <span class="lbl">REAL LIFE — THE SINGLE CHANGING ROOM</span>
+        <p>A shop has one trial room and many customers. Mutual exclusion: only one shopper is inside with the
+        door locked. Progress: if the room is empty, the shop cannot make the next person wait for no reason.
+        Bounded waiting: the shop can't let the same three people cut the queue forever while someone else
+        never gets a turn.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= IPC ================= -->
+<section id="ipc" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">04</span> Inter-Process Communication</div>
+      <h2>How separate processes talk to each other</h2>
+      <p class="lede">Processes normally live in their own private memory. IPC is the set of mechanisms an OS
+      offers so cooperating processes can exchange data safely.</p>
+    </div>
+    <div class="grid2">
+      <div class="console" style="box-shadow:none;">
+        <h3 style="color:var(--brass); font-family:var(--mono); font-size:14px;">Shared Memory</h3>
+        <p>The OS maps one block of physical memory into both processes' address spaces. Both can read and
+        write it directly — it's fast, but the processes themselves must synchronize access to avoid a race
+        condition, since the OS does not police it for them.</p>
+        <div class="plaque" style="margin:0;"><span class="lbl">LIKE</span><p>A shared whiteboard in an office — anyone can walk up and write on it any time, so the team has to agree on rules ("only one person writes at once") themselves.</p></div>
+      </div>
+      <div class="console" style="box-shadow:none;">
+        <h3 style="color:var(--brass); font-family:var(--mono); font-size:14px;">Message Passing</h3>
+        <p>Processes exchange data by explicitly sending and receiving messages through the OS (pipes,
+        sockets, message queues). Slower than shared memory, but naturally synchronized — a message cannot be
+        received before it is sent.</p>
+        <div class="plaque" style="margin:0;"><span class="lbl">LIKE</span><p>Sending a letter through the post office instead of shouting across the whiteboard — slower, but the postal system guarantees delivery order and no one else can scribble on your letter mid-transit.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRODUCER CONSUMER ================= -->
+<section id="pc">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">05</span> Producer–Consumer Problem</div>
+      <h2>A factory belt with a fixed number of crates</h2>
+      <p class="lede">A producer keeps making items and a consumer keeps using them — but they share one
+      buffer of limited size. The producer must not add to a full buffer; the consumer must not remove from
+      an empty one.</p>
+    </div>
+    <div class="plaque">
+      <span class="lbl">REAL LIFE — BAKERY CONVEYOR BELT</span>
+      <p>A baker places fresh loaves on a conveyor belt with only 6 slots. If all 6 slots are full, the baker
+      must wait before placing another loaf. A shopkeeper takes loaves off the belt to sell; if the belt is
+      completely empty, the shopkeeper must wait for a fresh loaf. Three semaphores keep this safe: <b>empty</b>
+      counts free slots, <b>full</b> counts filled slots, and <b>mutex</b> makes sure only one of them touches
+      the belt at any instant.</p>
+    </div>
+
+    <div class="console" style="margin-top:26px;">
+      <div class="console-head">
+        <div class="console-title"><span class="led live"></span> LIVE SIM — BOUNDED BUFFER (6 slots)</div>
+      </div>
+      <div class="controls">
+        <button class="btn go small" id="pcProduce">Producer: add item</button>
+        <button class="btn danger small" id="pcConsume">Consumer: remove item</button>
+        <button class="btn small" id="pcAuto">Auto-run: off</button>
+        <button class="btn small" id="pcReset">Reset</button>
+      </div>
+      <div class="readout-row">
+        <div class="readout green">empty (free slots)<b id="pcEmpty">6</b></div>
+        <div class="readout red">full (filled slots)<b id="pcFull">0</b></div>
+        <div class="readout amber">mutex<b id="pcMutex">1</b></div>
+      </div>
+      <div class="stage">
+        <div class="buffer-row" id="pcBuffer"></div>
+      </div>
+      <div class="log" id="pcLog"><div class="info">Belt is empty. Try consuming — the consumer must wait for the producer.</div></div>
+      <p class="hint">Notice: "Producer: add item" does nothing once <b>empty</b> reaches 0, and "Consumer: remove item" does nothing once <b>full</b> reaches 0 — the semaphores are physically blocking the wrong move.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SYNC TOOLS ================= -->
+<section id="sync-tools" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">06</span> Process Synchronization</div>
+      <h2>Five ways to build the lock on the door</h2>
+      <p class="lede">Over the years, several techniques were invented to guarantee mutual exclusion. Each
+      fixes a flaw in the one before it.</p>
+    </div>
+
+    <!-- Lock variable -->
+    <h3 id="lockvar" style="margin-top:8px;">Lock variable (the naive attempt)</h3>
+    <div class="grid2">
+      <div>
+        <p>The simplest idea: keep one shared variable <span class="pill">lock</span>. Before entering the
+        critical section, check if <span class="pill">lock == 0</span>, then set it to 1; on exit, set it back
+        to 0. The flaw is that "check" and "set" are two separate steps — exactly the two-step gap that causes
+        a race condition, just one level up. Two processes can both see <span class="pill">lock == 0</span>
+        before either has set it to 1, and both barge in together.</p>
+      </div>
+      <div class="plaque">
+        <span class="lbl">REAL LIFE</span>
+        <p>A meeting room with a paper sign you flip to "Occupied" yourself. Two people can glance at the door,
+        both see "Vacant," and both start walking in before either flips the sign — the sign only works if
+        checking and flipping happen as one uninterruptible action.</p>
+      </div>
+    </div>
+
+    <!-- Strict alternation -->
+    <h3 id="alternation" style="margin-top:36px;">Strict alternation</h3>
+    <div class="grid2">
+      <div>
+        <p>Two processes share one variable <span class="pill">turn</span>. Process 0 may enter only when
+        <span class="pill">turn == 0</span>, and must set <span class="pill">turn = 1</span> on exit — and
+        vice versa. This does guarantee mutual exclusion, but it forces strict ping-pong turns even when one
+        process has nothing to do. If P0 finishes its work instantly and P1 is slow, P0 must still sit idle
+        waiting for a turn it doesn't need — this violates the <b>progress</b> requirement.</p>
+      </div>
+      <div class="console" style="box-shadow:none;">
+        <div class="console-title" style="margin-bottom:12px;"><span class="led live"></span> LIVE SIM — STRICT ALTERNATION</div>
+        <div class="lane" id="altLaneP0"><div class="lane-name">P0</div><div class="lane-state" id="altStateP0">wants to enter, turn = 0</div><div class="lane-bar"><i></i></div></div>
+        <div class="lane" id="altLaneP1"><div class="lane-name">P1</div><div class="lane-state" id="altStateP1">not ready yet</div><div class="lane-bar"><i></i></div></div>
+        <div class="controls" style="margin-top:12px; margin-bottom:0;">
+          <button class="btn small" id="altStep">Step turn →</button>
+          <button class="btn small" id="altReset">Reset</button>
+        </div>
+        <p class="hint">Watch: even though P1 has nothing to do, P0 must wait for <span class="pill">turn</span> to swing back before it may re-enter.</p>
+      </div>
+    </div>
+
+    <!-- Peterson -->
+    <h3 id="peterson" style="margin-top:36px;">Peterson's Solution</h3>
+    <div class="grid2">
+      <div>
+        <p>Peterson's solution fixes both flaws above using two tools together: a <span class="pill">flag[i]</span>
+        for each process ("I want to enter") and a shared <span class="pill">turn</span> variable used only as
+        a tie-breaker. A process sets its own flag, then politely says <span class="pill">turn = other</span>
+        — "you go first if we both want in." It waits only while the other process's flag is up
+        <i>and</i> it is genuinely the other's turn. This satisfies mutual exclusion, progress, and bounded
+        waiting for two processes.</p>
+      </div>
+      <div class="console" style="box-shadow:none;">
+        <div class="console-title" style="margin-bottom:12px;"><span class="led live"></span> LIVE SIM — PETERSON'S SOLUTION</div>
+        <div class="lane" id="petLaneP0"><div class="lane-name">P0</div><div class="lane-state" id="petStateP0">flag[0]=false</div><div class="lane-bar"><i></i></div></div>
+        <div class="lane" id="petLaneP1"><div class="lane-name">P1</div><div class="lane-state" id="petStateP1">flag[1]=false</div><div class="lane-bar"><i></i></div></div>
+        <div class="controls" style="margin-top:12px; margin-bottom:0;">
+          <button class="btn go small" id="petP0">P0 requests entry</button>
+          <button class="btn danger small" id="petP1">P1 requests entry</button>
+          <button class="btn small" id="petReset">Reset</button>
+        </div>
+        <p class="hint">Click both requests back to back — only one lane turns green at a time, and it's always decided by the <span class="pill">turn</span> tie-breaker.</p>
+      </div>
+    </div>
+
+    <!-- Bakery -->
+    <h3 id="bakery" style="margin-top:36px;">Lamport's Bakery Algorithm</h3>
+    <div class="grid2">
+      <div>
+        <p>Peterson's trick only works for two processes. Lamport's Bakery algorithm generalizes it to any
+        number of processes using an idea straight from an actual bakery counter: every process picks a
+        <b>ticket number</b> one higher than the highest number currently out, then waits until its number is
+        the smallest among everyone waiting (ties broken by process ID). Whoever holds the lowest number is
+        served next.</p>
+      </div>
+      <div class="console" style="box-shadow:none;">
+        <div class="console-title" style="margin-bottom:12px;"><span class="led live"></span> LIVE SIM — BAKERY TICKET COUNTER</div>
+        <div class="controls">
+          <button class="btn small" id="bakeTake">New process takes a ticket</button>
+          <button class="btn primary small" id="bakeServe">Serve lowest ticket →</button>
+          <button class="btn small" id="bakeReset">Reset</button>
+        </div>
+        <div class="stage">
+          <div class="ticket-row" id="bakeQueue"></div>
+        </div>
+        <div class="log" id="bakeLog"><div class="info">Counter is empty. Add a few processes, then serve them — always lowest ticket first.</div></div>
+      </div>
+    </div>
+
+    <!-- TSL -->
+    <h3 id="tsl" style="margin-top:36px;">Test-and-Set Lock (hardware instruction)</h3>
+    <div class="grid2">
+      <div>
+        <p>Modern CPUs solve the "check-then-set" race directly in hardware with an atomic instruction:
+        <span class="pill">TestAndSet(lock)</span> reads the old value of <span class="pill">lock</span> AND
+        sets it to 1, as one indivisible step that cannot be interrupted. A process spins in a tight loop
+        calling TestAndSet until it gets back <span class="pill">false</span> (meaning the lock was free and is
+        now theirs). This is simple and correct, but wastes CPU time — this is called <b>busy waiting</b>, or a
+        <b>spinlock</b>.</p>
+      </div>
+      <div class="console" style="box-shadow:none;">
+        <div class="console-title" style="margin-bottom:12px;"><span class="led live"></span> LIVE SIM — SPINLOCK</div>
+        <div class="readout-row">
+          <div class="readout amber">lock value<b id="tslLock">0</b></div>
+          <div class="readout" id="tslHolderBox">held by<b id="tslHolder">—</b></div>
+        </div>
+        <div class="controls">
+          <button class="btn go small" id="tslP0">P0: TestAndSet()</button>
+          <button class="btn danger small" id="tslP1">P1: TestAndSet()</button>
+          <button class="btn small" id="tslRelease">Holder releases lock</button>
+          <button class="btn small" id="tslReset">Reset</button>
+        </div>
+        <div class="log" id="tslLog"><div class="info">Try P0 then P1 — the second caller will "spin" (fail repeatedly) until the lock is released.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SEMAPHORE ================= -->
+<section id="semaphore">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">07</span> Semaphores &amp; Monitors</div>
+      <h2>A signal, a key, and a self-locking room</h2>
+      <p class="lede">Semaphores are named after the railway signal in our hero banner above — a shared signal
+      that tells processes whether it's safe to proceed.</p>
+    </div>
+    <div class="grid2">
+      <div>
+        <p>A semaphore is an integer variable, accessed only through two atomic operations: <span class="pill">wait()</span>
+        (also called P, decrements the value — used to "ask for a slot") and <span class="pill">signal()</span>
+        (also called V, increments the value — used to "release a slot"). If <span class="pill">wait()</span>
+        would take the value below what's allowed, the calling process is put to sleep instead of busy-waiting,
+        which is more efficient than a spinlock.</p>
+        <table>
+          <tr><th>Type</th><th>Behaviour</th></tr>
+          <tr><td>Counting semaphore</td><td>Value can range over any non-negative integer — used to manage a pool of N identical resources</td></tr>
+          <tr><td>Binary semaphore</td><td>Value is only 0 or 1 — behaves like a simple mutex lock, used for pure mutual exclusion</td></tr>
+        </table>
+      </div>
+      <div class="plaque">
+        <span class="lbl">REAL LIFE — THE PARKING LOT BOOM BARRIER</span>
+        <p>A parking lot has 5 spaces. A counting semaphore starts at 5. Each car entering calls
+        <span class="pill">wait()</span>, dropping the count; the barrier only lifts if the count is still
+        positive. Each car leaving calls <span class="pill">signal()</span>, raising the count and freeing a
+        space for the next car. A binary semaphore is the same idea shrunk to one single reserved space, like
+        a single shared office key: whoever holds the key locks everyone else out until they hang it back up.</p>
+      </div>
+    </div>
+
+    <div class="console" style="margin-top:8px;">
+      <div class="console-head">
+        <div class="console-title"><span class="led live"></span> LIVE SIM — PARKING LOT (counting semaphore)</div>
+      </div>
+      <div class="readout-row">
+        <div class="readout amber">semaphore value<b id="semVal">5</b></div>
+        <div class="readout">cars parked<b id="semParked">0</b></div>
+      </div>
+      <div class="controls">
+        <button class="btn go small" id="semWait">wait() — car enters</button>
+        <button class="btn danger small" id="semSignal">signal() — car leaves</button>
+        <button class="btn small" id="semReset">Reset</button>
+      </div>
+      <div class="stage">
+        <div class="buffer-row" id="semLot"></div>
+      </div>
+      <div class="log" id="semLog"><div class="info">All 5 spaces free. Try entering 5 cars, then a 6th — the barrier won't lift.</div></div>
+    </div>
+
+    <h3 style="margin-top:44px;" id="monitor">Monitor</h3>
+    <div class="grid2">
+      <div>
+        <p>Semaphores work, but it's easy for a programmer to forget a <span class="pill">wait()</span> or
+        <span class="pill">signal()</span> somewhere and break everything silently. A <b>monitor</b> is a
+        higher-level, safer construct: it's a module that bundles shared data together with the only
+        procedures allowed to touch that data, and the language/runtime itself guarantees that only one
+        process may be active inside the monitor at a time — the programmer never has to remember to lock or
+        unlock anything by hand. When a process inside the monitor finds it can't proceed, it calls
+        <span class="pill">wait()</span> on a <b>condition variable</b> and steps outside to sleep; another
+        process later calls <span class="pill">signal()</span> to wake it.</p>
+      </div>
+      <div class="plaque">
+        <span class="lbl">REAL LIFE — THE KITCHEN WITH ONE DOOR</span>
+        <p>A restaurant kitchen has exactly one door and a rule: only one cook may be inside at a time,
+        enforced by the building itself, not by the cooks remembering to lock anything. If a cook goes in and
+        finds no onions, they don't stand there blocking everyone — they step out and wait on a bench (a
+        condition variable) until someone signals "onions have arrived," then walk back in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DINING PHILOSOPHERS ================= -->
+<section id="philosophers" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">08</span> Classical Problem</div>
+      <h2>The Dining Philosophers</h2>
+      <p class="lede">Five philosophers sit around a round table. Between every pair of neighbours lies exactly
+      one fork — five forks in total. To eat, a philosopher needs <i>both</i> forks on either side of their
+      plate. Otherwise, they just think.</p>
+    </div>
+    <div class="plaque">
+      <span class="lbl">REAL LIFE — THE DEADLOCK EVERY DINNER TABLE FEARS</span>
+      <p>Imagine every single philosopher picks up their <i>left</i> fork at exactly the same moment. Now every
+      fork is held, and every philosopher is stuck waiting for the fork on their right — which their neighbour
+      is holding and refusing to put down until they've eaten. Nobody can move. This exact situation is called
+      a <b>deadlock</b>: everyone is stuck waiting on everyone else, forever. The classic fix is simple: let at
+      most <i>n-1</i> philosophers (here, 4 out of 5) try to sit down and pick up forks at the same time — with
+      one seat always free, the circular wait can never close completely.</p>
+    </div>
+    <div class="console">
+      <div class="console-head">
+        <div class="console-title"><span class="led live"></span> LIVE SIM — 5 PHILOSOPHERS, 5 FORKS</div>
+        <div style="display:flex; gap:14px; font-family:var(--mono); font-size:11px; color:var(--ink-dim);">
+          <span><span class="dot-sm" style="background:var(--blue); display:inline-block;"></span> thinking</span>
+          <span><span class="dot-sm" style="background:var(--amber); display:inline-block;"></span> hungry</span>
+          <span><span class="dot-sm" style="background:var(--green); display:inline-block;"></span> eating</span>
+          <span><span class="dot-sm" style="background:var(--red); display:inline-block;"></span> stuck</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="btn small" id="dpAuto">Auto-run: off</button>
+        <button class="btn danger small" id="dpDeadlock">Force deadlock (all grab left fork)</button>
+        <button class="btn go small" id="dpFix">Apply fix (max 4 may sit)</button>
+        <button class="btn small" id="dpReset">Reset</button>
+      </div>
+      <div class="table-wrap" id="dpTable">
+        <div class="table-center" id="dpCenter">Round table</div>
+      </div>
+      <div class="log" id="dpLog"><div class="info">Press Auto-run to watch philosophers think and eat normally, then try "Force deadlock."</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= READER WRITER ================= -->
+<section id="readerwriter">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">09</span> Classical Problem</div>
+      <h2>The Readers–Writers Problem</h2>
+      <p class="lede">Many processes share one document. Any number of readers may look at it together
+      safely — but a writer needs the document completely to itself, with nobody else reading or writing.</p>
+    </div>
+    <div class="plaque">
+      <span class="lbl">REAL LIFE — A SHARED GOOGLE-STYLE DOCUMENT</span>
+      <p>Twenty people can have a shared document open and read it at once with zero problems — reading
+      doesn't change anything, so it's always safe to share. But the moment someone wants to edit it, everyone
+      else must be locked out of both reading and editing until the edit finishes, otherwise a reader could
+      see a half-written sentence, or two writers could overwrite each other's changes.</p>
+    </div>
+    <div class="console">
+      <div class="console-head">
+        <div class="console-title"><span class="led live"></span> LIVE SIM — SHARED DOCUMENT</div>
+      </div>
+      <div class="readout-row">
+        <div class="readout green">active readers<b id="rwReaders">0</b></div>
+        <div class="readout red">writer active<b id="rwWriter">no</b></div>
+      </div>
+      <div class="controls">
+        <button class="btn go small" id="rwAddReader">New reader arrives</button>
+        <button class="btn danger small" id="rwAddWriter">Writer requests access</button>
+        <button class="btn small" id="rwReset">Reset</button>
+      </div>
+      <div class="stage rw-zone">
+        <div class="doc" id="rwDoc">📄</div>
+        <div style="flex:1; min-width:200px;">
+          <div style="font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin-bottom:6px;">reading now</div>
+          <div class="person-row" id="rwReaderRow"></div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin:12px 0 6px;">waiting</div>
+          <div class="person-row" id="rwWaitRow"></div>
+        </div>
+      </div>
+      <div class="log" id="rwLog"><div class="info">Add a few readers — they'll all read together. Then request a writer and watch it wait for readers to finish.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SLEEPING BARBER ================= -->
+<section id="barber" class="alt">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker"><span class="tag">10</span> Classical Problem</div>
+      <h2>The Sleeping Barber</h2>
+      <p class="lede">A tiny barbershop has one barber, one barber chair, and 3 waiting chairs. If there are
+      no customers, the barber sleeps. A customer either wakes the barber, waits, or leaves if the shop is
+      full.</p>
+    </div>
+    <div class="plaque">
+      <span class="lbl">REAL LIFE — YOUR NEIGHBOURHOOD BARBERSHOP</span>
+      <p>No point paying a barber to stand around when nobody's there — so he naps (this models a semaphore
+      putting an idle process to sleep instead of wasting CPU on busy-waiting). A new customer either finds
+      him asleep and wakes him, finds him busy and takes a free waiting chair, or finds every waiting chair
+      full and walks out to find another shop — exactly like a bounded buffer of size 3 rejecting new items
+      once it's full.</p>
+    </div>
+    <div class="console">
+      <div class="console-head">
+        <div class="console-title"><span class="led live"></span> LIVE SIM — 1 BARBER, 3 WAITING CHAIRS</div>
+      </div>
+      <div class="controls">
+        <button class="btn go small" id="barberArrive">New customer arrives</button>
+        <button class="btn small" id="barberAuto">Auto-run: off</button>
+        <button class="btn small" id="barberReset">Reset</button>
+      </div>
+      <div class="stage shop">
+        <div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin-bottom:8px;">waiting room</div>
+          <div class="chair-row" id="barberChairs"></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono); font-size:11px; color:var(--ink-dim); margin-bottom:8px;">barber</div>
+          <div class="barber-chair sleeping" id="barberChair">💈</div>
+        </div>
+      </div>
+      <div class="log" id="barberLog"><div class="info">The barber is asleep. Send in a customer.</div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap-narrow">
+    <p style="font-family:var(--mono); font-size:11.5px; color:var(--brass); margin-bottom:10px;">SIGNAL ROOM — END OF LINE</p>
+    <p>Concurrency &amp; Process Synchronization — built as a hands-on companion for the classroom. Every
+    simulation above runs entirely in this page; reload any section to reset it and try a different sequence
+    of moves.</p>
+    <div class="toc-strip">
+      <a href="#race">Race Condition</a><a href="#peterson">Peterson</a><a href="#bakery">Bakery</a>
+      <a href="#tsl">TSL</a><a href="#semaphore">Semaphore</a><a href="#philosophers">Dining Philosophers</a>
+      <a href="#readerwriter">Reader–Writer</a><a href="#barber">Sleeping Barber</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ================= HERO SIGNAL LAMP ================= */
+(function(){
+  const lr=document.getElementById('lampR'), la=document.getElementById('lampA'), lg=document.getElementById('lampG');
+  const states=[['on-red',''  ,''],['','on-amber',''],['','','on-green'],['','on-amber','']];
+  let i=0;
+  function tick(){
+    lr.className='signal-lamp '+states[i][0];
+    la.className='signal-lamp '+states[i][1];
+    lg.className='signal-lamp '+states[i][2];
+    i=(i+1)%states.length;
+  }
+  tick(); setInterval(tick, 1400);
+})();
+
+function logTo(el, text, cls){
+  const d=document.createElement('div'); d.className=cls||''; d.textContent=text;
+  el.prepend(d);
+  while(el.children.length>40) el.removeChild(el.lastChild);
+}
+
+/* ================= RACE CONDITION SIM ================= */
+(function(){
+  const runBtn=document.getElementById('raceRun'), lockBtn=document.getElementById('raceToggleLock'),
+        resetBtn=document.getElementById('raceReset'), actualEl=document.getElementById('raceActual'),
+        led=document.getElementById('raceLed'), pill=document.getElementById('raceLockPill'),
+        log=document.getElementById('raceLog'), slotA=document.getElementById('raceSlotA'), slotB=document.getElementById('raceSlotB'),
+        actualBox=document.getElementById('raceActualBox');
+  let lockOn=false, total=0, running=false;
+
+  lockBtn.onclick=()=>{ lockOn=!lockOn; pill.textContent='LOCK: '+(lockOn?'ON':'OFF'); pill.className='pill '+(lockOn?'on':'off'); };
+  resetBtn.onclick=()=>{ total=0; actualEl.textContent='0'; actualBox.classList.remove('red'); log.innerHTML='<div class="info">Reset.</div>'; };
+
+  runBtn.onclick=async ()=>{
+    if(running) return;
+    running=true; runBtn.disabled=true; led.classList.add('live');
+    total=0; actualEl.textContent='0'; log.innerHTML='';
+    logTo(log, 'Starting: 500 increments from Thread A, 500 from Thread B...', 'info');
+
+    // simulate with an accurate model rather than 1000 real timers (kept fast but representative)
+    if(lockOn){
+      for(let k=0;k<1000;k++){ total++; }
+    } else {
+      // simulate interleaved read/write races statistically -> some lost updates
+      let shared=0;
+      for(let k=0;k<1000;k++){
+        // 3% chance of a lost update per step when unlocked, to visibly demonstrate the bug
+        const lost = Math.random() < 0.035;
+        if(!lost) shared++;
+      }
+      total=shared;
+    }
+    // small animated flourish
+    for(let s=0;s<10;s++){
+      slotA.classList.toggle('filled', s%2===0);
+      slotB.classList.toggle('filled', s%2===1);
+      await new Promise(r=>setTimeout(r,45));
+    }
+    slotA.classList.remove('filled'); slotB.classList.remove('filled');
+    actualEl.textContent=total;
+    actualBox.classList.toggle('red', total!==1000);
+    logTo(log, (lockOn?'[locked] ':'[unlocked] ')+'Final total = '+total, total===1000?'ok':'bad');
+    if(total!==1000) logTo(log, 'Lost update(s) detected — two threads overwrote each other\'s work.', 'bad');
+    else logTo(log, 'No lost updates — the lock forced each increment to finish before the next began.', 'ok');
+    running=false; runBtn.disabled=false; led.classList.remove('live');
+  };
+})();
+
+/* ================= PRODUCER CONSUMER SIM ================= */
+(function(){
+  const N=6;
+  let buf=new Array(N).fill(null);
+  let empty=N, full=0, auto=false, timer=null, seq=1;
+  const bufEl=document.getElementById('pcBuffer'), emptyEl=document.getElementById('pcEmpty'),
+        fullEl=document.getElementById('pcFull'), mutexEl=document.getElementById('pcMutex'),
+        log=document.getElementById('pcLog'), autoBtn=document.getElementById('pcAuto');
+
+  function render(){
+    bufEl.innerHTML='';
+    buf.forEach(v=>{
+      const d=document.createElement('div');
+      d.className='slot'+(v?' filled':'');
+      d.textContent=v?('#'+v):'';
+      bufEl.appendChild(d);
+    });
+    emptyEl.textContent=empty; fullEl.textContent=full;
+  }
+  function produce(){
+    if(empty<=0){ logTo(log,'Producer BLOCKED — buffer full, must wait() on empty.','bad'); return; }
+    empty--; 
+    const idx=buf.findIndex(v=>v===null); buf[idx]=seq++;
+    full++;
+    logTo(log,'Producer added item #'+(seq-1)+' — empty--, full++','ok');
+    render();
+  }
+  function consume(){
+    if(full<=0){ logTo(log,'Consumer BLOCKED — buffer empty, must wait() on full.','bad'); return; }
+    const idx=buf.findIndex(v=>v!==null); const item=buf[idx]; buf[idx]=null;
+    full--; empty++;
+    logTo(log,'Consumer removed item #'+item+' — full--, empty++','ok');
+    render();
+  }
+  document.getElementById('pcProduce').onclick=produce;
+  document.getElementById('pcConsume').onclick=consume;
+  document.getElementById('pcReset').onclick=()=>{ buf=new Array(N).fill(null); empty=N; full=0; seq=1; render(); log.innerHTML='<div class="info">Reset.</div>'; };
+  autoBtn.onclick=()=>{
+    auto=!auto; autoBtn.textContent='Auto-run: '+(auto?'on':'off');
+    if(auto){ timer=setInterval(()=>{ Math.random()<0.55?produce():consume(); }, 700); }
+    else { clearInterval(timer); }
+  };
+  render();
+})();
+
+/* ================= STRICT ALTERNATION SIM ================= */
+(function(){
+  let turn=0;
+  const p0=document.getElementById('altLaneP0'), p1=document.getElementById('altLaneP1'),
+        s0=document.getElementById('altStateP0'), s1=document.getElementById('altStateP1');
+  function render(){
+    p0.className='lane '+(turn===0?'active':'waiting');
+    p1.className='lane '+(turn===1?'active':'waiting');
+    s0.textContent= turn===0 ? 'turn==0 → allowed to enter critical section' : 'turn==1 → must wait, even if idle';
+    s1.textContent= turn===1 ? 'turn==1 → allowed to enter critical section' : 'turn==0 → must wait, even if idle';
+  }
+  document.getElementById('altStep').onclick=()=>{ turn=1-turn; render(); };
+  document.getElementById('altReset').onclick=()=>{ turn=0; render(); };
+  render();
+})();
+
+/* ================= PETERSON SIM ================= */
+(function(){
+  let flag=[false,false], turn=0;
+  const p0=document.getElementById('petLaneP0'), p1=document.getElementById('petLaneP1'),
+        s0=document.getElementById('petStateP0'), s1=document.getElementById('petStateP1');
+  function render(){
+    p0.className='lane '+(inCS(0)?'active':(flag[0]?'waiting':''));
+    p1.className='lane '+(inCS(1)?'active':(flag[1]?'waiting':''));
+    s0.textContent = 'flag[0]='+flag[0]+', turn='+turn+ (inCS(0)?' → IN critical section':(flag[0]?' → waiting its turn':''));
+    s1.textContent = 'flag[1]='+flag[1]+', turn='+turn+ (inCS(1)?' → IN critical section':(flag[1]?' → waiting its turn':''));
+  }
+  function inCS(i){
+    const other=1-i;
+    return flag[i] && !(flag[other] && turn===other);
+  }
+  function request(i){
+    flag[i]=true; turn=1-i; // "turn = other" — politely offer the turn to the other process
+    render();
+  }
+  document.getElementById('petP0').onclick=()=>request(0);
+  document.getElementById('petP1').onclick=()=>request(1);
+  document.getElementById('petReset').onclick=()=>{ flag=[false,false]; turn=0; render(); };
+  render();
+})();
+
+/* ================= BAKERY SIM ================= */
+(function(){
+  let queue=[]; // {id, ticket}
+  let nextTicket=1, nextId=1;
+  const q=document.getElementById('bakeQueue'), log=document.getElementById('bakeLog');
+  function render(){
+    q.innerHTML='';
+    const sorted=[...queue].sort((a,b)=> a.ticket-b.ticket || a.id-b.id);
+    sorted.forEach((p,i)=>{
+      const d=document.createElement('div');
+      d.className='ticket'+(i===0?' serving':'');
+      d.innerHTML='<div class="n">#'+p.ticket+'</div><div class="p">P'+p.id+'</div>';
+      q.appendChild(d);
+    });
+  }
+  document.getElementById('bakeTake').onclick=()=>{
+    const t=nextTicket++; const id=nextId++;
+    queue.push({id,ticket:t});
+    logTo(log,'Process P'+id+' takes ticket #'+t,'info');
+    render();
+  };
+  document.getElementById('bakeServe').onclick=()=>{
+    if(queue.length===0){ logTo(log,'No one waiting.','bad'); return; }
+    queue.sort((a,b)=> a.ticket-b.ticket || a.id-b.id);
+    const served=queue.shift();
+    logTo(log,'Serving P'+served.id+' (ticket #'+served.ticket+') — lowest number in the room','ok');
+    render();
+  };
+  document.getElementById('bakeReset').onclick=()=>{ queue=[]; nextTicket=1; nextId=1; render(); log.innerHTML='<div class="info">Reset.</div>'; };
+  render();
+})();
+
+/* ================= TSL SIM ================= */
+(function(){
+  let lock=0, holder=null;
+  const lockEl=document.getElementById('tslLock'), holderEl=document.getElementById('tslHolder'),
+        log=document.getElementById('tslLog'), holderBox=document.getElementById('tslHolderBox');
+  function render(){ lockEl.textContent=lock; holderEl.textContent=holder||'—'; holderBox.classList.toggle('green', !!holder); }
+  function testAndSet(name){
+    const old=lock; lock=1;
+    if(old===0){ holder=name; logTo(log,name+' called TestAndSet() → got false back → LOCK ACQUIRED','ok'); }
+    else { logTo(log,name+' called TestAndSet() → got true back → busy-waiting (spinning)...','bad'); }
+    render();
+  }
+  document.getElementById('tslP0').onclick=()=>testAndSet('P0');
+  document.getElementById('tslP1').onclick=()=>testAndSet('P1');
+  document.getElementById('tslRelease').onclick=()=>{
+    if(!holder){ logTo(log,'No one holds the lock.','info'); return; }
+    logTo(log,holder+' released the lock.','info'); holder=null; lock=0; render();
+  };
+  document.getElementById('tslReset').onclick=()=>{ lock=0; holder=null; render(); log.innerHTML='<div class="info">Reset.</div>'; };
+  render();
+})();
+
+/* ================= SEMAPHORE (PARKING) SIM ================= */
+(function(){
+  const CAP=5;
+  let value=CAP, cars=[];
+  const valEl=document.getElementById('semVal'), parkedEl=document.getElementById('semParked'),
+        lot=document.getElementById('semLot'), log=document.getElementById('semLog');
+  function render(){
+    valEl.textContent=value; parkedEl.textContent=cars.length;
+    lot.innerHTML='';
+    for(let i=0;i<CAP;i++){
+      const d=document.createElement('div'); d.className='slot'+(i<cars.length?' filled':'');
+      d.textContent = i<cars.length ? '🚗' : '';
+      lot.appendChild(d);
+    }
+  }
+  document.getElementById('semWait').onclick=()=>{
+    if(value<=0){ logTo(log,'wait() called — value already 0, barrier stays down. Car must wait outside.','bad'); return; }
+    value--; cars.push(1);
+    logTo(log,'wait() — a car enters, semaphore drops to '+value,'ok');
+    render();
+  };
+  document.getElementById('semSignal').onclick=()=>{
+    if(cars.length===0){ logTo(log,'No cars to remove.','info'); return; }
+    cars.pop(); value++;
+    logTo(log,'signal() — a car leaves, semaphore rises to '+value,'ok');
+    render();
+  };
+  document.getElementById('semReset').onclick=()=>{ value=CAP; cars=[]; render(); log.innerHTML='<div class="info">Reset.</div>'; };
+  render();
+})();
+
+/* ================= DINING PHILOSOPHERS SIM ================= */
+(function(){
+  const N=5;
+  const table=document.getElementById('dpTable'), center=document.getElementById('dpCenter'), log=document.getElementById('dpLog');
+  const autoBtn=document.getElementById('dpAuto');
+  let phils=[], forks=[], auto=false, timer=null, deadlocked=false, fixApplied=false, sittingLimit=N;
+
+  function build(){
+    table.querySelectorAll('.phil,.fork').forEach(e=>e.remove());
+    phils=[]; forks=[];
+    const R=42; // percentage radius for philosophers
+    const FR=32; // percentage radius for forks
+    for(let i=0;i<N;i++){
+      const angle = (i/N)*2*Math.PI - Math.PI/2;
+      const x=50+R*Math.cos(angle), y=50+R*Math.sin(angle);
+      const el=document.createElement('div');
+      el.className='phil thinking';
+      el.style.left=x+'%'; el.style.top=y+'%';
+      el.innerHTML='P'+i+'<span class="st">thinking</span>';
+      table.appendChild(el);
+      phils.push({el, state:'thinking', hasLeft:false, hasRight:false});
+    }
+    for(let i=0;i<N;i++){
+      const angle = ((i+0.5)/N)*2*Math.PI - Math.PI/2;
+      const x=50+FR*Math.cos(angle), y=50+FR*Math.sin(angle);
+      const el=document.createElement('div');
+      el.className='fork';
+      el.style.left=x+'%'; el.style.top=y+'%';
+      table.appendChild(el);
+      forks.push({el, heldBy:null});
+    }
+  }
+  function setState(i, st){
+    phils[i].state=st;
+    phils[i].el.className='phil '+st;
+    phils[i].el.innerHTML='P'+i+'<span class="st">'+st+'</span>';
+  }
+  function renderForks(){
+    forks.forEach(f=> f.el.classList.toggle('held', f.heldBy!==null));
+  }
+  function leftFork(i){ return i; }
+  function rightFork(i){ return (i+1)%N; }
+
+  function step(){
+    if(deadlocked) return;
+    // count currently seated (hungry attempting or eating) to respect fix limit
+    for(let i=0;i<N;i++){
+      const p=phils[i];
+      if(p.state==='thinking'){
+        if(Math.random()<0.4){
+          const seated = phils.filter(x=>x.state!=='thinking').length;
+          if(fixApplied && seated>=sittingLimit-1){ continue; } // must wait, chair rule
+          setState(i,'hungry');
+          logTo(log,'P'+i+' got hungry and wants both forks','info');
+        }
+      } else if(p.state==='hungry'){
+        const lf=forks[leftFork(i)], rf=forks[rightFork(i)];
+        if(lf.heldBy===null){ lf.heldBy=i; renderForks(); }
+        if(lf.heldBy===i && rf.heldBy===null){
+          rf.heldBy=i; renderForks();
+          setState(i,'eating');
+          logTo(log,'P'+i+' picked up both forks and is eating','ok');
+        }
+      } else if(p.state==='eating'){
+        if(Math.random()<0.5){
+          forks[leftFork(i)].heldBy=null; forks[rightFork(i)].heldBy=null; renderForks();
+          setState(i,'thinking');
+          logTo(log,'P'+i+' finished eating and put down both forks','info');
+        }
+      }
+    }
+  }
+  autoBtn.onclick=()=>{
+    auto=!auto; autoBtn.textContent='Auto-run: '+(auto?'on':'off');
+    if(auto){ timer=setInterval(step, 900); } else { clearInterval(timer); }
+  };
+  document.getElementById('dpDeadlock').onclick=()=>{
+    clearInterval(timer); auto=false; autoBtn.textContent='Auto-run: off';
+    fixApplied=false;
+    for(let i=0;i<N;i++){
+      forks[i].heldBy=null;
+    }
+    // everyone grabs their LEFT fork simultaneously
+    for(let i=0;i<N;i++){
+      forks[leftFork(i)].heldBy=i;
+      setState(i,'stuck');
+    }
+    renderForks();
+    deadlocked=true;
+    logTo(log,'DEADLOCK — every philosopher grabbed their left fork at once. Every right fork is now needed by someone who already holds a left fork. No one can proceed.','bad');
+  };
+  document.getElementById('dpFix').onclick=()=>{
+    fixApplied=true;
+    sittingLimit=N-1;
+    if(deadlocked){
+      deadlocked=false;
+      for(let i=0;i<N;i++){ forks[i].heldBy=null; setState(i,'thinking'); }
+      renderForks();
+      logTo(log,'Fix applied: at most '+(N-1)+' of '+N+' philosophers may pick up forks at once — one seat always stays empty, so the circular wait can never close. Table reset.','ok');
+    } else {
+      logTo(log,'Fix applied: at most '+(N-1)+' of '+N+' philosophers may sit at once. Deadlock is now structurally impossible.','ok');
+    }
+  };
+  document.getElementById('dpReset').onclick=()=>{
+    clearInterval(timer); auto=false; autoBtn.textContent='Auto-run: off';
+    deadlocked=false; fixApplied=false; sittingLimit=N;
+    build(); renderForks(); log.innerHTML='<div class="info">Reset.</div>';
+  };
+  build();
+})();
+
+/* ================= READER WRITER SIM ================= */
+(function(){
+  let readers=0, writerActive=false, waitQ=[], readerId=1, writerId=1;
+  const readersEl=document.getElementById('rwReaders'), writerEl=document.getElementById('rwWriter'),
+        doc=document.getElementById('rwDoc'), readerRow=document.getElementById('rwReaderRow'),
+        waitRow=document.getElementById('rwWaitRow'), log=document.getElementById('rwLog');
+  let activeReaders=[];
+
+  function render(){
+    readersEl.textContent=readers; writerEl.textContent=writerActive?'yes':'no';
+    doc.className='doc'+(writerActive?' writing':(readers>0?' reading':''));
+    readerRow.innerHTML=''; activeReaders.forEach(r=>{
+      const d=document.createElement('div'); d.className='person r'; d.textContent='R'+r; readerRow.appendChild(d);
+    });
+    if(writerActive){
+      const d=document.createElement('div'); d.className='person w'; d.textContent='W✎'; readerRow.appendChild(d);
+    }
+    waitRow.innerHTML=''; waitQ.forEach(w=>{
+      const d=document.createElement('div'); d.className='person '+(w.type==='r'?'r':'w'); d.textContent=(w.type==='r'?'R':'W')+w.id; waitRow.appendChild(d);
+    });
+    tryAdmit();
+  }
+  function tryAdmit(){
+    // admit waiting readers if no writer
+    if(!writerActive){
+      let changed=false;
+      waitQ=waitQ.filter(w=>{
+        if(w.type==='r'){ readers++; activeReaders.push(w.id); changed=true; return false; }
+        return true;
+      });
+      // if a writer is first in queue and no readers active, admit it
+      if(readers===0 && waitQ.length>0 && waitQ[0].type==='w'){
+        writerActive=true; waitQ.shift(); changed=true;
+      }
+      if(changed){ readersEl.textContent=readers; writerEl.textContent=writerActive?'yes':'no';
+        doc.className='doc'+(writerActive?' writing':(readers>0?' reading':''));
+        readerRow.innerHTML=''; activeReaders.forEach(r=>{ const d=document.createElement('div'); d.className='person r'; d.textContent='R'+r; readerRow.appendChild(d); });
+        if(writerActive){ const d=document.createElement('div'); d.className='person w'; d.textContent='W✎'; readerRow.appendChild(d); }
+        waitRow.innerHTML=''; waitQ.forEach(w=>{ const d=document.createElement('div'); d.className='person '+(w.type==='r'?'r':'w'); d.textContent=(w.type==='r'?'R':'W')+w.id; waitRow.appendChild(d); });
+      }
+    }
+  }
+  document.getElementById('rwAddReader').onclick=()=>{
+    const id=readerId++;
+    if(!writerActive && waitQ.length===0){ readers++; activeReaders.push(id); logTo(log,'Reader R'+id+' starts reading — no writer active, allowed immediately','ok'); }
+    else { waitQ.push({type:'r',id}); logTo(log,'Reader R'+id+' must wait — a writer is active or ahead in queue','bad'); }
+    render();
+  };
+  document.getElementById('rwAddWriter').onclick=()=>{
+    const id=writerId++;
+    if(!writerActive && readers===0){ writerActive=true; logTo(log,'Writer W'+id+' begins writing — document was free','ok'); }
+    else { waitQ.push({type:'w',id}); logTo(log,'Writer W'+id+' must wait for exclusive access','bad'); }
+    render();
+  };
+  // let readers/writer finish over time automatically to keep sim usable
+  setInterval(()=>{
+    if(activeReaders.length>0 && Math.random()<0.35){
+      const id=activeReaders.shift(); readers--; logTo(log,'Reader R'+id+' finished reading','info'); render();
+    } else if(writerActive && Math.random()<0.35){
+      writerActive=false; logTo(log,'Writer finished writing','info'); render();
+    }
+  }, 1600);
+  document.getElementById('rwReset').onclick=()=>{
+    readers=0; writerActive=false; waitQ=[]; activeReaders=[]; readerId=1; writerId=1;
+    render(); log.innerHTML='<div class="info">Reset.</div>';
+  };
+  render();
+})();
+
+/* ================= SLEEPING BARBER SIM ================= */
+(function(){
+  const CHAIRS=3;
+  let waiting=[], cutting=null, custId=1, auto=false, timer=null;
+  const chairsEl=document.getElementById('barberChairs'), barberEl=document.getElementById('barberChair'),
+        log=document.getElementById('barberLog'), autoBtn=document.getElementById('barberAuto');
+
+  function render(){
+    chairsEl.innerHTML='';
+    for(let i=0;i<CHAIRS;i++){
+      const d=document.createElement('div'); d.className='chair'+(i<waiting.length?' occupied':'');
+      d.textContent = i<waiting.length ? '🧍' : '';
+      chairsEl.appendChild(d);
+    }
+    barberEl.className='barber-chair '+(cutting?'cutting':'sleeping');
+    barberEl.textContent = cutting? '✂️' : '💈';
+  }
+  function arrive(){
+    const id=custId++;
+    if(!cutting){
+      cutting=id; logTo(log,'Customer C'+id+' arrives, wakes the sleeping barber — cut begins','ok');
+    } else if(waiting.length<CHAIRS){
+      waiting.push(id); logTo(log,'Customer C'+id+' arrives, barber busy — takes a free waiting chair','info');
+    } else {
+      logTo(log,'Customer C'+id+' arrives — all '+CHAIRS+' waiting chairs full — leaves the shop','bad');
+    }
+    render();
+  }
+  document.getElementById('barberArrive').onclick=arrive;
+  autoBtn.onclick=()=>{
+    auto=!auto; autoBtn.textContent='Auto-run: '+(auto?'on':'off');
+    if(auto){ timer=setInterval(arrive, 1100); } else { clearInterval(timer); }
+  };
+  document.getElementById('barberReset').onclick=()=>{
+    clearInterval(timer); auto=false; autoBtn.textContent='Auto-run: off';
+    waiting=[]; cutting=null; custId=1; render(); log.innerHTML='<div class="info">Reset. Barber is asleep again.</div>';
+  };
+  setInterval(()=>{
+    if(cutting && Math.random()<0.4){
+      logTo(log,'Barber finishes cutting C'+cutting+'\'s hair','info');
+      if(waiting.length>0){ cutting=waiting.shift(); logTo(log,'Barber calls next customer C'+cutting+' in from the waiting room','ok'); }
+      else { cutting=null; logTo(log,'No one waiting — barber goes back to sleep','info'); }
+      render();
+    }
+  }, 1300);
+  render();
+})();
+</script>
+</body>
+</html>
