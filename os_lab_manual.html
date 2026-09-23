@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OS Lab Manual — Process & CPU Scheduling</title>
+<style>
+:root{--bg:#080b18;--card:#101833;--acc:#67e8f9;--acc2:#f472b6;--acc3:#4ade80;--txt:#e8ecf8;--mut:#93a0c4;--warn:#fbbf24;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:radial-gradient(circle at 15% 0%,#132043 0%,#080b18 55%);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;line-height:1.6;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+h1{font-size:clamp(1.4rem,4vw,2.2rem);background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent;margin:0}
+h2{color:var(--acc);border-bottom:2px solid #1e2a55;padding-bottom:8px}
+h3{color:var(--acc2);margin-bottom:6px}
+header{position:sticky;top:0;top:env(safe-area-inset-top,0px);background:#080b18ee;backdrop-filter:blur(8px);z-index:50;padding:12px 18px;border-bottom:1px solid #1e2a55}
+nav{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+nav a{color:var(--mut);text-decoration:none;font-size:.78rem;padding:5px 11px;border:1px solid #263061;border-radius:16px}
+nav a:hover{background:var(--acc);color:#050814;border-color:var(--acc)}
+main{max-width:980px;margin:0 auto;padding:22px 16px 80px}
+section{margin-bottom:50px;scroll-margin-top:90px;opacity:0;animation:fade .6s forwards}
+@keyframes fade{to{opacity:1}}
+.card{background:var(--card);border:1px solid #1e2a55;border-radius:14px;padding:18px;margin:14px 0;box-shadow:0 8px 26px #0007}
+pre{background:#0b0f24;border:1px solid #263061;border-radius:8px;padding:12px;overflow-x:auto;font-size:.82rem;color:#c9d4f5}
+.kw{color:#7dd3fc}.tp{color:#f9a8d4}.cm{color:#6ee7a4;font-style:italic}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin:8px 0}
+td,th{border:1px solid #263061;padding:6px 8px;text-align:center}
+th{background:#161d40;color:var(--acc)}
+input{width:56px;background:#0b0f24;border:1px solid #2a366b;color:var(--txt);border-radius:5px;padding:4px;text-align:center}
+button{background:#161d40;color:var(--txt);border:1px solid #2a366b;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:.85rem;margin:3px 4px 3px 0}
+button:hover{background:var(--acc);color:#050814}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.eg{background:#0b3d2e33;border-left:3px solid var(--acc3);padding:8px 12px;border-radius:6px;margin:8px 0;font-size:.9rem}
+.tag{display:inline-block;background:#1e2a55;color:var(--acc3);padding:2px 10px;border-radius:12px;font-size:.72rem;margin-bottom:6px}
+ul.exp li{margin:4px 0;font-size:.88rem;color:var(--mut)}
+ul.exp b{color:var(--txt)}
+.gantt{display:flex;overflow-x:auto;margin:12px 0;min-height:52px;border:1px solid #263061;border-radius:8px;background:#0b0f24;padding:6px}
+.gseg{height:38px;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:bold;color:#050814;border-radius:4px;margin-right:2px;flex-shrink:0;opacity:0;transform:translateY(6px);transition:.35s;position:relative}
+.gseg.show{opacity:1;transform:translateY(0)}
+.gseg small{position:absolute;bottom:-16px;font-size:.65rem;color:var(--mut)}
+.pill{font-size:.7rem;color:var(--warn);border:1px solid var(--warn);padding:2px 8px;border-radius:10px}
+footer{text-align:center;color:var(--mut);font-size:.78rem;padding:20px}
+svg text{fill:var(--txt);font-family:Consolas,monospace;font-size:11px}
+</style>
+</head>
+<body>
+<header>
+<h1>🖥 OS Lab Manual — Process, C Basics & CPU Scheduling</h1>
+<nav>
+<a href="#s1">1. Process & Threads</a><a href="#s2">2. C Basics</a><a href="#codeexp">🧩 Code Explained</a><a href="#pdata">Process Data</a>
+<a href="#a-fcfs">FCFS</a><a href="#a-sjf">SJF</a><a href="#a-prio">Priority</a><a href="#a-rr">Round Robin</a><a href="#a-mlq">Multilevel Queue</a>
+</nav>
+</header>
+<main>
+
+<section id="s1">
+<h2>1. Process & Thread Management — Concepts</h2>
+<div class="card">
+<p>A <b>process</b> is a program in execution — it has its own memory (code, data, stack, heap) and is managed by the OS via a <b>Process Control Block (PCB)</b> storing PID, state, registers, priority, etc. A <b>thread</b> is a lightweight unit of execution <i>inside</i> a process; multiple threads of one process share the same memory but have separate stacks.</p>
+<h3>Process State Diagram</h3>
+<svg viewBox="0 0 620 140" width="100%" height="140">
+<g font-family="Consolas" font-size="12">
+<rect x="10" y="55" width="80" height="34" rx="6" fill="#1e2a55" stroke="#67e8f9"/><text x="25" y="76">New</text>
+<rect x="140" y="55" width="90" height="34" rx="6" fill="#1e2a55" stroke="#67e8f9"/><text x="150" y="76">Ready</text>
+<rect x="280" y="10" width="100" height="34" rx="6" fill="#1e2a55" stroke="#4ade80"/><text x="292" y="31">Running</text>
+<rect x="280" y="95" width="120" height="34" rx="6" fill="#1e2a55" stroke="#f472b6"/><text x="292" y="116">Waiting/Blocked</text>
+<rect x="470" y="55" width="120" height="34" rx="6" fill="#1e2a55" stroke="#fbbf24"/><text x="490" y="76">Terminated</text>
+<path d="M90,72 H140" stroke="#93a0c4" marker-end="url(#ah)"/>
+<path d="M230,65 Q255,45 280,30" stroke="#93a0c4" fill="none" marker-end="url(#ah)"/>
+<path d="M280,35 Q255,55 230,72" stroke="#93a0c4" fill="none" marker-end="url(#ah)"/>
+<path d="M380,25 H470 Q470,25 470,55" stroke="#93a0c4" fill="none" marker-end="url(#ah)"/>
+<path d="M330,44 V95" stroke="#93a0c4" marker-end="url(#ah)"/>
+<path d="M300,95 Q270,60 230,72" stroke="#93a0c4" fill="none" marker-end="url(#ah)"/>
+<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0L6,3L0,6Z" fill="#93a0c4"/></marker></defs>
+</g></svg>
+<table><tr><th>Process</th><th>Thread</th></tr>
+<tr><td>Heavyweight, own address space</td><td>Lightweight, shares parent's address space</td></tr>
+<tr><td>Context switch is slow (costly)</td><td>Context switch is fast (cheap)</td></tr>
+<tr><td>Communication needs IPC</td><td>Communication via shared memory (fast)</td></tr>
+<tr><td>Independent — crash doesn't affect others</td><td>Crash can affect whole process</td></tr>
+</table>
+<div class="eg"><b>Real-life analogy:</b> A process is like an entire office building (own resources, own address). Threads are like employees working inside that same building sharing the same furniture/files (memory) — much cheaper to hire/manage than opening a new building each time.</div>
+</div>
+</section>
+
+<section id="s2">
+<h2>2. Introduction to C Programming — Building Blocks</h2>
+<div class="card"><h3>a) Statement</h3>
+<p>A statement is one complete instruction ending with <code>;</code>.</p>
+<pre><span class="kw">int</span> a = 5;      <span class="cm">// declaration statement</span>
+printf(<span class="tp">"Value = %d"</span>, a); <span class="cm">// function-call statement</span></pre>
+<div class="eg">Output: <code>Value = 5</code></div></div>
+
+<div class="card"><h3>b) Conditional Statement (if-else)</h3>
+<pre><span class="kw">#include</span> &lt;stdio.h&gt;
+<span class="kw">int</span> main(){
+    <span class="kw">int</span> num = 7;
+    <span class="kw">if</span> (num % 2 == 0)              <span class="cm">// check divisibility by 2</span>
+        printf(<span class="tp">"Even"</span>);
+    <span class="kw">else</span>
+        printf(<span class="tp">"Odd"</span>);              <span class="cm">// runs when condition is false</span>
+    <span class="kw">return</span> 0;
+}</pre>
+<div class="eg">Output (Turbo C / GCC): <code>Odd</code></div></div>
+
+<div class="card"><h3>c) Loop (for)</h3>
+<pre><span class="kw">for</span>(<span class="kw">int</span> i = 1; i &lt;= 5; i++){   <span class="cm">// init; condition; increment</span>
+    printf(<span class="tp">"%d "</span>, i);           <span class="cm">// runs 5 times</span>
+}</pre>
+<div class="eg">Output: <code>1 2 3 4 5</code></div></div>
+
+<div class="card"><h3>d) Array</h3>
+<pre><span class="kw">int</span> marks[5] = {90,80,70,60,50}; <span class="cm">// fixed-size collection</span>
+<span class="kw">for</span>(<span class="kw">int</span> i=0;i&lt;5;i++)
+    printf(<span class="tp">"%d "</span>, marks[i]);   <span class="cm">// indices 0..4</span></pre>
+<div class="eg">Output: <code>90 80 70 60 50</code></div></div>
+
+<div class="card"><h3>e) Function</h3>
+<pre><span class="kw">int</span> square(<span class="kw">int</span> x){      <span class="cm">// function definition, takes x, returns int</span>
+    <span class="kw">return</span> x*x;         <span class="cm">// return statement sends value back</span>
+}
+<span class="kw">int</span> main(){
+    printf(<span class="tp">"%d"</span>, square(4)); <span class="cm">// function call, prints 16</span>
+    <span class="kw">return</span> 0;
+}</pre>
+<div class="eg">Output: <code>16</code></div></div>
+</section>
+
+<section id="codeexp">
+<h2>🧩 Code Explained — From Absolute Scratch (Easy English)</h2>
+<div class="card">
+<p>This page has <b>3 parts</b>: <b>HTML</b> (the structure — tables, buttons, headings), <b>CSS</b> (only colors/styling — has nothing to do with the algorithm logic), and <b>JavaScript</b> (the actual logic that runs the scheduling). Below, only the JavaScript <b>logic part</b> is explained step by step — that is the part that really matters.</p>
+</div>
+
+<div class="card"><h3>Step 1 — The Process Table (storing the data)</h3>
+<pre>let procs=[{pid:1,at:0,bt:5,pr:2}, ...];</pre>
+<p>This is an <b>array of objects</b> — each process's data is stored as one object:</p>
+<ul class="exp">
+<li><b>pid</b> = Process ID (P1, P2...)</li>
+<li><b>at</b> = Arrival Time (when the process requests the CPU)</li>
+<li><b>bt</b> = Burst Time (how much CPU time it needs in total)</li>
+<li><b>pr</b> = Priority (lower number = higher priority)</li>
+</ul>
+<p><code>renderTable()</code> displays this data as an HTML table. When you change a value in an input box, <code>onchange="procs[i].at=+this.value"</code> runs — meaning <b>as soon as you edit a value, the JavaScript array updates instantly.</b></p>
+</div>
+
+<div class="card"><h3>Step 2 — cloneProcs() (making a working copy)</h3>
+<pre>function cloneProcs(){return procs.map(p=>({...p, rem:p.bt}));}</pre>
+<p>This makes a <b>copy</b> of the original <code>procs</code> array and adds one new field, <code>rem</code> (remaining burst time). This is necessary because during simulation we keep reducing the burst time as the process runs on the CPU — but the original table's real data must stay untouched.</p>
+</div>
+
+<div class="card"><h3>Step 3 — timeStepSim(mode) — the most important function</h3>
+<p>This single function handles <b>FCFS, SJF, and Priority</b> scheduling. The idea is very simple:</p>
+<div class="eg">Move time forward one unit at a time (t = 0, 1, 2, 3...), and <b>at every unit, decide which process should run on the CPU right now.</b></div>
+<pre>while(done&lt;n && t&lt;maxT){
+  let cand = list of processes that have arrived AND are not yet finished;
+  // now pick one candidate, depending on the mode:
+  if(mode==='fcfs')     → pick whoever arrived first
+  if(mode==='sjf_np')   → pick smallest burst time (but don't interrupt once started)
+  if(mode==='sjf_p')    → RECHECK every unit; switch if a shorter job shows up
+  if(mode==='prio_np')  → pick highest priority, don't interrupt once started
+  if(mode==='prio_p')   → recheck every unit; switch based on priority
+
+  ps[pick].rem--;    // that process just completed 1 unit of work
+  t++;               // move the clock forward by 1 unit
+  if(rem==0) done++; // process has fully finished
+}</pre>
+<div class="eg"><b>Small example (FCFS):</b> P1 arrives at time 0, burst 5 sec → runs on CPU from 0 to 5. P2 arrives at time 1, burst 3 sec → runs from 5 to 8 (because P1 arrived first). That is exactly what this loop computes.</div>
+</div>
+
+<div class="card"><h3>Step 4 — simulateRR(quantum) — Round Robin</h3>
+<p>Here a <b>queue</b> (line) is maintained — just like a queue at a bank:</p>
+<ul class="exp">
+<li>Take out the process at the front — <code>queue.shift()</code></li>
+<li>Let it run only for the <b>quantum</b> (e.g. 2 sec), not its full burst</li>
+<li>If it isn't finished yet → send it <b>back to the end of the line</b> — <code>queue.push(cur)</code></li>
+<li>Newly arriving processes also join the line</li>
+</ul>
+<p>This is what makes Round Robin <b>fair</b> — no single process can hog the CPU for too long.</p>
+</div>
+
+<div class="card"><h3>Step 5 — simulateMLQ — Multilevel Queue</h3>
+<p>Two separate queues are maintained:</p>
+<ul class="exp">
+<li><b>q0</b> = System processes (priority ≤ 2) — scheduled using Round Robin</li>
+<li><b>q1</b> = User processes (priority &gt; 2) — scheduled using FCFS</li>
+</ul>
+<div class="eg">The rule is simple: <b>as long as q0 (system queue) has any process, q1 (user queue) doesn't get a turn at all.</b> Real operating systems work the same way — system-level work is always handled before ordinary user programs.</div>
+</div>
+
+<div class="card"><h3>Step 6 — renderResult() — displaying the result</h3>
+<p>This function takes the scheduling output and builds two things:</p>
+<ol>
+<li>The <b>Gantt chart</b> — colored blocks showing which process ran on the CPU and during which time range</li>
+<li>The <b>result table</b> — Completion Time (CT), Turnaround Time (TAT), Waiting Time (WT)</li>
+</ol>
+<div class="math" style="background:#0d1230;border:1px dashed #2a366b;border-radius:8px;padding:10px 14px">
+<b>Formulas worth memorizing (these come up in exams too):</b><br>
+TAT = Completion Time − Arrival Time<br>
+WT = Turnaround Time − Burst Time
+</div>
+</div>
+
+<div class="card"><h3>Step 7 — the ALGOS array + runAlgo() — ties everything together</h3>
+<p>Near the bottom of the script there's one big list called <code>ALGOS</code>, containing each algorithm's name, C code, and explanation. A loop then automatically builds the full section (code block + button + chart) for every algorithm in HTML — so the same layout didn't have to be written by hand six separate times.</p>
+<p>When you press the <b>"▶ Run Simulation"</b> button, a call like <code>runAlgo('fcfs')</code> is triggered, which runs the correct scheduling function (<code>timeStepSim</code> / <code>simulateRR</code> / <code>simulateMLQ</code>) and displays the result on screen.</p>
+</div>
+
+<div class="card" style="border-color:#4ade80"><h3>🎯 Bottom Line — Just Remember This</h3>
+<ul class="exp">
+<li><b>procs</b> = the data table (which process arrived when, how much work it needs)</li>
+<li><b>timeStepSim / simulateRR / simulateMLQ</b> = the actual scheduling logic (works exactly like the C code, just written in JavaScript)</li>
+<li><b>renderResult</b> = what you see on screen (Gantt chart + table)</li>
+</ul>
+<p style="color:var(--mut);font-size:.88rem">Tip: First look at the values in the "Process Data" table below, then read any algorithm's C code, then press its "Run Simulation" button — the code and the result will make sense side by side.</p>
+</div>
+</section>
+
+<section id="pdata">
+<h2>📋 Shared Process Data (used by every scheduling algorithm below)</h2>
+<div class="card">
+<p>Edit Arrival Time (AT), Burst Time (BT) and Priority (lower number = higher priority) — used by all algorithm simulators.</p>
+<table id="procTable"></table>
+<div class="row"><button onclick="addRow()">➕ Add Process</button><button onclick="delRow()">➖ Remove Last</button><button onclick="loadSample()">🔄 Load Sample Data</button></div>
+</div>
+</section>
+
+<div id="algoContainer"></div>
+
+<footer>OS Lab — Process Management & CPU Scheduling · Edit process data once above, then hit ▶ Run on any algorithm.</footer>
+</main>
+
+<script>
+/* ---------------- Shared process editor ---------------- */
+let procs=[{pid:1,at:0,bt:5,pr:2},{pid:2,at:1,bt:3,pr:1},{pid:3,at:2,bt:8,pr:3},{pid:4,at:3,bt:6,pr:2}];
+function loadSample(){procs=[{pid:1,at:0,bt:5,pr:2},{pid:2,at:1,bt:3,pr:1},{pid:3,at:2,bt:8,pr:3},{pid:4,at:3,bt:6,pr:2}];renderTable();}
+function addRow(){procs.push({pid:procs.length+1,at:0,bt:1,pr:1});renderTable();}
+function delRow(){if(procs.length>1)procs.pop();renderTable();}
+function renderTable(){
+  let h="<tr><th>PID</th><th>Arrival(AT)</th><th>Burst(BT)</th><th>Priority</th></tr>";
+  procs.forEach((p,i)=>{h+=`<tr><td>P${p.pid}</td>
+   <td><input type="number" min="0" value="${p.at}" onchange="procs[${i}].at=+this.value"></td>
+   <td><input type="number" min="1" value="${p.bt}" onchange="procs[${i}].bt=+this.value"></td>
+   <td><input type="number" min="1" value="${p.pr}" onchange="procs[${i}].pr=+this.value"></td></tr>`;});
+  document.getElementById('procTable').innerHTML=h;
+}
+renderTable();
+
+/* ---------------- Scheduling engines ---------------- */
+function cloneProcs(){return procs.map(p=>({pid:p.pid,at:p.at,bt:p.bt,pr:p.pr,rem:p.bt}));}
+
+function timeStepSim(mode){
+  let ps=cloneProcs(); let n=ps.length,t=0,done=0,current=-1,timeline=[];
+  let maxT=ps.reduce((s,p)=>s+p.bt,0)+ps.reduce((m,p)=>Math.max(m,p.at),0)+5;
+  while(done<n && t<maxT){
+    let cand=ps.map((p,i)=>i).filter(i=>ps[i].at<=t && ps[i].rem>0);
+    if(cand.length===0){t++;continue;}
+    let pick;
+    if(mode==='fcfs'){
+      if(current===-1||ps[current].rem<=0){cand.sort((a,b)=>ps[a].at-ps[b].at||a-b);pick=cand[0];}else pick=current;
+    }else if(mode==='sjf_np'){
+      if(current===-1||ps[current].rem<=0){cand.sort((a,b)=>ps[a].rem-ps[b].rem||ps[a].at-ps[b].at);pick=cand[0];}else pick=current;
+    }else if(mode==='sjf_p'){
+      cand.sort((a,b)=>ps[a].rem-ps[b].rem||ps[a].at-ps[b].at);pick=cand[0];
+    }else if(mode==='prio_np'){
+      if(current===-1||ps[current].rem<=0){cand.sort((a,b)=>ps[a].pr-ps[b].pr||ps[a].at-ps[b].at);pick=cand[0];}else pick=current;
+    }else if(mode==='prio_p'){
+      cand.sort((a,b)=>ps[a].pr-ps[b].pr||ps[a].at-ps[b].at);pick=cand[0];
+    }
+    if(timeline.length && timeline[timeline.length-1].idx===pick){timeline[timeline.length-1].end=t+1;}
+    else timeline.push({idx:pick,pid:ps[pick].pid,start:t,end:t+1});
+    ps[pick].rem--; current=pick; t++;
+    if(ps[pick].rem===0)done++;
+  }
+  return {timeline,ps};
+}
+function simulateRR(quantum){
+  let ps=cloneProcs(); let n=ps.length,t=0,timeline=[],queue=[];
+  let order=[...Array(n).keys()].sort((a,b)=>ps[a].at-ps[b].at);
+  let idx=0;
+  function pushArrivals(upTo){while(idx<n&&ps[order[idx]].at<=upTo){queue.push(order[idx]);idx++;}}
+  pushArrivals(0);
+  while(queue.length){
+    let cur=queue.shift();
+    let run=Math.min(quantum,ps[cur].rem);
+    timeline.push({idx:cur,pid:ps[cur].pid,start:t,end:t+run});
+    t+=run; ps[cur].rem-=run;
+    pushArrivals(t);
+    if(ps[cur].rem>0) queue.push(cur);
+    if(queue.length===0 && idx<n){t=ps[order[idx]].at; pushArrivals(t);}
+  }
+  return {timeline,ps};
+}
+function simulateMLQ(quantum){
+  // Queue0 = priority<=2 (system, Round Robin), Queue1 = priority>2 (user, FCFS). Queue0 always preempts Queue1.
+  let ps=cloneProcs(); let n=ps.length,t=0,timeline=[],q0=[],q1=[];
+  let order=[...Array(n).keys()].sort((a,b)=>ps[a].at-ps[b].at);
+  let idx=0;
+  function pushArrivals(upTo){while(idx<n&&ps[order[idx]].at<=upTo){(ps[order[idx]].pr<=2?q0:q1).push(order[idx]);idx++;}}
+  pushArrivals(0);
+  while(ps.some(p=>p.rem>0)){
+    if(q0.length===0&&q1.length===0){ if(idx<n){t=ps[order[idx]].at;pushArrivals(t);} else break; }
+    if(q0.length){
+      let cur=q0.shift(); let run=Math.min(quantum,ps[cur].rem);
+      timeline.push({idx:cur,pid:ps[cur].pid,start:t,end:t+run});
+      t+=run; ps[cur].rem-=run; pushArrivals(t);
+      if(ps[cur].rem>0) q0.push(cur);
+    } else {
+      let cur=q1.shift(); // FCFS: run fully unless a q0 job arrives (checked at completion)
+      let run=ps[cur].rem;
+      timeline.push({idx:cur,pid:ps[cur].pid,start:t,end:t+run});
+      t+=run; ps[cur].rem=0; pushArrivals(t);
+    }
+  }
+  return {timeline,ps};
+}
+
+/* ---------------- Rendering ---------------- */
+const COLORS=["#67e8f9","#f472b6","#4ade80","#fbbf24","#a78bfa","#fb7185","#38bdf8","#facc15"];
+function renderResult(prefix,timeline,ps){
+  const g=document.getElementById(prefix+'gantt'); g.innerHTML='';
+  timeline.forEach((seg,i)=>{
+    const d=document.createElement('div'); d.className='gseg';
+    d.style.width=Math.max(30,(seg.end-seg.start)*32)+'px';
+    d.style.background=COLORS[(seg.pid-1)%COLORS.length];
+    d.innerHTML='P'+seg.pid+'<small>'+seg.start+'-'+seg.end+'</small>';
+    g.appendChild(d);
+    setTimeout(()=>d.classList.add('show'), i*150);
+  });
+  // metrics: completion = last end time seen for pid
+  let comp={}; timeline.forEach(s=>{comp[s.pid]=s.end;});
+  let rows='<tr><th>PID</th><th>AT</th><th>BT</th><th>CT</th><th>TAT=CT-AT</th><th>WT=TAT-BT</th></tr>';
+  let sw=0,st=0;
+  ps.forEach(p=>{
+    const ct=comp[p.pid], tat=ct-p.at, wt=tat-p.bt; sw+=wt; st+=tat;
+    rows+=`<tr><td>P${p.pid}</td><td>${p.at}</td><td>${p.bt}</td><td>${ct}</td><td>${tat}</td><td>${wt}</td></tr>`;
+  });
+  document.getElementById(prefix+'metrics').innerHTML = rows +
+   `<tr><td colspan="6" style="text-align:left;color:var(--acc3)">Average Waiting Time = ${(sw/ps.length).toFixed(2)} &nbsp; | &nbsp; Average Turnaround Time = ${(st/ps.length).toFixed(2)}</td></tr>`;
+}
+
+/* ---------------- Algorithm definitions (code + explanation) ---------------- */
+const ALGOS=[
+{id:'fcfs',title:'4. FCFS — First Come First Served',theory:'Processes are executed strictly in order of arrival time. Simple but can cause the "convoy effect" (short jobs wait behind long ones).',
+code:`#include <stdio.h>
+struct Process{ int pid, at, bt, ct, tat, wt; };
+
+int main(){
+    int n = 4;                                  // number of processes
+    struct Process p[4] = {{1,0,5},{2,1,3},{3,2,8},{4,3,6}};
+
+    // Step 1: sort by arrival time (simple bubble sort)
+    for(int i=0;i<n-1;i++)
+        for(int j=0;j<n-1-i;j++)
+            if(p[j].at > p[j+1].at){
+                struct Process t=p[j]; p[j]=p[j+1]; p[j+1]=t;
+            }
+
+    int time = 0;
+    for(int i=0;i<n;i++){
+        if(time < p[i].at) time = p[i].at;       // CPU idle till process arrives
+        time += p[i].bt;                         // run process fully (non-preemptive)
+        p[i].ct  = time;                         // completion time
+        p[i].tat = p[i].ct - p[i].at;             // turnaround time
+        p[i].wt  = p[i].tat - p[i].bt;            // waiting time
+        printf("P%d CT=%d TAT=%d WT=%d\\n", p[i].pid,p[i].ct,p[i].tat,p[i].wt);
+    }
+    return 0;
+}`,
+exp:["<b>struct Process</b> groups all data of one process together.","Bubble sort orders processes by arrival time — FCFS runs them in that exact order.","<b>time += p[i].bt</b> means the current process runs to completion before the next starts (non-preemptive).","CT, TAT, WT are computed using the standard formulas: TAT = CT−AT, WT = TAT−BT."],
+mode:'fcfs',extra:null},
+
+{id:'sjf',title:'5. SJF — Shortest Job First (Non-Preemptive & Preemptive/SRTF)',theory:'Non-preemptive SJF picks the process with the smallest burst time among arrived processes and runs it fully. Preemptive SJF (called SRTF) re-checks every time unit and can interrupt a running process if a shorter one arrives.',
+code:`#include <stdio.h>
+struct Process{ int pid, at, bt, rem, ct, tat, wt, done; };
+
+int main(){
+    int n=4; struct Process p[4]={{1,0,5,5},{2,1,3,3},{3,2,8,8},{4,3,6,6}};
+    int completed=0, time=0;
+
+    while(completed < n){
+        int idx = -1, minBt = 999999;
+        for(int i=0;i<n;i++)
+            // pick process that has ARRIVED, is NOT finished, has SMALLEST remaining burst
+            if(p[i].at<=time && !p[i].done && p[i].rem < minBt){
+                minBt = p[i].rem; idx = i;
+            }
+        if(idx==-1){ time++; continue; }        // no process ready yet -> CPU idle
+
+        p[idx].rem--;                            // run for 1 unit (preemptive style loop)
+        time++;
+        if(p[idx].rem==0){                       // process finished
+            p[idx].done=1; completed++;
+            p[idx].ct=time; p[idx].tat=p[idx].ct-p[idx].at; p[idx].wt=p[idx].tat-p[idx].bt;
+            printf("P%d CT=%d TAT=%d WT=%d\\n",p[idx].pid,p[idx].ct,p[idx].tat,p[idx].wt);
+        }
+    }
+    return 0;
+}`,
+exp:["Looping 1 time-unit at a time and re-selecting the smallest <b>rem</b> (remaining burst) every step makes this <b>SRTF (preemptive SJF)</b>.","For <b>non-preemptive SJF</b>, only re-select a new process when the current one's <b>rem==0</b> (finishes) instead of every unit.","<b>done</b> flag prevents re-selecting a finished process.","This picks the globally shortest job first, minimizing average waiting time."],
+mode:null,extra:'sjf'},
+
+{id:'prio',title:'6. Priority Scheduling (Non-Preemptive & Preemptive)',theory:'Each process has a priority number (lower = higher priority here). Non-preemptive runs the chosen job fully; preemptive re-checks every unit and can interrupt for a higher-priority arrival. Risk: low-priority jobs may starve (fixed using "aging").',
+code:`#include <stdio.h>
+struct Process{ int pid, at, bt, pr, rem, ct, tat, wt, done; };
+
+int main(){
+    int n=4; struct Process p[4]={{1,0,5,2,5},{2,1,3,1,3},{3,2,8,3,8},{4,3,6,2,6}};
+    int completed=0, time=0;
+
+    while(completed<n){
+        int idx=-1, best=999999;
+        for(int i=0;i<n;i++)
+            // pick arrived, unfinished process with SMALLEST priority number (=highest priority)
+            if(p[i].at<=time && !p[i].done && p[i].pr < best){
+                best=p[i].pr; idx=i;
+            }
+        if(idx==-1){ time++; continue; }
+
+        p[idx].rem--; time++;                    // preemptive: 1 unit at a time
+        if(p[idx].rem==0){
+            p[idx].done=1; completed++;
+            p[idx].ct=time; p[idx].tat=p[idx].ct-p[idx].at; p[idx].wt=p[idx].tat-p[idx].bt;
+            printf("P%d CT=%d TAT=%d WT=%d\\n",p[idx].pid,p[idx].ct,p[idx].tat,p[idx].wt);
+        }
+    }
+    return 0;
+}`,
+exp:["<b>pr</b> field stores priority; smaller number wins (customisable convention).","Re-checking priority every time unit = <b>preemptive</b> priority scheduling.","For <b>non-preemptive</b>, keep running the same process until <b>rem==0</b> before choosing again.","Starvation of low-priority jobs is a known drawback — solved by 'aging' (increasing priority the longer a job waits)."],
+mode:null,extra:'prio'},
+
+{id:'rr',title:'7. Round Robin Scheduling',theory:'Each process gets a fixed time slice (quantum). If it does not finish, it goes to the back of the ready queue. Fair and good for time-sharing systems; choosing the right quantum size is critical.',
+code:`#include <stdio.h>
+#define Q 2                                     // time quantum
+struct Process{ int pid, at, bt, rem, ct, tat, wt; };
+
+int main(){
+    int n=4; struct Process p[4]={{1,0,5,5},{2,1,3,3},{3,2,8,8},{4,3,6,6}};
+    int queue[100], front=0, rear=0, time=0, completed=0;
+    int inQ[4]={0};
+
+    queue[rear++]=0; inQ[0]=1;                   // P0 arrives at time 0
+    while(completed<n){
+        int cur=queue[front++];
+        int run = p[cur].rem < Q ? p[cur].rem : Q; // run min(remaining, quantum)
+        time += run; p[cur].rem -= run;
+
+        for(int i=0;i<n;i++)                      // add any new arrivals to queue
+            if(p[i].at<=time && !inQ[i]){ queue[rear++]=i; inQ[i]=1; }
+
+        if(p[cur].rem>0) queue[rear++]=cur;        // not finished -> back of queue
+        else{
+            completed++;
+            p[cur].ct=time; p[cur].tat=p[cur].ct-p[cur].at; p[cur].wt=p[cur].tat-p[cur].bt;
+            printf("P%d CT=%d TAT=%d WT=%d\\n",p[cur].pid,p[cur].ct,p[cur].tat,p[cur].wt);
+        }
+    }
+    return 0;
+}`,
+exp:["<b>#define Q 2</b> sets the time slice every process is allowed to run.","<b>run = min(rem, Q)</b> — process runs for the quantum, or less if it finishes sooner.","New arrivals are appended to the queue right after the running process's slice, THEN the preempted process (if unfinished) is appended — this exact order matters for correctness.","This loop-and-requeue pattern is what makes Round Robin fair — every ready process gets a turn."],
+mode:'rr',extra:null},
+
+{id:'mlq',title:'8 & 9. Multilevel Queue Scheduling',theory:'Processes are split into separate queues by type/priority — e.g. Queue-0 (system processes, Round Robin) and Queue-1 (user processes, FCFS). Queue-0 has absolute priority: it always runs before Queue-1 gets the CPU. Each queue can use its own scheduling algorithm.',
+code:`#include <stdio.h>
+#define Q 2
+struct Process{ int pid, at, bt, pr, rem, ct, tat, wt; };
+// pr <= 2 => System Queue (Round Robin, quantum=Q)
+// pr  > 2 => User Queue   (FCFS)
+
+int main(){
+    int n=4; struct Process p[4]={{1,0,5,2,5},{2,1,3,1,3},{3,2,8,3,8},{4,3,6,2,6}};
+    int time=0, completed=0;
+    int q0[100],f0=0,r0=0, q1[100],f1=0,r1=0, inQ[4]={0};
+
+    for(int i=0;i<n;i++) if(p[i].at==0){ (p[i].pr<=2? q0[r0++]:q1[r1++]) = i; inQ[i]=1; }
+
+    while(completed<n){
+        for(int i=0;i<n;i++)                       // enqueue new arrivals into correct queue
+            if(p[i].at<=time && !inQ[i]){ (p[i].pr<=2? q0[r0++]:q1[r1++])=i; inQ[i]=1; }
+
+        if(f0<r0){                                  // Queue-0 (system) always preferred: Round Robin
+            int cur=q0[f0++];
+            int run = p[cur].rem<Q? p[cur].rem:Q;
+            time+=run; p[cur].rem-=run;
+            for(int i=0;i<n;i++) if(p[i].at<=time && !inQ[i]){(p[i].pr<=2?q0[r0++]:q1[r1++])=i;inQ[i]=1;}
+            if(p[cur].rem>0) q0[r0++]=cur;
+            else { completed++; p[cur].ct=time; p[cur].tat=p[cur].ct-p[cur].at; p[cur].wt=p[cur].tat-p[cur].bt;
+                   printf("P%d(sys) CT=%d TAT=%d WT=%d\\n",p[cur].pid,p[cur].ct,p[cur].tat,p[cur].wt); }
+        } else if(f1<r1){                           // Queue-1 (user) runs FCFS only if Queue-0 empty
+            int cur=q1[f1++];
+            time+=p[cur].rem; p[cur].rem=0; completed++;
+            p[cur].ct=time; p[cur].tat=p[cur].ct-p[cur].at; p[cur].wt=p[cur].tat-p[cur].bt;
+            printf("P%d(usr) CT=%d TAT=%d WT=%d\\n",p[cur].pid,p[cur].ct,p[cur].tat,p[cur].wt);
+        } else time++;                              // both queues empty -> CPU idle
+    }
+    return 0;
+}`,
+exp:["Two separate queues <b>q0</b> (system, priority ≤2) and <b>q1</b> (user, priority &gt;2) — classic Multilevel Queue design.","<b>if(f0&lt;r0)</b> is checked FIRST every loop — Queue-0 has strict priority over Queue-1, exactly like real OS kernels prioritising system processes.","Queue-0 uses Round Robin (quantum Q); Queue-1 uses plain FCFS — each queue keeps its own algorithm.","If a system process arrives while a user process runs, in true MLQ the user process would need to wait until Queue-0 fully empties again."],
+mode:'mlq',extra:null}
+];
+
+const cont=document.getElementById('algoContainer');
+ALGOS.forEach(a=>{
+  const sec=document.createElement('section'); sec.id='a-'+a.id;
+  let extraCtrl='';
+  if(a.mode==='rr'||a.mode==='mlq') extraCtrl=`<label>Quantum: <input id="${a.id}_q" type="number" value="2" min="1" style="width:44px"></label>`;
+  if(a.extra==='sjf') extraCtrl=`<select id="sjf_mode"><option value="sjf_np">Non-Preemptive</option><option value="sjf_p">Preemptive (SRTF)</option></select>`;
+  if(a.extra==='prio') extraCtrl=`<select id="prio_mode"><option value="prio_np">Non-Preemptive</option><option value="prio_p">Preemptive</option></select>`;
+  sec.innerHTML = `<h2>${a.title}</h2><div class="card">
+   <span class="tag">Theory</span><p>${a.theory}</p>
+   <h3>C Program (beginner, line-commented)</h3><pre>${a.code.replace(/</g,'&lt;')}</pre>
+   <h3>Line-by-line Explanation</h3><ul class="exp">${a.exp.map(e=>'<li>'+e+'</li>').join('')}</ul>
+   <div class="row">${extraCtrl}<button onclick="runAlgo('${a.id}')">▶ Run Simulation on Process Data above</button></div>
+   <h3>Gantt Chart (animated)</h3><div class="gantt" id="${a.id}gantt"></div>
+   <h3>Result Table</h3><table id="${a.id}metrics"></table>
+  </div>`;
+  cont.appendChild(sec);
+});
+
+function runAlgo(id){
+  const a=ALGOS.find(x=>x.id===id);
+  let res;
+  if(a.extra==='sjf'){ res=timeStepSim(document.getElementById('sjf_mode').value); }
+  else if(a.extra==='prio'){ res=timeStepSim(document.getElementById('prio_mode').value); }
+  else if(a.mode==='rr'){ res=simulateRR(+document.getElementById('rr_q').value); }
+  else if(a.mode==='mlq'){ res=simulateMLQ(+document.getElementById('mlq_q').value); }
+  else res=timeStepSim(a.mode);
+  renderResult(id,res.timeline,res.ps);
+}
+</script>
+</body>
+</html>
