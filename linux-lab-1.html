@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Linux Command Lab — Practical Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e14; --panel:#101720; --panel2:#0d131b; --line:#1e2733;
+  --text:#c7d0da; --dim:#6b7889; --bright:#eef3f8;
+  --green:#39d97a; --amber:#ffb454; --red:#ff6b6b; --blue:#5ac8fa;
+  --mono:'JetBrains Mono', monospace; --sans:'Space Grotesk', sans-serif;
+}
+:root:not([data-theme="light"]){ }
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  scroll-padding-top:calc(70px + env(safe-area-inset-top,0px));}
+body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+::-webkit-scrollbar{width:10px;} ::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;}
+
+/* ---------- Boot intro ---------- */
+#boot{position:fixed;inset:0;background:#000;color:var(--green);font-family:var(--mono);
+  z-index:999;padding:6vh 6vw;font-size:14px;line-height:1.7;overflow:hidden;}
+#boot pre{white-space:pre-wrap;margin:0;}
+#boot .cursor{display:inline-block;width:8px;height:14px;background:var(--green);animation:blink 1s step-end infinite;vertical-align:middle;}
+@keyframes blink{50%{opacity:0;}}
+#boot.hide{animation:fadeOut .6s ease forwards;}
+@keyframes fadeOut{to{opacity:0;visibility:hidden;pointer-events:none;}}
+
+/* ---------- Top bar ---------- */
+header.top{position:sticky;top:0;z-index:50;background:rgba(10,14,20,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:12px;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));}
+header.top .dots{display:flex;gap:6px;}
+header.top .dots span{width:10px;height:10px;border-radius:50%;display:inline-block;}
+header.top .dots span:nth-child(1){background:#ff5f56;} header.top .dots span:nth-child(2){background:#ffbd2e;} header.top .dots span:nth-child(3){background:#27c93f;}
+header.top .title{font-family:var(--mono);font-size:13px;color:var(--dim);}
+header.top .brand{margin-left:auto;font-weight:600;font-size:15px;color:var(--bright);}
+header.top .brand span{color:var(--green);}
+
+/* ---------- Layout ---------- */
+.wrap{display:grid;grid-template-columns:250px 1fr;max-width:1180px;margin:0 auto;}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;}nav.side{display:none;}}
+nav.side{border-right:1px solid var(--line);padding:26px 14px;position:sticky;top:57px;
+  height:calc(100vh - 57px);overflow-y:auto;align-self:start;}
+nav.side a{display:block;color:var(--dim);text-decoration:none;font-size:13px;padding:7px 10px;border-radius:6px;
+  border-left:2px solid transparent;margin-bottom:2px;transition:.15s;}
+nav.side a:hover{color:var(--bright);border-left-color:var(--green);background:var(--panel);}
+nav.side .num{color:var(--green);font-family:var(--mono);margin-right:6px;}
+
+main{padding:36px 26px 90px;min-width:0;}
+
+/* ---------- Hero ---------- */
+.hero{padding:40px 4px 50px;border-bottom:1px solid var(--line);margin-bottom:40px;}
+.hero .eyebrow{font-family:var(--mono);color:var(--green);font-size:13px;}
+.hero h1{font-size:clamp(28px,4.5vw,44px);line-height:1.15;margin:10px 0 14px;color:var(--bright);font-weight:700;}
+.hero p{max-width:60ch;color:var(--dim);font-size:15.5px;line-height:1.6;}
+.hero .cmdline{font-family:var(--mono);color:var(--text);background:var(--panel);border:1px solid var(--line);
+  border-radius:8px;padding:12px 16px;margin-top:22px;font-size:13.5px;max-width:60ch;}
+.hero .cmdline .p{color:var(--green);}
+
+/* ---------- Section ---------- */
+section.lesson{margin-bottom:64px;scroll-margin-top:80px;}
+section.lesson .head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;}
+section.lesson .head .co{font-family:var(--mono);color:var(--amber);font-size:12px;border:1px solid var(--line);
+  padding:2px 8px;border-radius:20px;}
+section.lesson h2{font-size:22px;color:var(--bright);margin:0;font-weight:600;}
+section.lesson>p.desc{color:var(--dim);font-size:14.5px;line-height:1.6;max-width:70ch;margin:10px 0 22px;}
+
+/* command grid */
+.cmd-block{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:18px;background:var(--panel);}
+.cmd-block .code{font-family:var(--mono);font-size:13px;line-height:2;padding:16px 18px;}
+.cmd-block .code .row{display:grid;grid-template-columns:minmax(0,auto) 1fr;gap:18px;padding:2px 0;border-bottom:1px dashed var(--line);}
+.cmd-block .code .row:last-child{border-bottom:none;}
+.cmd-block .code .cmd{color:var(--green);white-space:nowrap;}
+.cmd-block .code .cmd .flag{color:var(--amber);}
+.cmd-block .code .expl{color:var(--dim);font-family:var(--sans);font-size:13px;line-height:1.5;padding-top:1px;}
+@media (max-width:600px){.cmd-block .code .row{grid-template-columns:1fr;gap:2px;}}
+
+.actions{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel2);}
+.run-btn{font-family:var(--mono);font-size:12.5px;background:transparent;color:var(--green);
+  border:1px solid var(--green);border-radius:6px;padding:7px 14px;cursor:pointer;transition:.15s;}
+.run-btn:hover{background:var(--green);color:#04150a;}
+.run-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+
+/* terminal output */
+.term{font-family:var(--mono);font-size:12.5px;background:#05080c;border-top:1px solid var(--line);
+  padding:0 16px;max-height:0;overflow:hidden;transition:max-height .35s ease, padding .35s ease;}
+.term.open{max-height:420px;overflow-y:auto;padding:14px 16px;}
+.term .line{white-space:pre-wrap;color:var(--text);line-height:1.7;}
+.term .line.prompt{color:var(--green);}
+.term .line.out{color:var(--dim);}
+
+footer{border-top:1px solid var(--line);padding:30px 26px 50px;color:var(--dim);font-size:13px;font-family:var(--mono);
+  text-align:center;}
+footer .green{color:var(--green);}
+</style>
+</head>
+<body>
+
+<div id="boot"><pre id="bootText"></pre></div>
+
+<header class="top">
+  <div class="dots"><span></span><span></span><span></span></div>
+  <div class="title">linux-lab — bash — 120x30</div>
+  <div class="brand">practical<span>@</span>linux</div>
+</header>
+
+<div class="wrap">
+  <nav class="side" id="sideNav"></nav>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">CO1 · List of Practical</div>
+      <h1>Implementation of Linux Commands, explained line by line.</h1>
+      <p>Every command below is broken down piece by piece — what each flag does, why you'd use it, and what the terminal actually prints back. Press <b style="color:var(--bright)">Run</b> under any block to watch a simulated execution.</p>
+      <div class="cmdline"><span class="p">student@ubuntu:~$</span> whoami<br>student</div>
+    </section>
+
+    <div id="lessons"></div>
+  </main>
+</div>
+
+<footer>
+  <span class="green">$</span> echo "End of practical list — CO1" <span class="green">#</span> built as an interactive lab
+</footer>
+
+<script>
+/* ---------------- Boot sequence (single orchestrated intro) ---------------- */
+const bootLines = [
+ "Booting linux-lab kernel ................ [ OK ]",
+ "Mounting /practical/CO1 .................. [ OK ]",
+ "Loading command reference database ....... [ OK ]",
+ "Starting simulation shell ................ [ OK ]",
+ "",
+ "Welcome, student. Type is not required — just scroll."
+];
+const bootEl = document.getElementById('bootText');
+let bi=0, ci=0;
+function typeBoot(){
+  if(bi>=bootLines.length){ setTimeout(()=>{document.getElementById('boot').classList.add('hide');},500); return; }
+  const line = bootLines[bi];
+  if(ci<=line.length){
+    bootEl.textContent = bootLines.slice(0,bi).join("\n") + (bi>0?"\n":"") + line.slice(0,ci);
+    ci++; setTimeout(typeBoot, line.length? 8:80);
+  } else { bi++; ci=0; setTimeout(typeBoot,60); }
+}
+typeBoot();
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+  document.getElementById('boot').classList.add('hide');
+}
+
+/* ---------------- Lesson data ---------------- */
+const lessons = [
+{
+  id:"intro", co:"CO1", title:"Introduction to Unix/Linux OS & Architecture",
+  desc:"Linux is a Unix-like, open-source operating system built around a kernel that manages hardware, and a shell that lets you talk to that kernel using text commands. Its architecture is layered.",
+  rows:[
+    ["uname -a","Prints the full system identity: kernel name, hostname, kernel release/version, machine hardware, and OS."],
+    ["cat /proc/version","Reads the running kernel's version string directly from the virtual /proc filesystem."],
+    ["lsb_release -a","Shows the Linux distribution's name, release number, and codename (needs lsb-release package)."]
+  ],
+  demo:[["uname -a","Linux ubuntu-lab 6.8.0-45-generic #45-Ubuntu SMP x86_64 GNU/Linux"],
+        ["cat /proc/version","Linux version 6.8.0-45-generic (gcc 13.2.0) #45-Ubuntu SMP"]]
+},
+{
+  id:"sysinfo", co:"CO1", title:"Display System Information",
+  desc:"Commands that report basic facts about the machine you're logged into — its name, kernel, and current date/time.",
+  rows:[
+    ["uname","Prints only the kernel name (e.g. \"Linux\") with no arguments."],
+    ["uname<span class='flag'> -r</span>","-r shows just the kernel release number, useful for checking driver compatibility."],
+    ["hostname","Prints the machine's network name as set in /etc/hostname."],
+    ["hostname<span class='flag'> -I</span>","-I lists all IP addresses assigned to this host."],
+    ["date","Prints the current system date and time in the default locale format."],
+    ["date<span class='flag'> +\"%Y-%m-%d\"</span>","The +FORMAT argument lets you print only the parts you want — here, year-month-day."]
+  ],
+  demo:[["uname -r","6.8.0-45-generic"],["hostname","ubuntu-lab"],["date","Wed Sep 23 11:42:07 IST 2026"]]
+},
+{
+  id:"fileops", co:"CO1", title:"File Operations",
+  desc:"The everyday toolkit for creating, viewing, copying, moving, deleting files, and controlling who can access them.",
+  rows:[
+    ["cat file.txt","Concatenates and prints the full content of file.txt to the terminal."],
+    ["touch note.txt","Creates an empty file called note.txt, or updates its timestamp if it already exists."],
+    ["cp<span class='flag'> -r</span> src/ dest/","Copies files; -r makes it recursive so entire folders are copied, not just single files."],
+    ["mv old.txt new.txt","Renames old.txt to new.txt, or moves it to a different path if a directory is given."],
+    ["rm<span class='flag'> -i</span> file.txt","Deletes file.txt; -i asks for confirmation before each deletion, a safety net."],
+    ["chmod<span class='flag'> 755</span> script.sh","Sets permissions: owner gets read/write/execute (7), group and others get read/execute (5)."],
+    ["umask","Shows the default permission mask subtracted from new files/directories when they're created."]
+  ],
+  demo:[["touch note.txt","(file created, no output)"],["cat note.txt",""],["chmod 755 script.sh","(permissions updated)"],
+        ["ls -l script.sh","-rwxr-xr-x 1 student student 128 Sep 23 11:42 script.sh"]]
+},
+{
+  id:"dirs", co:"CO1", title:"Create, View & Navigate Directories",
+  desc:"Directories are how Linux organizes files into a tree. These commands let you build that tree and move around it.",
+  rows:[
+    ["mkdir<span class='flag'> -p</span> a/b/c","Creates directory a, then b inside it, then c inside that; -p creates parents as needed without erroring."],
+    ["rmdir empty_dir","Removes a directory, but only if it is completely empty."],
+    ["cd projects/","Changes the current working directory to projects/."],
+    ["pwd","Prints the full absolute path of the directory you're currently standing in."],
+    ["ls<span class='flag'> -la</span>","Lists directory contents; -l gives long detail (permissions, owner, size), -a includes hidden dotfiles."]
+  ],
+  demo:[["mkdir -p a/b/c","(no output)"],["pwd","/home/student"],
+        ["ls -la","drwxr-xr-x 4 student student 4096 Sep 23 11:40 .\ndrwxr-xr-x 3 student student 4096 Sep 23 11:40 a"]]
+},
+{
+  id:"disk", co:"CO1", title:"Disk Commands",
+  desc:"Tools to inspect storage usage, mount external volumes, and format or check filesystems.",
+  rows:[
+    ["df<span class='flag'> -h</span>","Reports free/used disk space per mounted filesystem; -h prints sizes in human-readable MB/GB."],
+    ["du<span class='flag'> -sh</span> folder/","Reports total disk usage of folder/; -s summarizes into one line, -h makes it human-readable."],
+    ["mount /dev/sdb1 /mnt/usb","Attaches the filesystem on device /dev/sdb1 to the directory /mnt/usb so it becomes accessible."],
+    ["umount /mnt/usb","Detaches (unmounts) the filesystem previously mounted at /mnt/usb."],
+    ["mkfs.ext4 /dev/sdb1","Formats the partition /dev/sdb1 with the ext4 filesystem, erasing existing data on it."],
+    ["fsck /dev/sdb1","Checks the filesystem on /dev/sdb1 for errors and repairs them if possible."]
+  ],
+  demo:[["df -h","Filesystem  Size  Used  Avail  Use%  Mounted on\n/dev/sda1    40G   18G   20G   48%   /"],
+        ["du -sh /var/log","312M    /var/log"]]
+},
+{
+  id:"redirect", co:"CO1", title:"Redirection & Piping",
+  desc:"Redirection sends a command's output somewhere other than the screen; piping feeds one command's output straight into another.",
+  rows:[
+    ["ls > files.txt","Redirects ls output into files.txt, overwriting the file if it already exists."],
+    ["echo hi >> log.txt","Appends the text \"hi\" to the end of log.txt without erasing existing content."],
+    ["sort < names.txt","Reads names.txt as input to sort, instead of sort waiting for keyboard input."],
+    ["ps aux <span class='flag'>|</span> grep bash","Pipes the output of ps aux into grep, which filters it down to lines containing \"bash\"."]
+  ],
+  demo:[["ls > files.txt","(files.txt now holds directory listing)"],
+        ["ps aux | grep bash","student   1122  0.0  0.1  8288  bash"]]
+},
+{
+  id:"compress", co:"CO1", title:"File Compression & Archiving",
+  desc:"Bundling many files into one archive, and shrinking that archive's size for storage or transfer.",
+  rows:[
+    ["tar<span class='flag'> -cvf</span> arc.tar dir/","Creates (c) an archive, verbose (v) lists files as it works, into file (f) arc.tar, from dir/."],
+    ["tar<span class='flag'> -xvf</span> arc.tar","Extracts (x) the contents of arc.tar back out, verbosely."],
+    ["gzip file.txt","Compresses file.txt in place, replacing it with file.txt.gz."],
+    ["zip<span class='flag'> -r</span> arc.zip dir/","Creates a zip archive; -r includes all files inside dir/ recursively."],
+    ["unzip arc.zip","Extracts every file contained in arc.zip into the current directory."]
+  ],
+  demo:[["tar -cvf arc.tar project/","project/\nproject/main.py\nproject/README.md"],
+        ["gzip notes.txt","(notes.txt replaced by notes.txt.gz)"]]
+},
+{
+  id:"process", co:"CO1", title:"Process Commands",
+  desc:"Every running program is a process with a unique PID. These commands let you view, prioritize, and stop them.",
+  rows:[
+    ["ps<span class='flag'> aux</span>","Lists every running process on the system with user, PID, CPU%, memory%, and command."],
+    ["kill 4521","Sends the default TERM signal to process ID 4521, asking it to shut down gracefully."],
+    ["killall firefox","Sends a kill signal to every process whose name matches \"firefox\", by name instead of PID."],
+    ["nice<span class='flag'> -n 10</span> ./task.sh","Launches task.sh with a lower scheduling priority (higher niceness = less CPU priority)."],
+    ["pgrep nginx","Searches running processes and prints the PIDs of any matching the name \"nginx\"."],
+    ["top","Opens a live, auto-refreshing dashboard of processes ranked by CPU usage."],
+    ["htop","An enhanced, colourized, interactive version of top with mouse support."]
+  ],
+  demo:[["ps aux | head -3","USER  PID  %CPU  %MEM  COMMAND\nroot   1    0.0   0.1   /sbin/init\nstudent 812 1.2  0.4  bash"],
+        ["pgrep nginx","1841\n1842"]]
+},
+{
+  id:"network", co:"CO1", title:"Network Commands",
+  desc:"Commands used to inspect network interfaces, test connectivity, and check routing.",
+  rows:[
+    ["ifconfig","Displays configuration (IP, MAC, netmask) of all active network interfaces (legacy tool)."],
+    ["ping<span class='flag'> -c 4</span> google.com","Sends 4 ICMP echo requests to google.com to test reachability and measure latency."],
+    ["netstat<span class='flag'> -tulnp</span>","Lists listening ports; -t TCP, -u UDP, -l listening only, -n numeric, -p show owning process."],
+    ["host google.com","Resolves the domain google.com to its IP address(es) using DNS."],
+    ["ip route","Displays the kernel's current routing table, showing which gateway handles which network."]
+  ],
+  demo:[["ping -c 2 google.com","64 bytes from google.com: icmp_seq=1 ttl=118 time=12.4 ms\n64 bytes from google.com: icmp_seq=2 ttl=118 time=11.9 ms"],
+        ["ip route","default via 192.168.1.1 dev eth0"]]
+},
+{
+  id:"admin", co:"CO1", title:"Administrator Commands",
+  desc:"Root-level commands for creating, modifying, and removing user accounts and groups — the backbone of multi-user Linux.",
+  rows:[
+    ["sudo adduser rahul","Creates a new user account \"rahul\", interactively setting password and details."],
+    ["sudo passwd rahul","Sets or changes the login password for the user rahul."],
+    ["sudo deluser rahul","Removes the user account rahul from the system (add --remove-home to delete their files too)."],
+    ["sudo usermod<span class='flag'> -aG</span> sudo rahul","Modifies user rahul, adding (-a, append) them to the \"sudo\" group (-G) without removing existing groups."],
+    ["sudo groupadd developers","Creates a new group called \"developers\" that users can later be added to."]
+  ],
+  demo:[["sudo adduser rahul","Adding user `rahul' ...\nAdding new group `rahul' (1001) ...\nAdding new user `rahul' (1001) ..."],
+        ["sudo groupadd developers","(group created, no output)"]]
+}
+];
+
+/* ---------------- Render ---------------- */
+const nav = document.getElementById('sideNav');
+const host = document.getElementById('lessons');
+
+lessons.forEach((L,idx)=>{
+  const num = String(idx+1).padStart(2,'0');
+  nav.innerHTML += `<a href="#${L.id}"><span class="num">${num}</span>${L.title}</a>`;
+
+  const rowsHtml = L.rows.map(r=>`<div class="row"><div class="cmd">$ ${r[0]}</div><div class="expl">${r[1]}</div></div>`).join('');
+  const demoData = JSON.stringify(L.demo).replace(/"/g,'&quot;');
+
+  host.innerHTML += `
+  <section class="lesson" id="${L.id}">
+    <div class="head"><span class="co">${L.co}</span><h2>${num}. ${L.title}</h2></div>
+    <p class="desc">${L.desc}</p>
+    <div class="cmd-block">
+      <div class="code">${rowsHtml}</div>
+      <div class="actions">
+        <button class="run-btn" data-demo="${demoData}" data-target="term-${L.id}">▶ Run simulation</button>
+      </div>
+      <div class="term" id="term-${L.id}"></div>
+    </div>
+  </section>`;
+});
+
+/* ---------------- Terminal simulation ---------------- */
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('.run-btn');
+  if(!btn) return;
+  const term = document.getElementById(btn.dataset.target);
+  const demo = JSON.parse(btn.dataset.demo.replace(/&quot;/g,'"'));
+  term.innerHTML = '';
+  term.classList.add('open');
+  btn.disabled = true; btn.textContent = '⏳ running...';
+  let i=0;
+  function next(){
+    if(i>=demo.length){ btn.disabled=false; btn.textContent='▶ Run again'; return; }
+    const [cmd,out] = demo[i];
+    const pLine = document.createElement('div');
+    pLine.className='line prompt';
+    pLine.textContent = 'student@ubuntu:~$ ' + cmd;
+    term.appendChild(pLine);
+    setTimeout(()=>{
+      if(out){
+        const oLine = document.createElement('div');
+        oLine.className='line out';
+        oLine.textContent = out;
+        term.appendChild(oLine);
+      }
+      term.scrollTop = term.scrollHeight;
+      i++; setTimeout(next,350);
+    },300);
+  }
+  next();
+});
+</script>
+</body>
+</html>
