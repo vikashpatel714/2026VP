@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Voice Chess Trainer</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#05060f;--fg:#e8ecff;--mut:#8f98c4;--card:#0d1030d9;--bd:#2a3170;--a:#00e5ff;--b:#b26bff;--lt:#6f7fc4;--dk:#2f3a86}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eef1ff;--fg:#12163a;--mut:#4b5384;--card:#ffffffe6;--bd:#b9c1f0;--a:#0077c8;--b:#7a2fd0;--lt:#e9ecff;--dk:#8d9be0}}
+:root[data-theme="light"]{--bg:#eef1ff;--fg:#12163a;--mut:#4b5384;--card:#ffffffe6;--bd:#b9c1f0;--a:#0077c8;--b:#7a2fd0;--lt:#e9ecff;--dk:#8d9be0}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(ellipse at top,#1a1f5a 0,var(--bg) 60%);background-color:var(--bg);color:var(--fg);font-family:Inter,system-ui,sans-serif;min-height:100vh}
+h1{text-align:center;margin:18px 0 4px;font-size:clamp(24px,5vw,40px);background:linear-gradient(90deg,var(--a),var(--b));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{text-align:center;color:var(--mut);margin:0 10px 12px;font-size:14px}
+.wrap{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;padding:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px}
+.side{width:min(94vw,400px)}
+.bd{display:grid;grid-template-columns:repeat(8,1fr);width:min(94vw,480px);aspect-ratio:1;border:3px solid var(--a);border-radius:6px;box-shadow:0 0 40px #00e5ff44,0 0 90px #b26bff33;overflow:hidden}
+.sq{display:flex;align-items:center;justify-content:center;font-size:min(9vw,46px);cursor:pointer;position:relative;user-select:none;line-height:1}
+.sq.l{background:var(--lt)}.sq.d{background:var(--dk)}
+.sq i{position:absolute;left:2px;top:0;font:9px sans-serif;font-style:normal;opacity:.6}
+.sq.lm{box-shadow:inset 0 0 0 100px #ffd60055}.sq.sel{box-shadow:inset 0 0 0 100px #00e5ff77}
+.sq.tg::after{content:"";width:28%;height:28%;border-radius:50%;background:#00e5ffcc;position:absolute}
+.sq.ck{box-shadow:inset 0 0 0 100px #ff2d4a88}.sq.hn{box-shadow:inset 0 0 0 100px #b26bffaa}
+.pw{color:#fff;text-shadow:0 0 3px #000,0 0 3px #000,0 1px 2px #000}.pb{color:#0b0d20;text-shadow:0 0 3px #7fd,0 0 2px #fff}
+.tabs,.ctl{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+button,select{background:var(--card);color:var(--fg);border:1px solid var(--bd);padding:7px 11px;border-radius:9px;cursor:pointer;font-size:13px}
+button.on,button.pri{background:linear-gradient(90deg,var(--a),var(--b));color:#fff;border-color:transparent}
+#st{font-weight:700;color:var(--a);margin-bottom:6px}
+#coach{min-height:96px;max-height:190px;overflow:auto;font-size:14px;line-height:1.5;border-left:3px solid var(--b);padding-left:10px}
+#coach p{margin:0 0 8px}#coach p:first-child{color:var(--fg)}#coach p+p{color:var(--mut);font-size:13px}
+#mv{font-family:ui-monospace,monospace;font-size:13px;color:var(--mut);max-height:90px;overflow:auto;margin-top:8px}
+h3{margin:8px 0 4px;font-size:14px;color:var(--b)}
+</style></head><body>
+<h1>♞ VOICE CHESS TRAINER</h1>
+<p class="sub">Play a real game or solve puzzles. The coach speaks every move with its notation and tells you why it matters.</p>
+<div class="wrap">
+<div><div class="bd" id="bd"></div></div>
+<div class="side card">
+<div class="tabs"><button id="tp" class="on">Play vs Computer</button><button id="tz">Puzzles</button></div>
+<div class="ctl" id="c1"><select id="lv"><option value="1">Easy</option><option value="2" selected>Medium</option><option value="3">Hard</option></select><button class="pri" id="ng">New Game</button><button id="un">Undo</button></div>
+<div class="ctl" id="c2" style="display:none"><select id="ps"></select><button id="pn">Next</button><button id="sl">Show solution</button></div>
+<div class="ctl"><button id="hn">Hint</button><button id="vo" class="on">Voice: ON</button><select id="rt"><option value="0.85">Slow</option><option value="1" selected>Normal</option><option value="1.2">Fast</option></select></div>
+<div id="st"></div>
+<h3>Coach says</h3><div id="coach"></div>
+<h3>Moves</h3><div id="mv"></div>
+</div></div>
+<script>
+const KN=[[1,2],[2,1],[-1,2],[-2,1],[1,-2],[2,-1],[-1,-2],[-2,-1]],KG=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const isW=c=>c===c.toUpperCase(),nm=i=>"abcdefgh"[i&7]+(8-(i>>3)),sqi=s=>(8-s[1])*8+s.charCodeAt(0)-97;
+const NM={P:"pawn",N:"knight",B:"bishop",R:"rook",Q:"queen",K:"king"},V={P:100,N:320,B:330,R:500,Q:900,K:0};
+const GL={K:"♚",Q:"♛",R:"♜",B:"♝",N:"♞",P:"♟"};
+function parse(f){const p=f.split(" "),b=[];for(const r of p[0].split("/"))for(const ch of r)/\d/.test(ch)?b.push(...Array(+ch).fill(".")):b.push(ch);return{b,t:p[1],c:p[2]==="-"?"":p[2],e:p[3]==="-"?-1:sqi(p[3]),n:+p[5]||1}}
+function att(b,i,w){const r=i>>3,f=i&7,g=(x,y)=>x<0||x>7||y<0||y>7?null:b[x*8+y],P=w?"P":"p",N=w?"N":"n",K=w?"K":"k";
+for(const d of[-1,1])if(g(r+(w?1:-1),f+d)===P)return 1;
+for(const[a,c]of KN)if(g(r+a,f+c)===N)return 1;
+for(const[a,c]of KG){if(g(r+a,f+c)===K)return 1;for(let k=1;;k++){const x=g(r+a*k,f+c*k);if(x===null)break;if(x!=="."){const u=x.toUpperCase();if(isW(x)===w&&(u==="Q"||(a&&c?u==="B":u==="R")))return 1;break}}}return 0}
+function gen(s){const{b,t,c,e}=s,w=t==="w",o=[],at=(r,f)=>r<0||r>7||f<0||f>7?null:b[r*8+f],mine=x=>x!=="."&&isW(x)===w;
+for(let i=0;i<64;i++){const p=b[i];if(p==="."||!mine(p))continue;const u=p.toUpperCase(),r=i>>3,f=i&7;
+if(u==="P"){const d=w?-1:1,pr=w?0:7,push=q=>o.push(q>>3===pr?{f:i,t:q,p:1}:{f:i,t:q});
+if(at(r+d,f)==="."){push(i+d*8);if(r===(w?6:1)&&at(r+2*d,f)===".")o.push({f:i,t:i+d*16})}
+for(const k of[-1,1]){const x=at(r+d,f+k);if(x===null)continue;const q=(r+d)*8+f+k;if(x!=="."&&!mine(x))push(q);else if(q===e)o.push({f:i,t:q,ep:1})}}
+else if(u==="N"||u==="K"){for(const[a,k]of u==="N"?KN:KG){const x=at(r+a,f+k);if(x!==null&&!mine(x))o.push({f:i,t:(r+a)*8+f+k})}
+if(u==="K"&&i===(w?60:4)){const S=w?"KQ":"kq",R=w?"R":"r";
+if(c.includes(S[0])&&b[i+1]==="."&&b[i+2]==="."&&b[i+3]===R&&![i,i+1,i+2].some(q=>att(b,q,!w)))o.push({f:i,t:i+2,cs:1});
+if(c.includes(S[1])&&b[i-1]==="."&&b[i-2]==="."&&b[i-3]==="."&&b[i-4]===R&&![i,i-1,i-2].some(q=>att(b,q,!w)))o.push({f:i,t:i-2,cs:1})}}
+else for(const[a,k]of KG){if(u==="B"&&!(a&&k)||u==="R"&&a&&k)continue;for(let n=1;;n++){const x=at(r+a*n,f+k*n);if(x===null||mine(x))break;o.push({f:i,t:(r+a*n)*8+f+k*n});if(x!==".")break}}}return o}
+function mv(s,m){const b=[...s.b],p=b[m.f],w=isW(p);b[m.t]=m.p?(w?"Q":"q"):p;b[m.f]=".";if(m.ep)b[m.t+(w?8:-8)]=".";
+if(m.cs){if(m.t>m.f){b[m.t-1]=b[m.f+3];b[m.f+3]="."}else{b[m.t+1]=b[m.f-4];b[m.f-4]="."}}
+let c=s.c;for(const[q,ch]of[[60,"KQ"],[63,"K"],[56,"Q"],[4,"kq"],[7,"k"],[0,"q"]])if(m.f===q||m.t===q)for(const x of ch)c=c.replace(x,"");
+return{b,t:s.t==="w"?"b":"w",c,e:p.toUpperCase()==="P"&&Math.abs(m.t-m.f)===16?(m.f+m.t)/2:-1,n:s.n+(s.t==="b"?1:0)}}
+const kingAt=(b,w)=>b.indexOf(w?"K":"k");
+function legal(s){const w=s.t==="w";return gen(s).filter(m=>{const n=mv(s,m);return!att(n.b,kingAt(n.b,w),!w)})}
+const inCheck=s=>att(s.b,kingAt(s.b,s.t==="w"),s.t!=="w");
+function san(s,m,L){const p=s.b[m.f].toUpperCase();let t;
+if(m.cs)t=m.t>m.f?"O-O":"O-O-O";else{const cap=s.b[m.t]!=="."||m.ep;
+if(p==="P")t=(cap?nm(m.f)[0]+"x":"")+nm(m.t)+(m.p?"=Q":"");
+else{const o=L.filter(x=>x.t===m.t&&x.f!==m.f&&s.b[x.f]===s.b[m.f]);let d="";
+if(o.length)d=o.some(x=>(x.f&7)===(m.f&7))?(o.some(x=>(x.f>>3)===(m.f>>3))?nm(m.f):nm(m.f)[1]):nm(m.f)[0];
+t=p+d+(cap?"x":"")+nm(m.t)}}
+const n=mv(s,m);return t+(inCheck(n)?(legal(n).length?"+":"#"):"")}
+function ev(s){let x=0;s.b.forEach((p,i)=>{if(p===".")return;const u=p.toUpperCase(),c=6-Math.abs(3.5-(i>>3))-Math.abs(3.5-(i&7));const v=V[u]+("PNB".includes(u)?c*4:0);x+=isW(p)?v:-v});return x}
+function search(s,d,a,b2){const L=legal(s);if(!L.length)return inCheck(s)?-99999-d:0;if(!d)return(s.t==="w"?1:-1)*ev(s);
+let best=-Infinity;for(const m of L){const v=-search(mv(s,m),d-1,-b2,-a);if(v>best)best=v;if(best>a)a=best;if(a>=b2)break}return best}
+function bestMove(s,d){let bm=null,bv=-Infinity;for(const m of legal(s)){const v=-search(mv(s,m),d-1,-Infinity,Infinity)+Math.random()*8;if(v>bv){bv=v;bm=m}}return bm}
+const PZ=[
+{n:"Back-rank mate",fen:"6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",sol:"d1d8",hint:"The black king is trapped behind its own pawns. Use your rook.",why:"The rook checks along the back rank and the king's own pawns block every escape square. This is called a back-rank mate."},
+{n:"Scholar's mate",fen:"r1bqkbnr/pppp1ppp/2n5/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 0 1",sol:"h5f7",hint:"Look at the weak pawn on f7, protected only by the king.",why:"The queen takes f7 supported by the bishop on c4, so the king cannot capture it. Checkmate in one."},
+{n:"Queen and king mate",fen:"7k/5Q2/6K1/8/8/8/8/8 w - - 0 1",sol:"f7g7",hint:"Put the queen next to the king, protected by your own king.",why:"The queen on g7 is guarded by your king, so the black king cannot take it, and every other square is covered."},
+{n:"Smothered mate",fen:"6rk/6pp/8/6N1/8/8/8/6K1 w - - 0 1",sol:"g5f7",hint:"The black king is smothered by its own rook and pawns. Only a knight can check it.",why:"A knight check cannot be blocked or captured, and the king has no free square. This pattern is a smothered mate."},
+{n:"Knight fork",fen:"4k3/1r6/8/8/4N3/8/8/4K3 w - - 0 1",sol:"e4d6",hint:"Find a square where the knight attacks the king and the rook together.",why:"The knight on d6 gives check and attacks the rook on b7 at the same time. Black must save the king, and you win the rook."}];
+const TIPS=["Tip: control the centre with pawns and pieces.","Tip: develop your knights and bishops before moving the queen.","Tip: castle early to keep your king safe.","Tip: before every move, ask what your opponent threatens.","Tip: do not move the same piece twice in the opening without a reason.","Tip: connect your rooks by clearing the back rank.","Tip: trade pieces when you are ahead in material.","Tip: always check for checks, captures and threats first."];
+let G,ST=[],mode="play",pi=0,voiceOn=true,busy=false;
+const $=id=>document.getElementById(id);
+function speak(t){if(!voiceOn||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=+$("rt").value;u.lang="en-US";speechSynthesis.speak(u)}
+function coach(t,extra){const d=$("coach");d.innerHTML=`<p>${t}</p>`+(extra?`<p>${extra}</p>`:"")+d.innerHTML;speak(t+" "+(extra||""))}
+function spoken(x){return x.replace("O-O-O","castles queenside").replace("O-O","castles kingside").replace(/^[NBRQK]/,c=>NM[c]+" ").replace("x"," takes ").replace("+"," check").replace("#"," checkmate").replace("=Q"," promotes to queen")}
+function mat(s){let x=0;s.b.forEach(p=>{if(p!==".")x+=(isW(p)?1:-1)*V[p.toUpperCase()]});return x/100}
+function explain(s,m,n,sn){const p=s.b[m.f].toUpperCase(),w=s.t==="w",side=w?"White":"Black",to=nm(m.t),cap=s.b[m.t]!=="."||m.ep;
+let t=m.cs?`${side} castles. Notation ${spoken(sn)}. `:`${side} moves the ${NM[p]} from ${nm(m.f)} to ${to}. Notation ${spoken(sn)}. `;
+if(cap)t+=`It captures a ${NM[m.ep?"P":s.b[m.t].toUpperCase()]}. `;
+if(m.cs)t+="Castling tucks the king to safety and activates the rook. ";
+else if(p==="P"&&["d4","e4","d5","e5"].includes(to))t+="A central pawn fights for the centre. ";
+else if("NB".includes(p)&&s.n<=10&&(w?m.f>=56:m.f<8))t+="Good development. Minor pieces belong in the game early. ";
+else if(p==="Q"&&s.n<=5)t+="Early queen move. Be careful, it can be chased away. ";
+if(m.p)t+="Promotion to a queen! ";
+if(inCheck(n)){t+=legal(n).length?"Check! The king must respond. ":"Checkmate! The game is over. "}
+else if(!legal(n).length)t+="Stalemate. It is a draw. ";
+else if(p!=="K"&&att(n.b,m.t,!w)&&!att(n.b,m.t,w))t+=`Warning: the piece on ${to} can be captured for free. `;
+const d=mat(n);return[t,`Material: ${d===0?"even":(d>0?"White":"Black")+" is ahead by "+Math.abs(d)+" points"}. ${TIPS[s.n%TIPS.length]}`]}
+function load(fen){G={s:parse(fen),last:null,hist:[],sel:-1,tg:[],hn:[],over:false,solved:false};ST=[];$("mv").textContent="";render()}
+function render(){const s=G.s,b=$("bd");b.innerHTML="";const ck=inCheck(s)?kingAt(s.b,s.t==="w"):-1;
+for(let i=0;i<64;i++){const d=document.createElement("div"),p=s.b[i],r=i>>3,f=i&7;
+d.className="sq "+((r+f)%2?"d":"l")+(G.last&&(G.last.f===i||G.last.t===i)?" lm":"")+(G.sel===i?" sel":"")+(G.tg.includes(i)?" tg":"")+(i===ck?" ck":"")+(G.hn.includes(i)?" hn":"");
+d.innerHTML=(f===0?`<i>${8-r}</i>`:"")+(p!=="."?`<span class="${isW(p)?"pw":"pb"}">${GL[p.toUpperCase()]}\uFE0E</span>`:"");
+d.onclick=()=>click(i);b.appendChild(d)}
+$("st").textContent=G.over?"Game over":(s.t==="w"?"White":"Black")+" to move"+(ck>=0?" (check)":"")}
+function apply(m,who){const s=G.s,L=legal(s),sn=san(s,m,L),n=mv(s,m);ST.push({s,last:G.last,h:G.hist.length});
+G.hist.push((s.t==="w"?s.n+". ":"")+sn);G.s=n;G.last=m;G.sel=-1;G.tg=[];G.hn=[];
+const[a,b]=explain(s,m,n,sn);$("mv").textContent=G.hist.join("  ");
+if(!legal(n).length)G.over=true;render();coach(a,b);
+if(mode==="play"&&!G.over&&n.t==="b"){busy=true;setTimeout(()=>{apply(bestMove(G.s,+$("lv").value),"ai");busy=false},1500)}}
+function click(i){if(G.over||busy||G.s.t!=="w"||G.solved)return;const L=legal(G.s),p=G.s.b[i];
+const m=G.sel>=0&&L.find(x=>x.f===G.sel&&x.t===i);
+if(m){if(mode==="puz"){const u=nm(m.f)+nm(m.t);if(u!==PZ[pi].sol){G.sel=-1;G.tg=[];render();coach("That is not the best move. Look for a check or a capture and try again.","Press Hint if you need help.");return}
+apply(m);G.solved=true;coach("Excellent! Puzzle solved.",PZ[pi].why);return}
+apply(m);return}
+if(p!=="."&&isW(p)){G.sel=i;G.tg=L.filter(x=>x.f===i).map(x=>x.t);G.hn=[];render();const u=NM[p.toUpperCase()];if(!G.tg.length)coach(`This ${u} has no legal moves right now.`);else speak(`${u} on ${nm(i)}`)}else{G.sel=-1;G.tg=[];render()}}
+function setMode(x){mode=x;$("tp").classList.toggle("on",x==="play");$("tz").classList.toggle("on",x==="puz");$("c1").style.display=x==="play"?"":"none";$("c2").style.display=x==="puz"?"":"none";$("coach").innerHTML="";x==="play"?newGame():loadPz(pi)}
+function newGame(){busy=false;load("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");coach("Welcome to the Voice Chess Trainer. You play White. I will explain every move with its notation and why it matters.","Start with a central pawn, for example e4 or d4.")}
+function loadPz(i){pi=i;busy=false;load(PZ[i].fen);$("ps").value=i;coach(`Puzzle ${i+1}: ${PZ[i].n}. White to move and find the best move.`)}
+$("ps").innerHTML=PZ.map((p,i)=>`<option value="${i}">${i+1}. ${p.n}</option>`).join("");
+$("ps").onchange=()=>loadPz(+$("ps").value);$("pn").onclick=()=>loadPz((pi+1)%PZ.length);
+$("sl").onclick=()=>{const u=PZ[pi].sol;G.hn=[sqi(u.slice(0,2)),sqi(u.slice(2))];render();coach(`The solution is ${nm(sqi(u.slice(0,2)))} to ${nm(sqi(u.slice(2)))}.`,PZ[pi].why)};
+$("hn").onclick=()=>{if(G.over||G.s.t!=="w")return;if(mode==="puz"){const u=PZ[pi].sol;G.hn=[sqi(u.slice(0,2))];render();coach("Hint: "+PZ[pi].hint);return}
+const m=bestMove(G.s,2);G.hn=[m.f,m.t];render();coach(`Hint: consider moving the ${NM[G.s.b[m.f].toUpperCase()]} from ${nm(m.f)} to ${nm(m.t)}.`,"Purple squares show the idea.")};
+$("un").onclick=()=>{if(busy||ST.length<1)return;let k=ST.length>1&&G.s.t==="w"?2:1;while(k--){const x=ST.pop();G.s=x.s;G.last=x.last;G.hist.length=x.h}G.over=false;G.sel=-1;G.tg=[];G.hn=[];$("mv").textContent=G.hist.join("  ");render();coach("Move taken back. Try a different idea.")};
+$("ng").onclick=newGame;$("tp").onclick=()=>setMode("play");$("tz").onclick=()=>setMode("puz");
+$("vo").onclick=()=>{voiceOn=!voiceOn;$("vo").textContent="Voice: "+(voiceOn?"ON":"OFF");$("vo").classList.toggle("on",voiceOn);if(!voiceOn&&window.speechSynthesis)speechSynthesis.cancel()};
+newGame();
+</script></body></html>
