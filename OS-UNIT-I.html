@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fundamentals of OS &amp; Linux Shell Scripting</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #123049; --bg-deep: #0D2438; --panel: #163A58;
+  --line: #6FA0C4; --line-dim: #3C6D8F;
+  --paper: #F1ECDC; --paper-dim: #E6DFC9;
+  --ink: #1B2733; --ink-dim: #4A5A68;
+  --accent: #E3A23D; --accent-dim: #B9822F;
+  --rust: #C15A45; --green: #6FA88A; --white: #F6F4EC;
+  --radius: 3px;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --sans: 'Space Grotesk', ui-sans-serif, sans-serif;
+  --serif: 'Source Serif 4', Georgia, serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root[data-theme="dark"] { --bg:#0A1E30; --bg-deep:#071523; --panel:#102B44; }
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: env(safe-area-inset-top, 0px); }
+body { margin:0; background:var(--bg); color:var(--white); font-family:var(--serif); line-height:1.6; -webkit-font-smoothing:antialiased; }
+::selection { background: var(--accent); color: var(--bg-deep); }
+.blueprint-bg { background-image: linear-gradient(var(--line-dim) 1px, transparent 1px), linear-gradient(90deg, var(--line-dim) 1px, transparent 1px); background-size:40px 40px; opacity:.12; position:absolute; inset:0; pointer-events:none; }
+a { color: var(--accent); }
+h1,h2,h3,h4 { font-family: var(--sans); font-weight:600; margin:0 0 .5em; color:var(--white); letter-spacing:-0.01em; }
+p { max-width:68ch; color:#DCE6EE; }
+.paper p, .paper li, .paper td, .paper th { color: var(--ink); }
+code, .mono { font-family: var(--mono); }
+.shell { display:grid; grid-template-columns:260px 1fr; min-height:100%; }
+.sidebar { position:sticky; top:0; height:100vh; overflow-y:auto; border-right:1px solid var(--line-dim); padding:28px 20px 40px; background:var(--bg-deep); }
+.sidebar .tag { font-family:var(--mono); font-size:11px; color:var(--accent); letter-spacing:.04em; margin-bottom:4px; }
+.sidebar h1 { font-size:19px; line-height:1.25; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--line-dim); }
+.navgroup { margin-bottom:18px; }
+.navgroup > a.top { display:block; font-family:var(--sans); font-weight:600; font-size:14px; color:var(--white); text-decoration:none; padding:6px 0; border-left:2px solid transparent; padding-left:10px; }
+.navgroup > a.top:hover, .navgroup > a.top.active { border-left-color:var(--accent); color:var(--accent); }
+.navgroup .sub { padding-left:20px; }
+.navgroup .sub a { display:block; font-size:12.5px; color:#9FB6C7; text-decoration:none; padding:3px 0 3px 10px; border-left:1px solid var(--line-dim); }
+.navgroup .sub a:hover, .navgroup .sub a.active { color:var(--accent); border-left-color:var(--accent); }
+.main { position:relative; min-width:0; }
+section.page { padding:0 56px 70px; max-width:980px; }
+.section-label { font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.05em; margin-bottom:10px; }
+h2.title { font-size:34px; margin-bottom:14px; }
+h3.sub { font-size:22px; margin-top:46px; border-top:1px solid var(--line-dim); padding-top:32px; }
+h4.minor { font-size:17px; color:var(--accent); margin-top:28px; }
+.lede { font-size:17px; color:#C7D8E4; max-width:66ch; }
+.hero { position:relative; padding:90px 56px 70px; overflow:hidden; border-bottom:1px solid var(--line-dim); }
+.hero .eyebrow { font-family:var(--mono); color:var(--accent); font-size:13px; letter-spacing:.06em; margin-bottom:18px; }
+.hero h1 { font-size:clamp(36px,5vw,58px); line-height:1.05; max-width:16ch; margin-bottom:20px; }
+.hero p.lede { font-size:18px; margin-bottom:10px; }
+.hero-grid { display:grid; grid-template-columns:1.1fr .9fr; gap:40px; align-items:center; position:relative; z-index:1; }
+@media (max-width:900px) { .hero-grid { grid-template-columns:1fr; } }
+.panel { background:var(--panel); border:1px solid var(--line-dim); border-radius:var(--radius); padding:22px 24px; }
+.paper { background:var(--paper); border:1px solid #C9BF9E; border-radius:var(--radius); padding:22px 26px; color:var(--ink); }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.grid5 { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+@media (max-width:760px) { .grid2,.grid3,.grid5 { grid-template-columns:1fr; } }
+table { width:100%; border-collapse:collapse; font-size:14.5px; margin:14px 0; }
+table.data th, table.data td { border:1px solid var(--line-dim); padding:8px 10px; text-align:left; font-family:var(--mono); font-size:13px; }
+table.data th { background:var(--bg-deep); color:var(--accent); }
+.paper table.data th, .paper table.data td { border-color:#C9BF9E; }
+.paper table.data th { background:#E6DFC9; color:var(--ink); }
+table.cmp td, table.cmp th { padding:10px 12px; border-bottom:1px solid var(--line-dim); font-size:14px; }
+table.cmp th { text-align:left; color:var(--accent); font-family:var(--sans); }
+.diagram { background:var(--bg-deep); border:1px solid var(--line-dim); border-radius:var(--radius); padding:18px; margin:18px 0; }
+.diagram svg { width:100%; height:auto; display:block; }
+.diagram .caption { font-family:var(--mono); font-size:12px; color:#8FA9BE; margin-top:10px; text-align:center; }
+.pill { display:inline-block; font-family:var(--mono); font-size:11px; padding:3px 9px; border:1px solid var(--line-dim); border-radius:20px; color:var(--accent); margin-right:6px; }
+button.ctl { font-family:var(--sans); font-weight:600; font-size:13.5px; background:var(--accent); color:var(--bg-deep); border:none; padding:10px 18px; border-radius:var(--radius); cursor:pointer; }
+button.ctl:hover { background:var(--white); }
+button.ctl.ghost { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+button.ctl.ghost:hover { background:var(--accent); color:var(--bg-deep); }
+button.ctl.small { padding:6px 12px; font-size:12px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+input[type=text], input[type=number], select { font-family:var(--mono); background:var(--bg-deep); border:1px solid var(--line-dim); color:var(--white); padding:7px 9px; border-radius:var(--radius); }
+footer { border-top:1px solid var(--line-dim); padding:30px 56px 60px; font-family:var(--mono); font-size:12px; color:#6E8AA0; }
+.nav-toggle { display:none; }
+@media (max-width:880px) {
+  .shell { grid-template-columns:1fr; }
+  .sidebar { position:sticky; top:0; height:auto; max-height:none; z-index:40; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding-top:calc(14px + env(safe-area-inset-top,0px)); }
+  .sidebar h1 { display:none; }
+  .sidebar .navlist { display:none; position:fixed; top:56px; left:0; right:0; bottom:0; background:var(--bg-deep); overflow-y:auto; padding:20px; z-index:50; }
+  .sidebar .navlist.open { display:block; }
+  .nav-toggle { display:block; background:var(--panel); border:1px solid var(--line-dim); color:var(--white); font-family:var(--mono); font-size:12px; padding:8px 12px; border-radius:var(--radius); }
+  section.page { padding:0 20px 56px; }
+  .hero { padding:50px 20px 40px; }
+  .grid2,.grid3,.grid5 { gap:14px; }
+}
+.reveal { opacity:0; transform:translateY(10px); transition:opacity .5s ease, transform .5s ease; }
+.reveal.in { opacity:1; transform:none; }
+@media (prefers-reduced-motion: reduce) { * { animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important; } }
+
+/* ---- code blocks ---- */
+pre.code { background:#0B1D2E; border:1px solid var(--line-dim); border-radius:var(--radius); padding:16px 18px; overflow-x:auto; font-family:var(--mono); font-size:13px; line-height:1.65; color:#D9E6EF; margin:14px 0; }
+pre.code .c { color:#6E8AA0; } /* comment */
+pre.code .k { color:#E3A23D; } /* keyword */
+pre.code .s { color:#8FC9A6; } /* string */
+pre.code .v { color:#7EC8E3; } /* variable */
+
+/* ---- terminal ---- */
+.terminal { background:#0A0F14; border:1px solid #24313D; border-radius:6px; overflow:hidden; margin:16px 0; }
+.term-bar { background:#141C24; padding:8px 12px; display:flex; gap:6px; align-items:center; }
+.term-dot { width:10px; height:10px; border-radius:50%; }
+.term-body { padding:14px 16px; font-family:var(--mono); font-size:13px; color:#B8F0C0; min-height:120px; max-height:340px; overflow-y:auto; white-space:pre-wrap; }
+.term-line { margin:0 0 2px; }
+.term-prompt { color:#E3A23D; }
+.term-input-row { display:flex; align-items:center; gap:6px; }
+.term-input-row input { flex:1; background:transparent; border:none; color:#F6F4EC; font-family:var(--mono); font-size:13px; outline:none; }
+.term-cursor { display:inline-block; width:7px; height:14px; background:#B8F0C0; animation:blink 1s step-start infinite; vertical-align:middle; }
+@keyframes blink { 50% { opacity:0; } }
+
+/* ---- run buttons row ---- */
+.run-row { display:flex; align-items:center; gap:10px; margin:10px 0 4px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <button class="nav-toggle" id="navToggle">Contents ▾</button>
+    <div class="navlist" id="navList">
+      <div class="tag">CS · OPERATING SYSTEMS</div>
+      <h1>OS Fundamentals &amp;<br>Linux Shell Scripting</h1>
+
+      <div class="navgroup">
+        <a href="#fundamentals" class="top">1 · Fundamentals of OS</a>
+        <div class="sub">
+          <a href="#overview">Overview of OS</a>
+          <a href="#generations">Generations of OS</a>
+          <a href="#architecture">OS architecture</a>
+          <a href="#interrupts">Interrupt handling</a>
+          <a href="#syscalls">System calls &amp; kernel</a>
+          <a href="#types-of-os">Types of OS</a>
+        </div>
+      </div>
+
+      <div class="navgroup">
+        <a href="#shell-scripting" class="top">2 · Shell Scripting in Linux</a>
+        <div class="sub">
+          <a href="#linux-arch">Linux architecture</a>
+          <a href="#cli-basics">CLI basics</a>
+          <a href="#try-terminal">Try the terminal</a>
+          <a href="#variables">Variables</a>
+          <a href="#control-structures">Control structures</a>
+          <a href="#functions">Functions</a>
+        </div>
+      </div>
+
+      <div class="navgroup">
+        <a href="#case-study" class="top">3 · Case Study</a>
+        <div class="sub">
+          <a href="#automation-script">Automating sysadmin tasks</a>
+          <a href="#cron">Scheduling with cron</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <header class="hero">
+      <div class="blueprint-bg"></div>
+      <div class="hero-grid">
+        <div>
+          <div class="eyebrow">LECTURE NOTES — OS FUNDAMENTALS &amp; LINUX SHELL SCRIPTING</div>
+          <h1>From the kernel's first interrupt to a script that runs itself at 2 a.m.</h1>
+          <p class="lede">Every operating system, from a 1950s batch machine to the phone in your pocket, solves the same problem: sit between messy hardware and demanding programs, and make the whole thing feel orderly. These notes trace that idea from the earliest generations of OS design, through interrupts and system calls, into the one OS you can actually open a terminal on right now — Linux — and out the other side into shell scripts that do a sysadmin's job while they sleep.</p>
+        </div>
+        <div class="diagram" style="margin:0;">
+          <svg id="heroDiagram" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div class="caption">a system call crossing from user mode into the kernel — watch it run</div>
+        </div>
+      </div>
+    </header>
+    <section class="page" id="fundamentals">
+      <div class="section-label">01 / FUNDAMENTALS OF OPERATING SYSTEMS</div>
+      <h2 class="title" id="overview">What an operating system actually does</h2>
+      <p class="lede">Strip away the marketing and an OS has one job: manage hardware resources — CPU, memory, storage, I/O devices — on behalf of programs that don't know or care about each other, while presenting a clean, consistent interface to both the programs and the person using them. Think of a busy hospital: doctors (programs) need beds, equipment and staff (hardware), and the hospital administration (the OS) is what prevents chaos — scheduling who gets the operating theatre when, without any doctor having to negotiate directly with another.</p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 560 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="170" width="520" height="34" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="280" y="192" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="12" font-weight="700">HARDWARE — CPU, memory, disks, network, peripherals</text>
+          <rect x="20" y="110" width="520" height="50" fill="#E3A23D" stroke="#E3A23D"/>
+          <text x="280" y="140" text-anchor="middle" fill="#0D2438" font-family="Space Grotesk" font-size="14" font-weight="700">OPERATING SYSTEM — the resource manager &amp; abstraction layer</text>
+          <rect x="20" y="55" width="520" height="40" fill="#2A5678" stroke="#6FA0C4"/>
+          <text x="280" y="79" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="12">APPLICATIONS — browser, editor, compiler, games</text>
+          <rect x="20" y="10" width="520" height="30" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="280" y="30" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="11">USER</text>
+        </svg>
+        <div class="caption">The OS is the only layer that touches both raw hardware and every running program — that's why it's a single point of control.</div>
+      </div>
+
+      <div class="grid3">
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Resource manager</h4><p style="margin:0;">Decides which process gets the CPU, which pages sit in RAM, and in what order disk requests are served — arbitrating between programs that would otherwise fight over the same hardware.</p></div>
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Abstraction provider</h4><p style="margin:0;">Gives programs a clean file, a virtual address space, and a socket — instead of forcing every application to speak directly to disk sectors and network cards.</p></div>
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Control program</h4><p style="margin:0;">Prevents errors and improper use — stopping one process from reading another's memory, or from monopolising the CPU forever.</p></div>
+      </div>
+
+      <h3 class="sub" id="generations">Generations of operating systems</h3>
+      <p>OS design tracks hardware generations closely — each leap in electronics unlocked a fundamentally different way of managing a computer.</p>
+      <div class="diagram">
+        <svg id="genTimeline" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="caption">click a generation to read what changed</div>
+      </div>
+      <div class="panel" id="genDetail">
+        <h4 class="minor" style="margin-top:0;" id="genDetailTitle">1st Generation (1940s–1950s)</h4>
+        <p id="genDetailText" style="margin:0;">Vacuum tubes and plugboards. There was no operating system at all — a single program had the entire machine, wired by hand with cables and switches. Programming meant physically rewiring the computer.</p>
+      </div>
+
+      <h3 class="sub" id="architecture">Operating system architecture</h3>
+      <p>How the OS itself is internally organised is a design choice with real consequences for performance, reliability and extensibility. Four broad styles:</p>
+
+      <h4 class="minor">Monolithic architecture</h4>
+      <div class="diagram">
+        <svg viewBox="0 0 480 160" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="440" height="120" fill="#2A5678" stroke="#6FA0C4" rx="3"/>
+          <text x="240" y="42" text-anchor="middle" fill="#E3A23D" font-family="Space Grotesk" font-size="12" font-weight="700">SINGLE KERNEL ADDRESS SPACE</text>
+          <g font-family="JetBrains Mono" font-size="10" fill="#F6F4EC">
+            <rect x="35" y="55" width="95" height="70" fill="#183A50"/><text x="82" y="93" text-anchor="middle">File system</text>
+            <rect x="140" y="55" width="95" height="70" fill="#183A50"/><text x="187" y="85" text-anchor="middle">Process</text><text x="187" y="98" text-anchor="middle">scheduler</text>
+            <rect x="245" y="55" width="95" height="70" fill="#183A50"/><text x="292" y="85" text-anchor="middle">Device</text><text x="292" y="98" text-anchor="middle">drivers</text>
+            <rect x="350" y="55" width="95" height="70" fill="#183A50"/><text x="397" y="85" text-anchor="middle">Memory</text><text x="397" y="98" text-anchor="middle">manager</text>
+          </g>
+        </svg>
+        <div class="caption">All services run in kernel mode inside one address space — fast (direct function calls between modules) but a bug in one driver can crash the whole OS. Traditional UNIX and the Linux kernel follow this style.</div>
+      </div>
+
+      <h4 class="minor">Layered architecture</h4>
+      <div class="diagram">
+        <svg viewBox="0 0 480 180" xmlns="http://www.w3.org/2000/svg">
+          <g font-family="JetBrains Mono" font-size="10.5" fill="#F6F4EC">
+            <rect x="140" y="10" width="200" height="28" fill="#183A50" stroke="#6FA0C4"/><text x="240" y="29" text-anchor="middle">Layer N — user interface</text>
+            <rect x="140" y="42" width="200" height="28" fill="#20475F" stroke="#6FA0C4"/><text x="240" y="61" text-anchor="middle">Layer 3 — I/O management</text>
+            <rect x="140" y="74" width="200" height="28" fill="#26506E" stroke="#6FA0C4"/><text x="240" y="93" text-anchor="middle">Layer 2 — memory management</text>
+            <rect x="140" y="106" width="200" height="28" fill="#2A5678" stroke="#6FA0C4"/><text x="240" y="125" text-anchor="middle">Layer 1 — CPU scheduling</text>
+            <rect x="140" y="138" width="200" height="28" fill="#E3A23D" stroke="#E3A23D"/><text x="240" y="157" text-anchor="middle" fill="#0D2438">Layer 0 — hardware</text>
+          </g>
+        </svg>
+        <div class="caption">Each layer only calls the layer directly beneath it, hiding its own details from the layers above — easier to debug and verify, at the cost of extra call overhead between layers.</div>
+      </div>
+
+      <h4 class="minor">Microkernel architecture</h4>
+      <div class="diagram">
+        <svg viewBox="0 0 480 190" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="120" width="440" height="55" fill="none" stroke="#3C6D8F" stroke-dasharray="4 3"/>
+          <text x="30" y="135" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9.5">USER SPACE</text>
+          <g font-family="JetBrains Mono" font-size="10" fill="#F6F4EC">
+            <rect x="35" y="140" width="95" height="30" fill="#2A5678"/><text x="82" y="159" text-anchor="middle">File server</text>
+            <rect x="140" y="140" width="95" height="30" fill="#2A5678"/><text x="187" y="159" text-anchor="middle">Device driver</text>
+            <rect x="245" y="140" width="95" height="30" fill="#2A5678"/><text x="292" y="159" text-anchor="middle">Network stack</text>
+            <rect x="350" y="140" width="95" height="30" fill="#2A5678"/><text x="397" y="159" text-anchor="middle">App server</text>
+          </g>
+          <rect x="20" y="15" width="440" height="55" fill="none" stroke="#3C6D8F" stroke-dasharray="4 3"/>
+          <text x="30" y="30" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9.5">KERNEL SPACE</text>
+          <rect x="140" y="35" width="200" height="30" fill="#E3A23D"/>
+          <text x="240" y="55" text-anchor="middle" fill="#0D2438" font-family="Space Grotesk" font-size="11" font-weight="700">Microkernel: IPC + minimal scheduling</text>
+          <path d="M82 140 V70" stroke="#6FA0C4" stroke-width="1.5"/><path d="M187 140 V70" stroke="#6FA0C4" stroke-width="1.5"/>
+          <path d="M292 140 V70" stroke="#6FA0C4" stroke-width="1.5"/><path d="M397 140 V70" stroke="#6FA0C4" stroke-width="1.5"/>
+        </svg>
+        <div class="caption">Only the bare essentials — inter-process communication and basic scheduling — live in kernel mode; file systems, drivers, and network stacks run as ordinary user-space servers reached via message passing. Used by QNX and MINIX; more robust to a single driver crashing, but message-passing overhead costs performance.</div>
+      </div>
+
+      <h4 class="minor">Hybrid architecture</h4>
+      <p>Most production systems compromise: a kernel that is mostly monolithic for performance but exposes some services in a microkernel-like modular way. Windows NT and macOS's XNU kernel are the standard examples — monolithic-style device drivers and file systems for speed, with modular loadable components for flexibility.</p>
+
+      <h3 class="sub" id="interrupts">Interrupt handling</h3>
+      <p>An interrupt is hardware's way of tapping the CPU on the shoulder: "stop what you're doing, something needs attention." Instead of the CPU constantly polling every device to ask "are you done yet?" (wasteful), devices simply raise a signal when they need service, and the CPU reacts.</p>
+      <div class="diagram">
+        <svg id="interruptDiagram" viewBox="0 0 640 280" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:12px; flex-wrap:wrap;">
+          <div class="caption" id="interruptExplain" style="text-align:left; margin:0; min-height:34px;">Press "Trigger interrupt" to see a keyboard interrupt walk through the full cycle.</div>
+          <div style="display:flex; gap:8px;">
+            <button class="ctl" id="playInterrupt">▶ Trigger interrupt</button>
+            <button class="ctl ghost" id="resetInterrupt">Reset</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Hardware interrupts</h4><p style="margin:0;">Raised by physical devices — a key pressed, a network packet arriving, a disk finishing a read — via a dedicated interrupt request (IRQ) line.</p></div>
+        <div class="panel"><h4 class="minor" style="margin-top:0;">Software interrupts (traps)</h4><p style="margin:0;">Raised deliberately by a running program — a system call, or an error like division by zero — to hand control to the kernel on purpose.</p></div>
+      </div>
+      <p>Every interrupt has a unique number that indexes into the <strong>interrupt vector table</strong>, a fixed array of addresses the CPU consults to jump straight to the correct <strong>interrupt service routine (ISR)</strong> — no searching required, which is why interrupt response can be fast and deterministic. Some interrupts are <strong>maskable</strong> (the CPU can temporarily ignore them during a critical section); a <strong>non-maskable interrupt (NMI)</strong> — reserved for catastrophic events like a hardware memory failure — cannot be ignored.</p>
+
+      <h3 class="sub" id="syscalls">System calls and the kernel</h3>
+      <p>A CPU runs in one of (at least) two privilege levels: <strong>user mode</strong>, where ordinary programs run and cannot directly touch hardware or other processes' memory, and <strong>kernel mode</strong>, where the OS runs with full hardware access. A hardware <strong>mode bit</strong> tracks which one is active. A <strong>system call</strong> is the only sanctioned door between them — the mechanism a user program uses to politely ask the kernel to do something privileged on its behalf, like opening a file or creating a process.</p>
+      <div class="diagram">
+        <svg id="syscallDiagram" viewBox="0 0 640 220" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="caption">read() looks like an ordinary function call to the programmer — underneath, it traps into the kernel and back.</div>
+        <div id="syscallSteps" style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+          <div class="syscall-step" data-i="0" style="flex:1; min-width:130px; font-family:var(--mono); font-size:11px; color:#8FA9BE; border-left:2px solid var(--line-dim); padding-left:8px;">1. Program calls read() — a normal-looking function in user mode.</div>
+          <div class="syscall-step" data-i="1" style="flex:1; min-width:130px; font-family:var(--mono); font-size:11px; color:#8FA9BE; border-left:2px solid var(--line-dim); padding-left:8px;">2. Library executes a trap instruction — mode bit flips to kernel.</div>
+          <div class="syscall-step" data-i="2" style="flex:1; min-width:130px; font-family:var(--mono); font-size:11px; color:#8FA9BE; border-left:2px solid var(--line-dim); padding-left:8px;">3. Kernel's syscall handler does the actual privileged work.</div>
+          <div class="syscall-step" data-i="3" style="flex:1; min-width:130px; font-family:var(--mono); font-size:11px; color:#8FA9BE; border-left:2px solid var(--line-dim); padding-left:8px;">4. Mode bit flips back — program resumes in user mode with the result.</div>
+        </div>
+      </div>
+      <table class="data">
+        <tr><th>Category</th><th>Examples</th><th>Purpose</th></tr>
+        <tr><td>Process control</td><td>fork, exec, exit, wait</td><td>Create, run, end, and synchronize processes</td></tr>
+        <tr><td>File management</td><td>open, read, write, close</td><td>Manipulate files and their contents</td></tr>
+        <tr><td>Device management</td><td>ioctl, read, write</td><td>Request and release devices, perform I/O</td></tr>
+        <tr><td>Information maintenance</td><td>getpid, alarm, sleep</td><td>Get/set system data like time and process IDs</td></tr>
+        <tr><td>Communication</td><td>pipe, shmget, send, recv</td><td>Transfer data between processes, locally or over a network</td></tr>
+      </table>
+
+      <h3 class="sub" id="types-of-os">Types of operating systems</h3>
+      <div class="grid2">
+        <div class="panel">
+          <div class="pill">EARLIEST</div>
+          <h4 class="minor" style="margin-top:10px;">Batch Operating System</h4>
+          <p>Jobs with similar needs are grouped ("batched") and fed to the computer together with no interaction while running; an operator loads a stack of jobs and the results come out later, all at once. No user waits at a screen — the computer decides the order and simply works through the pile.</p>
+          <p style="margin-top:8px;"><strong>Real-life example:</strong> a bank's overnight batch job that processes every account's interest calculation and prints statements for all customers in one run, or exam-result processing where thousands of scripts are graded in one scheduled pass.</p>
+        </div>
+        <div class="panel">
+          <div class="pill">KEEP THE CPU BUSY</div>
+          <h4 class="minor" style="margin-top:10px;">Multiprogramming OS</h4>
+          <p>Several programs are kept in memory at once so that when one is blocked waiting for I/O, the CPU immediately switches to another instead of sitting idle. The goal is maximum CPU utilization, not necessarily fast response to any one user.</p>
+          <p style="margin-top:8px;"><strong>Real-life example:</strong> a university server that simultaneously runs a print job, a database query, and a compile job — while the compile waits on disk reads, the CPU quietly keeps the database query moving.</p>
+        </div>
+        <div class="panel">
+          <div class="pill">FAST SWITCHING</div>
+          <h4 class="minor" style="margin-top:10px;">Multitasking OS</h4>
+          <p>Extends multiprogramming with fast enough time-sharing that it <em>feels</em> simultaneous to a human — the CPU rapidly switches between tasks, giving each a tiny time slice. This is what makes an interactive desktop or phone possible at all.</p>
+          <p style="margin-top:8px;"><strong>Real-life example:</strong> playing music, typing a document, and downloading a file on your laptop at the same time — the CPU is really only doing one thing at any instant, switching so fast you never notice.</p>
+        </div>
+        <div class="panel">
+          <div class="pill">MORE THAN ONE CPU</div>
+          <h4 class="minor" style="margin-top:10px;">Multiprocessor OS</h4>
+          <p>Manages a machine with two or more CPUs sharing memory and peripherals, either running processes in true parallel (not just interleaved) or splitting one workload across cores. Offers higher throughput and can survive a single processor failing (graceful degradation).</p>
+          <p style="margin-top:8px;"><strong>Real-life example:</strong> a data-center server handling millions of search queries by spreading them across dozens of CPU cores simultaneously.</p>
+        </div>
+        <div class="panel" style="grid-column:1/-1;">
+          <div class="pill">DEADLINES ARE THE POINT</div>
+          <h4 class="minor" style="margin-top:10px;">Real-Time Operating System (RTOS)</h4>
+          <p>Correctness depends not just on the right answer but on delivering it within a strict, predictable time bound. A <strong>hard</strong> real-time system fails completely if a deadline is missed; a <strong>soft</strong> real-time system just degrades in quality.</p>
+          <p style="margin-top:8px;"><strong>Real-life examples:</strong> a car's anti-lock braking system and a hospital pacemaker are hard real-time — missing a deadline by milliseconds can be fatal. Video streaming and voice calls are soft real-time — a dropped or delayed frame is annoying, not catastrophic.</p>
+        </div>
+      </div>
+    </section>
+    <section class="page" id="shell-scripting">
+      <div class="section-label">02 / SHELL SCRIPTING IN LINUX</div>
+      <h2 class="title" id="linux-arch">Linux: an OS you can actually open up</h2>
+      <p class="lede">Linux is a concrete, everyday example of most of the ideas above: a monolithic-style kernel, a strict user/kernel mode boundary, system calls, and a rich set of process types all running under one roof. What makes it special for learning is that the interface to all of it — the <strong>shell</strong> — is just a program you can type into.</p>
+      <div class="diagram">
+        <svg viewBox="0 0 560 260" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="205" width="520" height="35" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="280" y="227" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">HARDWARE</text>
+
+          <rect x="20" y="110" width="520" height="85" fill="#2A5678" stroke="#6FA0C4"/>
+          <text x="280" y="128" text-anchor="middle" fill="#E3A23D" font-family="Space Grotesk" font-size="12" font-weight="700">LINUX KERNEL</text>
+          <g font-family="JetBrains Mono" font-size="9.5" fill="#F6F4EC">
+            <rect x="35" y="138" width="118" height="45" fill="#183A50"/><text x="94" y="158" text-anchor="middle">Process</text><text x="94" y="170" text-anchor="middle">scheduler</text>
+            <rect x="160" y="138" width="118" height="45" fill="#183A50"/><text x="219" y="158" text-anchor="middle">Memory</text><text x="219" y="170" text-anchor="middle">manager</text>
+            <rect x="285" y="138" width="118" height="45" fill="#183A50"/><text x="344" y="158" text-anchor="middle">VFS / file</text><text x="344" y="170" text-anchor="middle">systems</text>
+            <rect x="410" y="138" width="118" height="45" fill="#183A50"/><text x="469" y="158" text-anchor="middle">Device</text><text x="469" y="170" text-anchor="middle">drivers</text>
+          </g>
+
+          <rect x="20" y="65" width="520" height="35" fill="#E3A23D" stroke="#E3A23D"/>
+          <text x="280" y="87" text-anchor="middle" fill="#0D2438" font-family="Space Grotesk" font-size="12" font-weight="700">SHELL (bash / zsh) — your command interpreter</text>
+
+          <rect x="20" y="10" width="520" height="45" fill="#183A50" stroke="#6FA0C4"/>
+          <text x="280" y="30" text-anchor="middle" fill="#F6F4EC" font-family="JetBrains Mono" font-size="11">USER-SPACE UTILITIES &amp; APPLICATIONS</text>
+          <text x="280" y="45" text-anchor="middle" fill="#8FA9BE" font-family="JetBrains Mono" font-size="9.5">ls, grep, vim, gcc, firefox, your shell scripts…</text>
+        </svg>
+        <div class="caption">The shell isn't the kernel — it's an ordinary program that reads what you type and turns it into system calls on your behalf.</div>
+      </div>
+      <p>Every command you type — <code>ls</code>, <code>cp</code>, <code>grep</code> — is itself just a small program. The shell's job is to find it, run it (which under the hood is a <code>fork()</code> + <code>exec()</code> pair of system calls), wire up its input/output, and wait for it to finish.</p>
+
+      <h3 class="sub" id="cli-basics">Basic command-line operations</h3>
+      <table class="data">
+        <tr><th>Command</th><th>What it does</th></tr>
+        <tr><td>pwd</td><td>Print the current working directory</td></tr>
+        <tr><td>ls / ls -l</td><td>List directory contents / with details (permissions, size, date)</td></tr>
+        <tr><td>cd &lt;dir&gt;</td><td>Change directory (<code>cd ..</code> = parent, <code>cd ~</code> = home)</td></tr>
+        <tr><td>mkdir &lt;name&gt;</td><td>Create a new directory</td></tr>
+        <tr><td>touch &lt;name&gt;</td><td>Create an empty file, or update its timestamp</td></tr>
+        <tr><td>cat &lt;file&gt;</td><td>Print a file's contents to the screen</td></tr>
+        <tr><td>rm &lt;file&gt;</td><td>Delete a file (<code>rm -r</code> for a directory)</td></tr>
+        <tr><td>cp / mv</td><td>Copy / move (or rename) a file or directory</td></tr>
+        <tr><td>echo "text"</td><td>Print text — or with <code>&gt;</code> / <code>&gt;&gt;</code>, write/append it to a file</td></tr>
+        <tr><td>grep "pattern" file</td><td>Print only the lines that match a pattern</td></tr>
+        <tr><td>chmod</td><td>Change a file's permission bits (read/write/execute)</td></tr>
+        <tr><td>ps / top</td><td>List running processes / live resource usage</td></tr>
+        <tr><td>man &lt;command&gt;</td><td>Open the manual page for a command</td></tr>
+      </table>
+      <p>Two ideas make the CLI genuinely powerful rather than just a slower GUI: <strong>redirection</strong> (<code>&gt;</code> sends a command's output into a file instead of the screen) and <strong>pipes</strong> (<code>|</code> feeds one command's output directly into another command's input, letting you chain small tools into a custom one — e.g. <code>ps aux | grep firefox</code>).</p>
+
+      <h3 class="sub" id="try-terminal">Try it — a practice terminal</h3>
+      <p>This is a small in-browser simulation of a Linux shell with its own tiny virtual filesystem — not a real machine, but real enough to practice the commands above. Type <code>help</code> to see everything it understands.</p>
+      <div class="terminal">
+        <div class="term-bar">
+          <div class="term-dot" style="background:#E3574B;"></div><div class="term-dot" style="background:#E3A23D;"></div><div class="term-dot" style="background:#6FA88A;"></div>
+          <div style="margin-left:8px; font-family:var(--mono); font-size:11px; color:#7C8B96;">student@linux-lab: ~</div>
+        </div>
+        <div class="term-body" id="termBody"></div>
+        <div class="term-bar" style="border-top:1px solid #24313D;">
+          <span class="term-prompt mono" style="font-family:var(--mono); font-size:13px;">$</span>
+          <div class="term-input-row"><input type="text" id="termInput" autocomplete="off" spellcheck="false" placeholder="type a command… try: help"></div>
+        </div>
+      </div>
+
+      <h3 class="sub" id="variables">Shell variables</h3>
+      <p>A shell variable holds a piece of text. No dollar sign when you <em>set</em> it, but always a dollar sign when you <em>read</em> it back — that distinction trips up almost every beginner.</p>
+      <pre class="code"><span class="c">#!/bin/bash</span>
+<span class="v">name</span>=<span class="s">"Operating Systems"</span>    <span class="c"># set — no $, no spaces around =</span>
+<span class="v">version</span>=2
+
+<span class="k">echo</span> <span class="s">"Course: $name (Unit $version)"</span>   <span class="c"># read — with $</span></pre>
+      <div class="run-row"><button class="ctl small run-script" data-target="out-vars" data-lines='["Course: Operating Systems (Unit 2)"]'>▶ Run</button></div>
+      <div class="terminal" style="margin-top:6px;"><div class="term-body" id="out-vars" style="min-height:40px;"></div></div>
+      <p>Variables can also come from a command's output using <strong>command substitution</strong>, written <code>$(command)</code> — for example <code>today=$(date +%F)</code> stores today's date as text. Wrap a variable in quotes (<code>"$name"</code>) whenever it might contain spaces, to stop the shell from splitting it into separate words.</p>
+
+      <h3 class="sub" id="control-structures">Control structures</h3>
+      <h4 class="minor">Conditionals — if / elif / else</h4>
+      <pre class="code"><span class="c">#!/bin/bash</span>
+<span class="v">usage</span>=93
+<span class="k">if</span> [ <span class="v">$usage</span> -gt 90 ]; <span class="k">then</span>
+  <span class="k">echo</span> <span class="s">"Warning: disk almost full!"</span>
+<span class="k">elif</span> [ <span class="v">$usage</span> -gt 70 ]; <span class="k">then</span>
+  <span class="k">echo</span> <span class="s">"Notice: disk usage getting high."</span>
+<span class="k">else</span>
+  <span class="k">echo</span> <span class="s">"Disk usage normal."</span>
+<span class="k">fi</span></pre>
+      <div class="run-row"><button class="ctl small run-script" data-target="out-if" data-lines='["Warning: disk almost full!"]'>▶ Run (usage=93)</button></div>
+      <div class="terminal" style="margin-top:6px;"><div class="term-body" id="out-if" style="min-height:40px;"></div></div>
+      <p>Square brackets <code>[ ... ]</code> are actually a command (<code>test</code>) that checks a condition and exits successfully or not; <code>-gt</code>, <code>-lt</code>, <code>-eq</code> compare numbers, while <code>=</code> and <code>!=</code> compare text.</p>
+
+      <h4 class="minor">Loops — for, while, until</h4>
+      <pre class="code"><span class="c">#!/bin/bash</span>
+<span class="k">for</span> i in 1 2 3 4 5
+<span class="k">do</span>
+  <span class="k">echo</span> <span class="s">"Processing file_$i.log"</span>
+<span class="k">done</span>
+<span class="k">echo</span> <span class="s">"All files processed."</span></pre>
+      <div class="run-row"><button class="ctl small run-script" data-target="out-for" data-lines='["Processing file_1.log","Processing file_2.log","Processing file_3.log","Processing file_4.log","Processing file_5.log","All files processed."]'>▶ Run</button></div>
+      <div class="terminal" style="margin-top:6px;"><div class="term-body" id="out-for" style="min-height:40px;"></div></div>
+
+      <p>A <code>while</code> loop keeps going as long as its condition stays true — useful when you don't know the count in advance, like reading a file line by line or waiting for a resource to free up. <code>until</code> is the mirror image: it repeats until the condition becomes true.</p>
+
+      <p>The <code>case</code> statement is a cleaner alternative to a long chain of <code>elif</code>s when you're matching one variable against several fixed patterns — commonly used to parse a command-line option:</p>
+      <pre class="code"><span class="k">case</span> <span class="v">$1</span> in
+  start)   <span class="k">echo</span> <span class="s">"Starting service..."</span> ;;
+  stop)    <span class="k">echo</span> <span class="s">"Stopping service..."</span> ;;
+  restart) <span class="k">echo</span> <span class="s">"Restarting service..."</span> ;;
+  *)       <span class="k">echo</span> <span class="s">"Usage: $0 {start|stop|restart}"</span> ;;
+<span class="k">esac</span></pre>
+
+      <h3 class="sub" id="functions">Functions</h3>
+      <p>A function packages a block of commands under a name, so a script can call it — with different inputs — instead of repeating itself. Inside a function, <code>$1</code>, <code>$2</code>… refer to the arguments it was called with, and <code>local</code> keeps a variable from leaking into the rest of the script.</p>
+      <pre class="code"><span class="c">#!/bin/bash</span>
+<span class="v">count_down</span>() {
+  <span class="k">local</span> n=<span class="v">$1</span>
+  <span class="k">while</span> [ <span class="v">$n</span> -gt 0 ]; <span class="k">do</span>
+    <span class="k">echo</span> <span class="s">"T-minus $n"</span>
+    n=$((n-1))
+  <span class="k">done</span>
+  <span class="k">echo</span> <span class="s">"Liftoff!"</span>
+}
+<span class="v">count_down</span> 3</pre>
+      <div class="run-row"><button class="ctl small run-script" data-target="out-fn" data-lines='["T-minus 3","T-minus 2","T-minus 1","Liftoff!"]'>▶ Run count_down 3</button></div>
+      <div class="terminal" style="margin-top:6px;"><div class="term-body" id="out-fn" style="min-height:40px;"></div></div>
+    </section>
+    <section class="page" id="case-study">
+      <div class="section-label">03 / CASE STUDY</div>
+      <h2 class="title" id="automation-script">Automating system administration with a shell script</h2>
+      <p class="lede">This is the real payoff of everything above: a script that does a sysadmin's repetitive nightly checklist — check disk space, back up important data, delete old backups, log who's online — without a human ever typing a command. It combines variables, functions, a conditional, command substitution, and a loop-free but iteration-friendly command (<code>find</code>) into one coherent tool.</p>
+
+      <pre class="code"><span class="c">#!/bin/bash</span>
+<span class="c"># auto_admin.sh — daily system maintenance script</span>
+
+<span class="v">LOGFILE</span>=<span class="s">"/var/log/auto_admin.log"</span>
+<span class="v">BACKUP_DIR</span>=<span class="s">"/backup"</span>
+<span class="v">SRC_DIR</span>=<span class="s">"/home/user/data"</span>
+<span class="v">THRESHOLD</span>=80
+
+<span class="v">timestamp</span>() { <span class="k">date</span> <span class="s">"+%Y-%m-%d %H:%M:%S"</span>; }
+<span class="v">log</span>() { <span class="k">echo</span> <span class="s">"[$(timestamp)] $1"</span> >> <span class="s">"$LOGFILE"</span>; }
+
+<span class="c"># 1. Check disk usage</span>
+<span class="v">usage</span>=$(df / | tail -1 | awk <span class="s">'{print $5}'</span> | tr -d <span class="s">'%'</span>)
+<span class="k">if</span> [ <span class="s">"$usage"</span> -ge <span class="s">"$THRESHOLD"</span> ]; <span class="k">then</span>
+  log <span class="s">"WARNING: Disk usage at ${usage}% (threshold ${THRESHOLD}%)"</span>
+<span class="k">else</span>
+  log <span class="s">"Disk usage OK at ${usage}%"</span>
+<span class="k">fi</span>
+
+<span class="c"># 2. Back up important data</span>
+mkdir -p <span class="s">"$BACKUP_DIR"</span>
+tar -czf <span class="s">"$BACKUP_DIR/backup_$(date +%F).tar.gz"</span> <span class="s">"$SRC_DIR"</span>
+log <span class="s">"Backup completed: backup_$(date +%F).tar.gz"</span>
+
+<span class="c"># 3. Delete backups older than 7 days</span>
+find <span class="s">"$BACKUP_DIR"</span> -name <span class="s">"*.tar.gz"</span> -mtime +7 -exec rm {} \;
+log <span class="s">"Old backups cleaned up"</span>
+
+<span class="c"># 4. Report how many users are logged in</span>
+<span class="v">users_online</span>=$(who | wc -l)
+log <span class="s">"Active users: $users_online"</span>
+
+<span class="k">echo</span> <span class="s">"Maintenance run complete. See $LOGFILE for details."</span></pre>
+
+      <div class="grid2">
+        <div class="panel">
+          <h4 class="minor" style="margin-top:0;">Reading it line by line</h4>
+          <ul style="margin:0; padding-left:18px; color:#DCE6EE;">
+            <li style="margin-bottom:8px;"><strong>Variables at the top</strong> (<code>LOGFILE</code>, <code>BACKUP_DIR</code>, <code>THRESHOLD</code>) put every configurable value in one place — change the threshold once, not everywhere it's used.</li>
+            <li style="margin-bottom:8px;"><strong>Two small functions</strong> (<code>timestamp</code>, <code>log</code>) avoid repeating the same <code>date</code> formatting and file-append logic four times.</li>
+            <li style="margin-bottom:8px;"><strong>Command substitution + a pipeline</strong> (<code>df / | tail -1 | awk … | tr -d '%'</code>) turns raw disk-usage output into a single clean number the <code>if</code> can compare.</li>
+            <li style="margin-bottom:8px;"><strong>tar</strong> compresses the whole source directory into one dated archive — a new file every day, never overwriting yesterday's.</li>
+            <li style="margin-bottom:8px;"><strong><code>find ... -mtime +7 -exec rm</code></strong> finds every backup older than 7 days and deletes it — this is what stops backups from silently filling the disk forever.</li>
+            <li><strong><code>who | wc -l</code></strong> is a one-line pipe: list logged-in users, count the lines.</li>
+          </ul>
+        </div>
+        <div>
+          <div class="run-row"><button class="ctl" id="runCaseStudy">▶ Run auto_admin.sh</button></div>
+          <div class="terminal">
+            <div class="term-bar">
+              <div class="term-dot" style="background:#E3574B;"></div><div class="term-dot" style="background:#E3A23D;"></div><div class="term-dot" style="background:#6FA88A;"></div>
+              <div style="margin-left:8px; font-family:var(--mono); font-size:11px; color:#7C8B96;">student@linux-lab: ~</div>
+            </div>
+            <div class="term-body" id="out-casestudy" style="min-height:180px;">
+              <div class="term-line"><span class="term-prompt">$</span> ./auto_admin.sh</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="sub" id="cron">Making it run itself: cron</h3>
+      <p>A script is only "automated" once nobody has to remember to run it. Linux's <strong>cron</strong> daemon runs any command on a fixed schedule, defined by a single line in a user's <strong>crontab</strong>:</p>
+      <div class="diagram">
+        <svg viewBox="0 0 620 130" xmlns="http://www.w3.org/2000/svg">
+          <g font-family="JetBrains Mono" font-size="13" font-weight="700" fill="#F6F4EC">
+            <text x="30" y="30">0    2    *    *    *   /home/user/scripts/auto_admin.sh</text>
+          </g>
+          <g font-family="JetBrains Mono" font-size="9.5" fill="#8FA9BE">
+            <text x="30" y="55">│    │    │    │    │</text>
+            <text x="30" y="70">│    │    │    │    └── day of week (0–6, Sun–Sat)</text>
+            <text x="30" y="85">│    │    │    └────────── month (1–12)</text>
+            <text x="30" y="100">│    │    └─────────────────── day of month (1–31)</text>
+            <text x="30" y="115">│    └──────────────────────────── hour (0–23)</text>
+            <text x="240" y="40" fill="#E3A23D">└ minute (0–59)</text>
+          </g>
+        </svg>
+        <div class="caption">This entry runs auto_admin.sh at 02:00 every single day — five fields for minute, hour, day-of-month, month, day-of-week, each "*" meaning "every".</div>
+      </div>
+      <p>Add it with <code>crontab -e</code>, and the operating system itself — through cron, one of its own background processes — becomes the thing that remembers to keep the system healthy. That closes the loop back to where these notes started: an OS is fundamentally a resource manager, and a well-placed shell script is just one more resource it's willing to manage on a schedule.</p>
+    </section>
+
+    <footer>
+      OPERATING SYSTEMS · FUNDAMENTALS OF OS &amp; LINUX SHELL SCRIPTING — lecture notes with live terminal simulation
+    </footer>
+
+  </main>
+</div>
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var NS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs){ var e=document.createElementNS(NS,tag); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+
+  /* ---------------- Mobile nav ---------------- */
+  var navToggle = document.getElementById('navToggle');
+  var navList = document.getElementById('navList');
+  if (navToggle) {
+    navToggle.addEventListener('click', function(){
+      navList.classList.toggle('open');
+      navToggle.textContent = navList.classList.contains('open') ? 'Contents ▴' : 'Contents ▾';
+    });
+    navList.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){ navList.classList.remove('open'); navToggle.textContent='Contents ▾'; });
+    });
+  }
+
+  /* ---------------- Scroll spy ---------------- */
+  var navLinks = Array.prototype.slice.call(document.querySelectorAll('.navgroup a'));
+  var targets = navLinks.map(function(a){ return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+  function onScroll(){
+    var y = window.scrollY + 140, current = null;
+    targets.forEach(function(t){ if (t.offsetTop <= y) current = t; });
+    navLinks.forEach(function(a){ a.classList.remove('active'); });
+    if (current) navLinks.forEach(function(a){ if (a.getAttribute('href') === '#'+current.id) a.classList.add('active'); });
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  /* ---------------- Reveal on scroll ---------------- */
+  document.querySelectorAll('.panel, .paper, .diagram, .terminal').forEach(function(el){ el.classList.add('reveal'); });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, {threshold:.1});
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+  function tween(setter, from, to, duration, onDone){
+    if (reduceMotion) { setter(1); onDone && onDone(); return; }
+    var start = null;
+    function step(ts){
+      if (!start) start = ts;
+      var p = Math.min((ts-start)/duration, 1);
+      var ease = p<.5 ? 2*p*p : -1+(4-2*p)*p;
+      setter(ease);
+      if (p < 1) requestAnimationFrame(step); else onDone && onDone();
+    }
+    requestAnimationFrame(step);
+  }
+  function tweenPoint(token, from, to, duration, onDone){
+    tween(function(e){ token.setAttribute('cx', from.x+(to.x-from.x)*e); token.setAttribute('cy', from.y+(to.y-from.y)*e); }, 0,1,duration,onDone);
+  }
+
+  /* ================= Hero: syscall crossing animation ================= */
+  var heroSvg = document.getElementById('heroDiagram');
+  if (heroSvg) {
+    heroSvg.innerHTML = '';
+    var defsH = svgEl('defs', {});
+    var mkH = svgEl('marker', {id:'arrowHero', markerWidth:8, markerHeight:8, refX:6, refY:3, orient:'auto'});
+    mkH.appendChild(svgEl('path', {d:'M0,0 L6,3 L0,6 Z', fill:'#6FA0C4'}));
+    defsH.appendChild(mkH); heroSvg.appendChild(defsH);
+
+    heroSvg.appendChild(svgEl('rect', {x:20, y:20, width:320, height:90, fill:'#2A5678', stroke:'#6FA0C4', rx:3}));
+    heroSvg.appendChild((function(){ var t=svgEl('text',{x:180,y:45,'text-anchor':'middle',fill:'#F6F4EC','font-family':'JetBrains Mono','font-size':11,'font-weight':700}); t.textContent='USER MODE'; return t; })());
+    heroSvg.appendChild((function(){ var t=svgEl('text',{x:180,y:80,'text-anchor':'middle',fill:'#C7D8E4','font-family':'JetBrains Mono','font-size':10}); t.textContent='read(fd, buf, n)'; return t; })());
+
+    heroSvg.appendChild(svgEl('rect', {x:20, y:150, width:320, height:90, fill:'#E3A23D', stroke:'#E3A23D', rx:3}));
+    heroSvg.appendChild((function(){ var t=svgEl('text',{x:180,y:175,'text-anchor':'middle',fill:'#0D2438','font-family':'Space Grotesk','font-size':12,'font-weight':700}); t.textContent='KERNEL MODE'; return t; })());
+    heroSvg.appendChild((function(){ var t=svgEl('text',{x:180,y:205,'text-anchor':'middle',fill:'#0D2438','font-family':'JetBrains Mono','font-size':10}); t.textContent='service routine runs'; return t; })());
+
+    var heroToken = svgEl('circle', {cx:180, cy:65, r:8, fill:'#F6F4EC', stroke:'#0D2438', 'stroke-width':2});
+    heroSvg.appendChild(heroToken);
+
+    if (!reduceMotion) {
+      var top = {x:180,y:65}, bottom = {x:180,y:195};
+      var goingDown = true;
+      function loop(){
+        tweenPoint(heroToken, goingDown?top:bottom, goingDown?bottom:top, 1000, function(){
+          goingDown = !goingDown;
+          setTimeout(loop, 500);
+        });
+      }
+      setTimeout(loop, 500);
+    }
+  }
+
+  /* ================= Generations of OS timeline ================= */
+  var generations = [
+    {era:'1st Gen', years:'1940s–1950s', title:'1st Generation (1940s–1950s)',
+     text:'Vacuum tubes and plugboards. There was no operating system at all — a single program had the entire machine, wired by hand with cables and switches. Programming meant physically rewiring the computer for each job.'},
+    {era:'2nd Gen', years:'1950s–1960s', title:'2nd Generation (1950s–1960s)',
+     text:'Transistors replaced vacuum tubes, and the first true batch operating systems appeared. Jobs were punched onto cards, grouped into batches, and processed one after another with no interactive input — languages like FORTRAN and COBOL emerged here.'},
+    {era:'3rd Gen', years:'1960s–1970s', title:'3rd Generation (1960s–1970s)',
+     text:'Integrated circuits enabled multiprogramming and time-sharing — multiple users could interact with one machine "simultaneously" via terminals. UNIX was born in this era at Bell Labs, introducing ideas (processes, a hierarchical filesystem, the shell) still used today.'},
+    {era:'4th Gen', years:'1970s–1980s', title:'4th Generation (1970s–1980s)',
+     text:'The microprocessor made the personal computer possible. Operating systems like MS-DOS, and later graphical systems like the early Macintosh OS and Windows, brought computing out of data centers and onto individual desks.'},
+    {era:'5th Gen', years:'1980s–present', title:'5th Generation (1980s–present)',
+     text:'Distributed, networked, mobile and cloud computing. Android and iOS put a full operating system in every pocket; distributed OS concepts let clusters of machines act as one; and modern kernels manage virtualization and containers at massive scale.'}
+  ];
+  var genSvg = document.getElementById('genTimeline');
+  var genTitleEl = document.getElementById('genDetailTitle');
+  var genTextEl = document.getElementById('genDetailText');
+  if (genSvg) {
+    genSvg.innerHTML = '';
+    var gw = 900, gy = 130, n = generations.length;
+    var xs = generations.map(function(_,i){ return 90 + i*((gw-180)/(n-1)); });
+    genSvg.appendChild(svgEl('line', {x1:xs[0], y1:gy, x2:xs[n-1], y2:gy, stroke:'#3C6D8F', 'stroke-width':2}));
+    generations.forEach(function(g, i){
+      var grp = svgEl('g', {style:'cursor:pointer', 'data-idx':i, 'class':'gen-node'});
+      var circ = svgEl('circle', {cx:xs[i], cy:gy, r:16, fill: i===0 ? '#E3A23D' : '#2A5678', stroke:'#6FA0C4', 'stroke-width':2});
+      grp.appendChild(circ);
+      var num = svgEl('text', {x:xs[i], y:gy+5, 'text-anchor':'middle', fill: i===0?'#0D2438':'#F6F4EC', 'font-family':'JetBrains Mono', 'font-size':12, 'font-weight':700});
+      num.textContent = i+1;
+      grp.appendChild(num);
+      var lbl = svgEl('text', {x:xs[i], y:gy-30, 'text-anchor':'middle', fill:'#F6F4EC', 'font-family':'Space Grotesk', 'font-size':12, 'font-weight':600});
+      lbl.textContent = g.era;
+      grp.appendChild(lbl);
+      var yrs = svgEl('text', {x:xs[i], y:gy+38, 'text-anchor':'middle', fill:'#8FA9BE', 'font-family':'JetBrains Mono', 'font-size':10});
+      yrs.textContent = g.years;
+      grp.appendChild(yrs);
+      grp.addEventListener('click', function(){ selectGen(i); });
+      genSvg.appendChild(grp);
+    });
+  }
+  function selectGen(i){
+    if (!genSvg) return;
+    genSvg.querySelectorAll('.gen-node circle').forEach(function(c,j){
+      c.setAttribute('fill', j===i ? '#E3A23D' : '#2A5678');
+    });
+    genSvg.querySelectorAll('.gen-node text').forEach(function(t,idx){
+      var groupIdx = Math.floor(idx/3);
+    });
+    Array.prototype.forEach.call(genSvg.querySelectorAll('.gen-node'), function(g, j){
+      var numText = g.querySelectorAll('text')[0];
+      numText.setAttribute('fill', j===i ? '#0D2438' : '#F6F4EC');
+    });
+    genTitleEl.textContent = generations[i].title;
+    genTextEl.textContent = generations[i].text;
+  }
+
+  /* ================= Interrupt handling diagram ================= */
+  var intSvg = document.getElementById('interruptDiagram');
+  var intExplain = document.getElementById('interruptExplain');
+  var intBoxes = {};
+  function buildInterruptDiagram(){
+    intSvg.innerHTML = '';
+    var defs = svgEl('defs', {});
+    var mk = svgEl('marker', {id:'arrowI', markerWidth:8, markerHeight:8, refX:6, refY:3, orient:'auto'});
+    mk.appendChild(svgEl('path', {d:'M0,0 L6,3 L0,6 Z', fill:'#6FA0C4'}));
+    defs.appendChild(mk); intSvg.appendChild(defs);
+
+    var spec = [
+      {id:'proc', x:20, y:20, w:160, h:55, label:'Running process', sub:'executing normally'},
+      {id:'cpu', x:240, y:20, w:160, h:55, label:'CPU', sub:'checks interrupt line'},
+      {id:'device', x:460, y:20, w:160, h:55, label:'Keyboard (device)', sub:'raises IRQ'},
+      {id:'save', x:20, y:115, w:160, h:55, label:'Save context', sub:'PC + registers → PCB'},
+      {id:'vector', x:240, y:115, w:160, h:55, label:'Interrupt vector table', sub:'lookup ISR address'},
+      {id:'isr', x:460, y:115, w:160, h:55, label:'ISR runs', sub:'services the keypress'},
+      {id:'resume', x:240, y:210, w:160, h:55, label:'Restore &amp; resume', sub:'process continues'}
+    ];
+    spec.forEach(function(s){
+      var g = svgEl('g', {});
+      var r = svgEl('rect', {x:s.x, y:s.y, width:s.w, height:s.h, fill:'#183A50', stroke:'#6FA0C4', rx:3, id:'box-'+s.id});
+      g.appendChild(r);
+      var t1 = svgEl('text', {x:s.x+s.w/2, y:s.y+24, 'text-anchor':'middle', fill:'#F6F4EC', 'font-family':'JetBrains Mono', 'font-size':11, 'font-weight':700});
+      t1.textContent = s.label; g.appendChild(t1);
+      var t2 = svgEl('text', {x:s.x+s.w/2, y:s.y+40, 'text-anchor':'middle', fill:'#8FA9BE', 'font-family':'JetBrains Mono', 'font-size':9});
+      t2.textContent = s.sub; g.appendChild(t2);
+      intSvg.appendChild(g);
+      intBoxes[s.id] = r;
+    });
+
+    function arrow(x1,y1,x2,y2,dash){
+      var a = {d:'M'+x1+','+y1+' L'+x2+','+y2, stroke:'#3C6D8F', 'stroke-width':1.5, fill:'none', 'marker-end':'url(#arrowI)'};
+      if (dash) a['stroke-dasharray'] = '4 3';
+      intSvg.appendChild(svgEl('path', a));
+    }
+    arrow(460,47,400,47);
+    arrow(240,75,240,115);
+    arrow(400,142,460,142);
+    arrow(460,170,240,170,true);
+    arrow(240,142,100,142);
+    arrow(100,170,240,210);
+    arrow(320,210,320,170,true);
+  }
+  buildInterruptDiagram();
+
+  var interruptSteps = [
+    {id:'device', text:'A key is pressed. The keyboard raises a hardware interrupt on its IRQ line.'},
+    {id:'cpu', text:'The CPU finishes its current instruction and checks — yes, an interrupt is pending.'},
+    {id:'save', text:'Before doing anything else, the CPU saves the running process\u2019s program counter and registers, so it can resume later exactly where it left off.'},
+    {id:'vector', text:'The interrupt\u2019s number indexes straight into the interrupt vector table — no searching — to find the address of the correct handler.'},
+    {id:'isr', text:'The interrupt service routine (ISR) runs: it reads the keypress from the keyboard controller.'},
+    {id:'resume', text:'The saved context is restored, and the original process resumes — it never even knew it was interrupted.'}
+  ];
+  var playingInterrupt = false;
+  function resetInterrupt(){
+    Object.keys(intBoxes).forEach(function(k){ intBoxes[k].setAttribute('fill', '#183A50'); });
+    intExplain.textContent = 'Press "Trigger interrupt" to see a keyboard interrupt walk through the full cycle.';
+  }
+  function runInterrupt(){
+    if (playingInterrupt) return;
+    playingInterrupt = true;
+    var btn = document.getElementById('playInterrupt');
+    btn.textContent = '… running';
+    resetInterrupt();
+    var i = 0;
+    function step(){
+      if (i >= interruptSteps.length) { playingInterrupt = false; btn.textContent = '▶ Trigger interrupt'; return; }
+      var s = interruptSteps[i];
+      intBoxes[s.id].setAttribute('fill', '#E3A23D');
+      intExplain.textContent = s.text;
+      i++;
+      setTimeout(step, 950);
+    }
+    step();
+  }
+  document.getElementById('playInterrupt').addEventListener('click', runInterrupt);
+  document.getElementById('resetInterrupt').addEventListener('click', function(){ playingInterrupt=false; document.getElementById('playInterrupt').textContent='▶ Trigger interrupt'; resetInterrupt(); });
+
+  /* ================= System call diagram (auto loop) ================= */
+  var sysSvg = document.getElementById('syscallDiagram');
+  if (sysSvg) {
+    sysSvg.innerHTML = '';
+    var defsS = svgEl('defs', {});
+    var mkS = svgEl('marker', {id:'arrowSys', markerWidth:8, markerHeight:8, refX:6, refY:3, orient:'auto'});
+    mkS.appendChild(svgEl('path', {d:'M0,0 L6,3 L0,6 Z', fill:'#6FA0C4'}));
+    defsS.appendChild(mkS); sysSvg.appendChild(defsS);
+
+    sysSvg.appendChild(svgEl('rect', {x:20, y:15, width:600, height:75, fill:'#2A5678', stroke:'#6FA0C4', rx:3}));
+    sysSvg.appendChild((function(){var t=svgEl('text',{x:320,y:38,'text-anchor':'middle',fill:'#E3A23D','font-family':'Space Grotesk','font-size':12,'font-weight':700});t.textContent='USER MODE';return t;})());
+    sysSvg.appendChild((function(){var t=svgEl('text',{x:320,y:62,'text-anchor':'middle',fill:'#C7D8E4','font-family':'JetBrains Mono','font-size':10.5});t.textContent='application calls read(fd, buf, count)';return t;})());
+
+    sysSvg.appendChild(svgEl('line', {x1:20, y1:110, x2:620, y2:110, stroke:'#E3A23D', 'stroke-width':2, 'stroke-dasharray':'6 4'}));
+    sysSvg.appendChild((function(){var t=svgEl('text',{x:320,y:104,'text-anchor':'middle',fill:'#E3A23D','font-family':'JetBrains Mono','font-size':9});t.textContent='TRAP — mode bit flips';return t;})());
+
+    sysSvg.appendChild(svgEl('rect', {x:20, y:125, width:600, height:75, fill:'#183A50', stroke:'#6FA0C4', rx:3}));
+    sysSvg.appendChild((function(){var t=svgEl('text',{x:320,y:148,'text-anchor':'middle',fill:'#E3A23D','font-family':'Space Grotesk','font-size':12,'font-weight':700});t.textContent='KERNEL MODE';return t;})());
+    sysSvg.appendChild((function(){var t=svgEl('text',{x:320,y:172,'text-anchor':'middle',fill:'#C7D8E4','font-family':'JetBrains Mono','font-size':10.5});t.textContent='syscall handler reads from the device, returns bytes';return t;})());
+
+    var sysToken = svgEl('circle', {cx:320, cy:52, r:8, fill:'#F6F4EC', stroke:'#0D2438', 'stroke-width':2});
+    sysSvg.appendChild(sysToken);
+
+    var stepEls = Array.prototype.slice.call(document.querySelectorAll('.syscall-step'));
+    function highlightStep(i){
+      stepEls.forEach(function(el){
+        var on = parseInt(el.dataset.i,10) === i;
+        el.style.color = on ? '#F6F4EC' : '#8FA9BE';
+        el.style.borderLeftColor = on ? '#E3A23D' : 'var(--line-dim)';
+      });
+    }
+    if (!reduceMotion) {
+      var top = {x:320,y:52}, bottom = {x:320,y:162};
+      var down = true;
+      function sysLoop(){
+        highlightStep(down ? 1 : 3);
+        tweenPoint(sysToken, down?top:bottom, down?bottom:top, 900, function(){
+          highlightStep(down ? 2 : 0);
+          down = !down;
+          setTimeout(sysLoop, 700);
+        });
+      }
+      highlightStep(0);
+      setTimeout(sysLoop, 700);
+    }
+  }
+
+  /* ================= Practice terminal (virtual filesystem shell) ================= */
+  var termBody = document.getElementById('termBody');
+  var termInput = document.getElementById('termInput');
+  if (termBody && termInput) {
+    var fs = { type:'dir', children:{
+      'home': { type:'dir', children:{
+        'student': { type:'dir', children:{
+          'notes.txt': { type:'file', content:'Operating Systems — Unit 1 & 2 notes.' },
+          'scripts': { type:'dir', children:{
+            'auto_admin.sh': { type:'file', content:'#!/bin/bash\necho "Maintenance run complete."' }
+          }}
+        }}
+      }},
+      'etc': { type:'dir', children:{ 'hostname': { type:'file', content:'linux-lab' } } },
+      'var': { type:'dir', children:{ 'log': { type:'dir', children:{} } } }
+    }};
+    var cwd = ['home','student'];
+
+    function resolveDir(path){
+      var node = fs, parts;
+      if (path === undefined || path === '') return {node:getNode(cwd), path:cwd};
+      if (path === '~') return {node:getNode(['home','student']), path:['home','student']};
+      var abs = path.charAt(0) === '/';
+      parts = path.split('/').filter(Boolean);
+      var base = abs ? [] : cwd.slice();
+      parts.forEach(function(p){
+        if (p === '.') return;
+        if (p === '..') { base.pop(); return; }
+        base.push(p);
+      });
+      return {node:getNode(base), path:base};
+    }
+    function getNode(pathArr){
+      var node = fs;
+      for (var i=0;i<pathArr.length;i++){
+        if (!node.children || !node.children[pathArr[i]]) return null;
+        node = node.children[pathArr[i]];
+      }
+      return node;
+    }
+
+    function printLine(text, cls){
+      var d = document.createElement('div');
+      d.className = 'term-line' + (cls ? ' '+cls : '');
+      d.textContent = text;
+      termBody.appendChild(d);
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+    function printPrompt(cmd){
+      var d = document.createElement('div');
+      d.className = 'term-line';
+      var p = document.createElement('span'); p.className='term-prompt'; p.textContent = '/'+cwd.join('/')+' $ ';
+      d.appendChild(p);
+      d.appendChild(document.createTextNode(cmd));
+      termBody.appendChild(d);
+      termBody.scrollTop = termBody.scrollHeight;
+    }
+
+    var helpText = [
+      'Available commands:',
+      '  pwd, ls [-l], cd <dir>, mkdir <name>, touch <name>,',
+      '  cat <file>, echo <text> [> file | >> file], rm <name>,',
+      '  grep <pattern> <file>, whoami, date, clear, help'
+    ];
+
+    function runCommand(raw){
+      var line = raw.trim();
+      if (!line) return;
+      var parts = line.match(/(?:[^\s"]+|"[^"]*")+/g) || [];
+      parts = parts.map(function(p){ return p.replace(/^"|"$/g,''); });
+      var cmd = parts[0], args = parts.slice(1);
+
+      if (cmd === 'help') { helpText.forEach(function(l){ printLine(l); }); return; }
+      if (cmd === 'clear') { termBody.innerHTML = ''; return; }
+      if (cmd === 'whoami') { printLine('student'); return; }
+      if (cmd === 'date') { printLine(new Date().toString()); return; }
+      if (cmd === 'pwd') { printLine('/'+cwd.join('/')); return; }
+
+      if (cmd === 'ls') {
+        var flag = args.find(function(a){ return a.charAt(0)==='-'; });
+        var target = args.find(function(a){ return a.charAt(0)!=='-'; });
+        var r = resolveDir(target);
+        if (!r.node || r.node.type !== 'dir') { printLine((target||'')+': No such directory', 'err'); return; }
+        var names = Object.keys(r.node.children);
+        if (names.length === 0) { printLine('(empty)'); return; }
+        if (flag === '-l') {
+          names.forEach(function(n){
+            var c = r.node.children[n];
+            printLine((c.type==='dir' ? 'drwxr-xr-x' : '-rw-r--r--') + '  ' + (c.type==='dir'? n+'/' : n));
+          });
+        } else {
+          printLine(names.map(function(n){ return r.node.children[n].type==='dir' ? n+'/' : n; }).join('  '));
+        }
+        return;
+      }
+
+      if (cmd === 'cd') {
+        var target2 = args[0] || '~';
+        var r2 = resolveDir(target2);
+        if (!r2.node || r2.node.type !== 'dir') { printLine('cd: '+target2+': No such directory', 'err'); return; }
+        cwd = r2.path;
+        return;
+      }
+
+      if (cmd === 'mkdir') {
+        if (!args[0]) { printLine('mkdir: missing operand', 'err'); return; }
+        var dirNode = getNode(cwd);
+        if (dirNode.children[args[0]]) { printLine('mkdir: '+args[0]+': already exists', 'err'); return; }
+        dirNode.children[args[0]] = {type:'dir', children:{}};
+        return;
+      }
+
+      if (cmd === 'touch') {
+        if (!args[0]) { printLine('touch: missing operand', 'err'); return; }
+        var dirNode2 = getNode(cwd);
+        if (!dirNode2.children[args[0]]) dirNode2.children[args[0]] = {type:'file', content:''};
+        return;
+      }
+
+      if (cmd === 'rm') {
+        if (!args[0]) { printLine('rm: missing operand', 'err'); return; }
+        var dirNode3 = getNode(cwd);
+        if (!dirNode3.children[args[0]]) { printLine('rm: '+args[0]+': No such file', 'err'); return; }
+        delete dirNode3.children[args[0]];
+        return;
+      }
+
+      if (cmd === 'cat') {
+        if (!args[0]) { printLine('cat: missing operand', 'err'); return; }
+        var dirNode4 = getNode(cwd);
+        var f = dirNode4.children[args[0]];
+        if (!f || f.type !== 'file') { printLine('cat: '+args[0]+': No such file', 'err'); return; }
+        (f.content || '(empty file)').split('\n').forEach(function(l){ printLine(l); });
+        return;
+      }
+
+      if (cmd === 'echo') {
+        var gtIdx = args.indexOf('>'), gtgtIdx = args.indexOf('>>');
+        if (gtIdx !== -1 || gtgtIdx !== -1) {
+          var idx = gtIdx !== -1 ? gtIdx : gtgtIdx;
+          var text = args.slice(0, idx).join(' ');
+          var fname = args[idx+1];
+          if (!fname) { printLine('echo: syntax error near unexpected token', 'err'); return; }
+          var dirNode5 = getNode(cwd);
+          if (!dirNode5.children[fname]) dirNode5.children[fname] = {type:'file', content:''};
+          if (gtIdx !== -1) dirNode5.children[fname].content = text;
+          else dirNode5.children[fname].content = (dirNode5.children[fname].content ? dirNode5.children[fname].content+'\n' : '') + text;
+          return;
+        }
+        printLine(args.join(' '));
+        return;
+      }
+
+      if (cmd === 'grep') {
+        if (args.length < 2) { printLine('grep: usage: grep <pattern> <file>', 'err'); return; }
+        var pattern = args[0], fname2 = args[1];
+        var dirNode6 = getNode(cwd);
+        var f2 = dirNode6.children[fname2];
+        if (!f2 || f2.type !== 'file') { printLine('grep: '+fname2+': No such file', 'err'); return; }
+        var matched = false;
+        (f2.content||'').split('\n').forEach(function(l){ if (l.indexOf(pattern) !== -1) { printLine(l); matched = true; } });
+        if (!matched) printLine('(no matches)');
+        return;
+      }
+
+      if (cmd === 'man') {
+        printLine((args[0]||'')+': see the CLI basics table above for a short description.');
+        return;
+      }
+
+      printLine(cmd + ': command not found — type "help" for a list', 'err');
+    }
+
+    printLine('Welcome to the practice shell. Type "help" to see what it understands.');
+    termInput.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') {
+        var val = termInput.value;
+        printPrompt(val);
+        termInput.value = '';
+        runCommand(val);
+      }
+    });
+    termBody.addEventListener('click', function(){ termInput.focus(); });
+  }
+
+  /* ================= Run-script typewriter demos ================= */
+  function typewriterInto(el, lines, onDone){
+    el.innerHTML = '';
+    var i = 0;
+    function next(){
+      if (i >= lines.length) { onDone && onDone(); return; }
+      var d = document.createElement('div');
+      d.className = 'term-line';
+      d.textContent = lines[i];
+      el.appendChild(d);
+      el.scrollTop = el.scrollHeight;
+      i++;
+      setTimeout(next, 420);
+    }
+    next();
+  }
+  document.querySelectorAll('.run-script').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var targetEl = document.getElementById(btn.dataset.target);
+      var lines = JSON.parse(btn.dataset.lines);
+      btn.disabled = true;
+      var original = btn.textContent;
+      btn.textContent = '… running';
+      typewriterInto(targetEl, lines, function(){ btn.disabled = false; btn.textContent = original; });
+    });
+  });
+
+  /* ================= Case study script runner ================= */
+  var csBtn = document.getElementById('runCaseStudy');
+  if (csBtn) {
+    csBtn.addEventListener('click', function(){
+      var el = document.getElementById('out-casestudy');
+      var d = new Date();
+      var pad = function(n){ return (n<10?'0':'')+n; };
+      var ts = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+      var dateOnly = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+      var lines = [
+        '$ ./auto_admin.sh',
+        '['+ts+'] Disk usage OK at 62%',
+        '['+ts+'] Backup completed: backup_'+dateOnly+'.tar.gz',
+        '['+ts+'] Old backups cleaned up',
+        '['+ts+'] Active users: 3',
+        'Maintenance run complete. See /var/log/auto_admin.log for details.'
+      ];
+      csBtn.disabled = true;
+      var original = csBtn.textContent;
+      csBtn.textContent = '… running';
+      typewriterInto(el, lines, function(){ csBtn.disabled = false; csBtn.textContent = original; });
+    });
+  }
+
+  /* init generations default */
+  if (typeof selectGen === 'function') selectGen(0);
+
+})();
+</script>
+</body>
+</html>
