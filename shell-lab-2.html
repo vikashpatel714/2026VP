@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shell Scripting Lab — CO1 Practicals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e14; --panel:#101720; --panel2:#0d131b; --line:#1e2733;
+  --text:#c7d0da; --dim:#6b7889; --bright:#eef3f8;
+  --green:#39d97a; --amber:#ffb454; --red:#ff6b6b; --blue:#5ac8fa; --purple:#c792ea;
+  --mono:'JetBrains Mono', monospace; --sans:'Space Grotesk', sans-serif;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);
+  scroll-padding-top:calc(70px + env(safe-area-inset-top,0px));}
+body{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);}
+::-webkit-scrollbar{width:10px;} ::-webkit-scrollbar-thumb{background:var(--line);border-radius:5px;}
+
+#boot{position:fixed;inset:0;background:#000;color:var(--green);font-family:var(--mono);
+  z-index:999;padding:6vh 6vw;font-size:14px;line-height:1.7;}
+#boot pre{white-space:pre-wrap;margin:0;}
+#boot.hide{animation:fadeOut .6s ease forwards;}
+@keyframes fadeOut{to{opacity:0;visibility:hidden;pointer-events:none;}}
+
+header.top{position:sticky;top:0;z-index:50;background:rgba(10,14,20,.92);backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--line);padding:14px 20px;display:flex;align-items:center;gap:12px;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));}
+header.top .dots{display:flex;gap:6px;}
+header.top .dots span{width:10px;height:10px;border-radius:50%;display:inline-block;}
+header.top .dots span:nth-child(1){background:#ff5f56;} header.top .dots span:nth-child(2){background:#ffbd2e;} header.top .dots span:nth-child(3){background:#27c93f;}
+header.top .title{font-family:var(--mono);font-size:13px;color:var(--dim);}
+header.top .brand{margin-left:auto;font-weight:600;font-size:15px;color:var(--bright);}
+header.top .brand span{color:var(--green);}
+
+.wrap{display:grid;grid-template-columns:240px 1fr;max-width:1180px;margin:0 auto;}
+@media (max-width:860px){.wrap{grid-template-columns:1fr;}nav.side{display:none;}}
+nav.side{border-right:1px solid var(--line);padding:26px 14px;position:sticky;top:57px;
+  height:calc(100vh - 57px);overflow-y:auto;align-self:start;}
+nav.side a{display:block;color:var(--dim);text-decoration:none;font-size:12.5px;padding:6px 10px;border-radius:6px;
+  border-left:2px solid transparent;margin-bottom:2px;}
+nav.side a:hover{color:var(--bright);border-left-color:var(--green);background:var(--panel);}
+nav.side .num{color:var(--green);font-family:var(--mono);margin-right:6px;}
+
+main{padding:36px 26px 90px;min-width:0;}
+
+.hero{padding:40px 4px 46px;border-bottom:1px solid var(--line);margin-bottom:36px;}
+.hero .eyebrow{font-family:var(--mono);color:var(--green);font-size:13px;}
+.hero h1{font-size:clamp(26px,4.2vw,40px);line-height:1.15;margin:10px 0 14px;color:var(--bright);font-weight:700;}
+.hero p{max-width:64ch;color:var(--dim);font-size:15px;line-height:1.6;}
+
+/* ---- notes section ---- */
+.notes{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px 26px 10px;margin-bottom:50px;}
+.notes h2{color:var(--bright);font-size:20px;margin:0 0 4px;}
+.notes>p{color:var(--dim);font-size:14px;margin:0 0 20px;}
+.note-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 24px;padding-bottom:20px;}
+@media(max-width:700px){.note-grid{grid-template-columns:1fr;}}
+.note-item{border-left:2px solid var(--green);padding:2px 0 2px 14px;}
+.note-item code{font-family:var(--mono);color:var(--amber);font-size:13px;display:block;margin-bottom:3px;}
+.note-item span{color:var(--dim);font-size:13px;line-height:1.5;}
+
+/* ---- program sections ---- */
+section.lesson{margin-bottom:64px;scroll-margin-top:80px;}
+section.lesson .head{display:flex;align-items:baseline;gap:12px;margin-bottom:6px;flex-wrap:wrap;}
+section.lesson .head .co{font-family:var(--mono);color:var(--amber);font-size:12px;border:1px solid var(--line);
+  padding:2px 8px;border-radius:20px;}
+section.lesson h2{font-size:20px;color:var(--bright);margin:0;font-weight:600;}
+section.lesson>p.desc{color:var(--dim);font-size:14px;line-height:1.6;max-width:74ch;margin:8px 0 18px;}
+
+.panel{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px;background:var(--panel);}
+.panel .ph{font-family:var(--mono);font-size:11.5px;color:var(--dim);padding:9px 14px;border-bottom:1px solid var(--line);
+  background:var(--panel2);display:flex;justify-content:space-between;}
+textarea.code-edit{width:100%;background:#05080c;color:var(--text);font-family:var(--mono);font-size:13px;
+  line-height:1.65;border:none;padding:16px 18px;resize:vertical;min-height:220px;outline:none;}
+
+.rows{padding:6px 0;}
+.row{display:grid;grid-template-columns:minmax(0,1fr) 1.3fr;gap:16px;padding:8px 18px;border-bottom:1px dashed var(--line);}
+.row:last-child{border-bottom:none;}
+.row .l{font-family:var(--mono);color:var(--green);font-size:12.5px;white-space:pre-wrap;}
+.row .e{color:var(--dim);font-size:13px;line-height:1.5;}
+@media(max-width:640px){.row{grid-template-columns:1fr;}}
+
+.inputs{display:flex;flex-wrap:wrap;gap:10px;padding:14px 16px;background:var(--panel2);border-top:1px solid var(--line);}
+.field{display:flex;flex-direction:column;gap:4px;}
+.field label{font-family:var(--mono);font-size:11px;color:var(--dim);}
+.field input{font-family:var(--mono);font-size:13px;background:#05080c;border:1px solid var(--line);color:var(--bright);
+  border-radius:6px;padding:7px 10px;width:170px;}
+.field input:focus{outline:1px solid var(--blue);}
+
+.actions{display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:var(--panel2);}
+.run-btn{font-family:var(--mono);font-size:12.5px;background:transparent;color:var(--green);
+  border:1px solid var(--green);border-radius:6px;padding:7px 14px;cursor:pointer;}
+.run-btn:hover{background:var(--green);color:#04150a;}
+.hint{color:var(--dim);font-size:11.5px;font-family:var(--mono);}
+
+.term{font-family:var(--mono);font-size:12.5px;background:#05080c;border-top:1px solid var(--line);
+  padding:0 16px;max-height:0;overflow:hidden;transition:max-height .35s ease, padding .35s ease;}
+.term.open{max-height:420px;overflow-y:auto;padding:14px 16px;}
+.term .line{white-space:pre-wrap;color:var(--text);line-height:1.7;}
+.term .line.prompt{color:var(--green);}
+.term .line.out{color:var(--dim);}
+.term .line.warn{color:var(--red);}
+
+footer{border-top:1px solid var(--line);padding:30px 26px 50px;color:var(--dim);font-size:13px;font-family:var(--mono);text-align:center;}
+footer .green{color:var(--green);}
+</style>
+</head>
+<body>
+
+<div id="boot"><pre id="bootText"></pre></div>
+
+<header class="top">
+  <div class="dots"><span></span><span></span><span></span></div>
+  <div class="title">shell-lab — bash — 120x30</div>
+  <div class="brand">shell<span>@</span>scripting</div>
+</header>
+
+<div class="wrap">
+  <nav class="side" id="sideNav"><a href="#notes"><span class="num">00</span>Beginner Notes</a></nav>
+  <main>
+    <section class="hero">
+      <div class="eyebrow">CO1 · Shell Scripting Programming</div>
+      <h1>Shell scripts, taught from the syntax up.</h1>
+      <p>Start with the beginner notes to learn every piece of syntax used below. Then, for each program: read the code, edit it freely in the box, fill in sample inputs, and press <b style="color:var(--bright)">Run</b> to watch it execute step by step in a simulated terminal.</p>
+    </section>
+
+    <section class="notes" id="notes">
+      <h2>00. Beginner Notes — Shell Script Syntax</h2>
+      <p>These are the building blocks every program on this page is made from. Read this once before jumping into the exercises.</p>
+      <div class="note-grid" id="noteGrid"></div>
+    </section>
+
+    <div id="lessons"></div>
+  </main>
+</div>
+
+<footer><span class="green">$</span> exit <span class="green">#</span> end of CO1 shell scripting practicals</footer>
+
+<script>
+/* ---------------- Boot ---------------- */
+const bootLines=["Booting shell-lab kernel ................. [ OK ]","Loading bash syntax reference ............ [ OK ]",
+"Starting interactive script simulator .... [ OK ]","","Welcome, student. Edit any script and press Run."];
+const bootEl=document.getElementById('bootText'); let bi=0,ci=0;
+function typeBoot(){
+  if(bi>=bootLines.length){setTimeout(()=>document.getElementById('boot').classList.add('hide'),500);return;}
+  const line=bootLines[bi];
+  if(ci<=line.length){bootEl.textContent=bootLines.slice(0,bi).join("\n")+(bi>0?"\n":"")+line.slice(0,ci);ci++;setTimeout(typeBoot,line.length?8:80);}
+  else{bi++;ci=0;setTimeout(typeBoot,60);}
+}
+typeBoot();
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.getElementById('boot').classList.add('hide');}
+
+/* ---------------- Beginner notes ---------------- */
+const noteItems=[
+["#!/bin/bash","The shebang. Must be the first line. Tells the OS which interpreter (bash) should run this file."],
+["# comment","Anything after # on a line is ignored by bash — used to explain code, never executed."],
+["name=\"value\"","Variable assignment. No spaces around =. Access it later with $name."],
+["read var","Pauses the script, waits for keyboard input, and stores whatever the user types into var."],
+["echo \"text $var\"","Prints text to the screen. Inside double quotes, $var is replaced by the variable's value."],
+["$((expr))","Arithmetic expansion — evaluates a math expression like $((a+b)) and returns the integer result."],
+["if [ cond ]; then ... fi","Conditional block. [ ] is the test command; cond is checked, and the block between then/fi runs if true."],
+["-eq -ne -lt -gt -le -ge","Numeric comparison operators used inside [ ]: equal, not-equal, less-than, greater, less/greater-or-equal."],
+["for i in 1 2 3; do...done","Loops over a fixed list of values, running the body once per value with i set to that value."],
+["for i in {1..10}","Brace expansion — generates the sequence 1,2,3...10 for the for loop to iterate over."],
+["while [ cond ]; do...done","Repeats the body as long as cond stays true — you must update a variable inside to eventually stop it."],
+["arr=(1 2 3)","Declares an indexed array. Access an element with ${arr[i]}, all elements with ${arr[@]}."],
+["${#var}","Returns the length (number of characters) of a string variable."],
+["${var:pos:len}","Substring expansion — extracts len characters from var, starting at index pos (0-based)."],
+["a=$b; b=$temp","Swapping pattern: save one value in a temp variable before overwriting it, so nothing is lost."]
+];
+const ng=document.getElementById('noteGrid');
+noteItems.forEach(n=>{ng.innerHTML+=`<div class="note-item"><code>${n[0]}</code><span>${n[1]}</span></div>`;});
+
+/* ---------------- Programs ---------------- */
+const programs=[
+{id:"p1",title:"Name, Program & Enrollment Number",
+ problem:"Ask the user's name, program name and enrollment number, then print them back.",
+ code:`#!/bin/bash
+echo "Enter your name:"
+read name
+echo "Enter your program name:"
+read program
+echo "Enter your enrollment number:"
+read enroll
+echo "Name: $name"
+echo "Program: $program"
+echo "Enrollment Number: $enroll"`,
+ lines:[["read name","Waits for input and stores it in the variable name."],
+        ["read program","Waits for input and stores it in program."],
+        ["read enroll","Waits for input and stores it in enroll."],
+        ['echo "Name: $name"',"Prints the label followed by the stored value, expanded inside double quotes."]],
+ inputs:[{id:"name",label:"name",ph:"Rahul Sharma"},{id:"program",label:"program",ph:"B.Tech CSE"},{id:"enroll",label:"enroll",ph:"2201234"}],
+ run:v=>[["Name: "+v.name],["Program: "+v.program],["Enrollment Number: "+v.enroll]].map(o=>({out:o[0]}))
+},
+{id:"p2",title:"Sum, Average & Product of Four Integers",
+ problem:"Read four integers and compute their sum, average and product.",
+ code:`#!/bin/bash
+echo "Enter four integers:"
+read a b c d
+sum=$((a+b+c+d))
+avg=$((sum/4))
+product=$((a*b*c*d))
+echo "Sum = $sum"
+echo "Average = $avg"
+echo "Product = $product"`,
+ lines:[["read a b c d","One read can fill multiple variables at once, split by spaces in the typed line."],
+        ["sum=$((a+b+c+d))","Adds all four using arithmetic expansion and stores the integer result."],
+        ["avg=$((sum/4))","Bash integer division truncates — 7/4 gives 1, not 1.75."],
+        ["product=$((a*b*c*d))","Multiplies all four values together."]],
+ inputs:[{id:"a",label:"a",ph:"4"},{id:"b",label:"b",ph:"8"},{id:"c",label:"c",ph:"2"},{id:"d",label:"d",ph:"6"}],
+ run:v=>{const a=+v.a,b=+v.b,c=+v.c,d=+v.d,sum=a+b+c+d,avg=Math.trunc(sum/4),prod=a*b*c*d;
+   return [{out:"Sum = "+sum},{out:"Average = "+avg+"   (integer division — remainder dropped)"},{out:"Product = "+prod}];}
+},
+{id:"p3",title:"Average of Numbers from the Command Line",
+ problem:"Compute the average of numbers passed as command-line arguments ($1 $2 ...).",
+ code:`#!/bin/bash
+sum=0
+count=0
+for num in "$@"
+do
+    sum=$((sum+num))
+    count=$((count+1))
+done
+avg=$((sum/count))
+echo "Average = $avg"`,
+ lines:[["for num in \"$@\"","$@ holds every command-line argument; the loop runs once per argument, num taking each value."],
+        ["sum=$((sum+num))","Running total, updated each pass through the loop."],
+        ["count=$((count+1))","Counts how many arguments were processed."],
+        ["avg=$((sum/count))","Integer average of all arguments after the loop finishes."]],
+ inputs:[{id:"args",label:"$1 $2 $3 ...",ph:"e.g. 10 20 30 40",w:260}],
+ run:v=>{const nums=(v.args||"").trim().split(/\s+/).filter(Boolean).map(Number);
+   if(!nums.length) return [{warn:"No arguments given — script would divide by zero."}];
+   const sum=nums.reduce((a,b)=>a+b,0),avg=Math.trunc(sum/nums.length);
+   return [{cmd:"./avg.sh "+nums.join(" ")},{out:"Average = "+avg}];}
+},
+{id:"p4",title:"Exchange Two Variables",
+ problem:"Read two values and swap them using a temporary variable.",
+ code:`#!/bin/bash
+echo "Enter value of a:"
+read a
+echo "Enter value of b:"
+read b
+temp=$a
+a=$b
+b=$temp
+echo "After swap: a=$a b=$b"`,
+ lines:[["temp=$a","Saves a's original value in temp so it isn't lost."],
+        ["a=$b","Overwrites a with b's value."],
+        ["b=$temp","Gives b the value that was originally in a, completing the swap."]],
+ inputs:[{id:"a",label:"a",ph:"5"},{id:"b",label:"b",ph:"9"}],
+ run:v=>[{out:`After swap: a=${v.b} b=${v.a}`}]
+},
+{id:"p5",title:"Print 1 to 10 — while & do-while style",
+ problem:"Print numbers 1 to 10 first with a while loop, then with a do-while style (bash has no native do-while, so it's built from while true + break).",
+ code:`#!/bin/bash
+echo "Using while loop:"
+i=1
+while [ $i -le 10 ]
+do
+    echo $i
+    i=$((i+1))
+done
+
+echo "Using do-while style loop:"
+i=1
+while true
+do
+    echo $i
+    i=$((i+1))
+    if [ $i -gt 10 ]; then
+        break
+    fi
+done`,
+ lines:[["while [ $i -le 10 ]","Checks the condition BEFORE each pass — classic while loop, may run zero times."],
+        ["i=$((i+1))","Increments the counter; forgetting this line causes an infinite loop."],
+        ["while true ... break","do-while runs the body at least once, then the if/break checks the exit condition at the end."]],
+ inputs:[],
+ run:()=>{const out=[{out:"Using while loop:"}];for(let i=1;i<=10;i++)out.push({out:String(i)});
+   out.push({out:"Using do-while style loop:"});for(let i=1;i<=10;i++)out.push({out:String(i)});return out;}
+},
+{id:"p6",title:"Print 1 to 10 — for loop",
+ problem:"Print numbers 1 to 10 using a for loop with brace expansion.",
+ code:`#!/bin/bash
+for i in {1..10}
+do
+    echo $i
+done`,
+ lines:[["for i in {1..10}","{1..10} expands to 1 2 3 ... 10 before the loop even starts running."],
+        ["echo $i","Prints the current value of i on each pass."]],
+ inputs:[],
+ run:()=>{const out=[];for(let i=1;i<=10;i++)out.push({out:String(i)});return out;}
+},
+{id:"p7",title:"Odd-Position Digits of a 5-Digit Number",
+ problem:"Given a 5-digit number, print the digits at the 1st, 3rd and 5th (odd) positions.",
+ code:`#!/bin/bash
+echo "Enter a 5-digit number:"
+read num
+d1=\${num:0:1}
+d2=\${num:1:1}
+d3=\${num:2:1}
+d4=\${num:3:1}
+d5=\${num:4:1}
+echo "Odd position digits (1st,3rd,5th): $d1 $d3 $d5"`,
+ lines:[["num=${num:0:1}... etc","${var:pos:len} slices the string — position 0 is the 1st digit, position 2 the 3rd, and so on."],
+        ["echo ... $d1 $d3 $d5","Only the digits at index 0, 2 and 4 (the odd positions) are printed."]],
+ inputs:[{id:"num",label:"num (5 digits)",ph:"48213"}],
+ run:v=>{const s=(v.num||"").padEnd(5,"0").slice(0,5);
+   return [{out:`Odd position digits (1st,3rd,5th): ${s[0]} ${s[2]} ${s[4]}`}];}
+},
+{id:"p8",title:"Binary Search",
+ problem:"Search for a number in a pre-sorted list using the binary search algorithm.",
+ code:`#!/bin/bash
+arr=(2 5 8 12 16 23 38 45 56 72)
+echo "Enter number to search:"
+read key
+low=0
+high=9
+found=0
+while [ $low -le $high ]
+do
+    mid=$(( (low+high)/2 ))
+    if [ \${arr[mid]} -eq $key ]; then
+        echo "Number found at index $mid"
+        found=1
+        break
+    elif [ \${arr[mid]} -lt $key ]; then
+        low=$((mid+1))
+    else
+        high=$((mid-1))
+    fi
+done
+if [ $found -eq 0 ]; then
+    echo "Number not found"
+fi`,
+ lines:[["arr=(2 5 ... 72)","A pre-sorted array — binary search only works correctly on sorted data."],
+        ["mid=$(((low+high)/2))","Picks the middle index between the current low and high bounds."],
+        ["if [ ${arr[mid]} -eq $key ]","If the middle element matches, we're done — report the index and break."],
+        ["elif ... -lt $key ... low=mid+1","If the middle element is smaller than the key, search the right half next."],
+        ["else high=mid-1","Otherwise the key must be in the left half, so shrink high."]],
+ inputs:[{id:"key",label:"key",ph:"23"}],
+ run:v=>{const arr=[2,5,8,12,16,23,38,45,56,72],key=+v.key;let low=0,high=arr.length-1,found=false;
+   const out=[{out:"Array: ["+arr.join(", ")+"]"}];
+   while(low<=high){const mid=Math.floor((low+high)/2);
+     out.push({out:`low=${low} high=${high} mid=${mid} arr[mid]=${arr[mid]}`});
+     if(arr[mid]===key){out.push({out:"Number found at index "+mid});found=true;break;}
+     else if(arr[mid]<key){out.push({out:"arr[mid] < key -> search right half"});low=mid+1;}
+     else{out.push({out:"arr[mid] > key -> search left half"});high=mid-1;}
+   }
+   if(!found)out.push({out:"Number not found"});
+   return out;}
+},
+{id:"p9",title:"Concatenate Strings & Find Length",
+ problem:"Join two strings together and report the length of the result.",
+ code:`#!/bin/bash
+echo "Enter first string:"
+read str1
+echo "Enter second string:"
+read str2
+result="$str1$str2"
+echo "Concatenated string: $result"
+echo "Length: \${#result}"`,
+ lines:[['result="$str1$str2"',"Placing two variables next to each other inside quotes joins (concatenates) them."],
+        ["${#result}","The # inside ${} returns the character count of result, not its value."]],
+ inputs:[{id:"s1",label:"str1",ph:"Hello"},{id:"s2",label:"str2",ph:"World"}],
+ run:v=>{const r=(v.s1||"")+(v.s2||"");return [{out:"Concatenated string: "+r},{out:"Length: "+r.length}];}
+},
+{id:"p10",title:"Smallest of Three Numbers",
+ problem:"Read three numbers and determine which one is the smallest.",
+ code:`#!/bin/bash
+echo "Enter three numbers:"
+read a b c
+if [ $a -le $b ] && [ $a -le $c ]; then
+    smallest=$a
+elif [ $b -le $a ] && [ $b -le $c ]; then
+    smallest=$b
+else
+    smallest=$c
+fi
+echo "Smallest number is $smallest"`,
+ lines:[["[ $a -le $b ] && [ $a -le $c ]","&& means AND — this branch runs only if a is less-or-equal to BOTH b and c."],
+        ["elif [ $b -le $a ] && [ $b -le $c ]","Checked next: is b smaller-or-equal to both others?"],
+        ["else smallest=$c","If neither a nor b qualified, c must be the smallest by elimination."]],
+ inputs:[{id:"a",label:"a",ph:"12"},{id:"b",label:"b",ph:"4"},{id:"c",label:"c",ph:"9"}],
+ run:v=>{const a=+v.a,b=+v.b,c=+v.c;const s=Math.min(a,b,c);return [{out:"Smallest number is "+s}];}
+},
+{id:"p11",title:"Count Words, Characters, Whitespaces & Special Symbols",
+ problem:"Read a line of text and count its words, characters, whitespace characters, and special (non-alphanumeric) symbols.",
+ code:`#!/bin/bash
+echo "Enter a line of text:"
+read -r text
+len=\${#text}
+words=1
+chars=0
+spaces=0
+special=0
+i=0
+while [ $i -lt $len ]
+do
+    ch=\${text:i:1}
+    chars=$((chars+1))
+    case "$ch" in
+        " ") spaces=$((spaces+1)); words=$((words+1)) ;;
+        [a-zA-Z0-9]) ;;
+        *) special=$((special+1)) ;;
+    esac
+    i=$((i+1))
+done
+echo "Characters: $chars"
+echo "Words: $words"
+echo "Whitespaces: $spaces"
+echo "Special symbols: $special"`,
+ lines:[["read -r text","-r stops backslashes from being treated specially, so the raw line is captured."],
+        ["ch=${text:i:1}","Grabs one character at position i, so the while loop can inspect it."],
+        ["case \"$ch\" in ... esac","Pattern matching: a space increments spaces & words; a letter/digit does nothing extra; anything else counts as special."]],
+ inputs:[{id:"text",label:"text",ph:"Hi there! 123",w:240}],
+ run:v=>{const t=v.text||"";const chars=t.length;
+   const words=t.trim()?t.trim().split(/\s+/).length:0;
+   const spaces=(t.match(/ /g)||[]).length;
+   const special=(t.match(/[^a-zA-Z0-9 ]/g)||[]).length;
+   return [{out:"Characters: "+chars},{out:"Words: "+words},{out:"Whitespaces: "+spaces},{out:"Special symbols: "+special}];}
+}
+];
+
+/* ---------------- Render ---------------- */
+const nav=document.getElementById('sideNav');
+const host=document.getElementById('lessons');
+
+programs.forEach((P,idx)=>{
+  const num=String(idx+1).padStart(2,'0');
+  nav.innerHTML+=`<a href="#${P.id}"><span class="num">${num}</span>${P.title}</a>`;
+
+  const rowsHtml=P.lines.map(r=>`<div class="row"><div class="l">${r[0]}</div><div class="e">${r[1]}</div></div>`).join('');
+  const inputsHtml=(P.inputs||[]).map(f=>`<div class="field"><label>${f.label}</label><input type="text" id="in-${P.id}-${f.id}" placeholder="${f.ph||''}" style="${f.w?'width:'+f.w+'px':''}"></div>`).join('');
+
+  host.innerHTML+=`
+  <section class="lesson" id="${P.id}">
+    <div class="head"><span class="co">CO1</span><h2>${num}. ${P.title}</h2></div>
+    <p class="desc">${P.problem}</p>
+
+    <div class="panel">
+      <div class="ph"><span>${P.id}.sh — editable</span><span>bash</span></div>
+      <textarea class="code-edit" id="code-${P.id}" spellcheck="false">${P.code}</textarea>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><span>Line-by-line explanation</span></div>
+      <div class="rows">${rowsHtml}</div>
+      ${inputsHtml?`<div class="inputs">${inputsHtml}</div>`:''}
+      <div class="actions">
+        <button class="run-btn" data-id="${P.id}">▶ Run simulation</button>
+        <span class="hint">runs the algorithm above using the sample inputs you enter</span>
+      </div>
+      <div class="term" id="term-${P.id}"></div>
+    </div>
+  </section>`;
+});
+
+/* ---------------- Run engine ---------------- */
+document.addEventListener('click', e=>{
+  const btn=e.target.closest('.run-btn');
+  if(!btn) return;
+  const P=programs.find(p=>p.id===btn.dataset.id);
+  const term=document.getElementById('term-'+P.id);
+  term.innerHTML=''; term.classList.add('open');
+
+  const vals={};
+  (P.inputs||[]).forEach(f=>{vals[f.id]=document.getElementById(`in-${P.id}-${f.id}`).value||f.ph||'';});
+
+  let lines;
+  try{ lines=P.run(vals); }catch(err){ lines=[{warn:"Error: check your inputs and try again."}]; }
+
+  btn.disabled=true; btn.textContent='⏳ running...';
+  const promptLine=document.createElement('div');
+  promptLine.className='line prompt';
+  promptLine.textContent='student@ubuntu:~$ bash '+P.id+'.sh'+(vals.args?(' '+vals.args):'');
+  term.appendChild(promptLine);
+
+  let i=0;
+  function next(){
+    if(i>=lines.length){btn.disabled=false;btn.textContent='▶ Run again';return;}
+    const L=lines[i];
+    const el=document.createElement('div');
+    el.className='line '+(L.warn?'warn':'out');
+    el.textContent=L.warn||L.out;
+    term.appendChild(el);
+    term.scrollTop=term.scrollHeight;
+    i++; setTimeout(next,180);
+  }
+  setTimeout(next,250);
+});
+</script>
+</body>
+</html>
