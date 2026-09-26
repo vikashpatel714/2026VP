@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Overfitting — Vikash Patel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=Sora:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07070f;
+    --bg-panel:#0e0f1e;
+    --ink:#ece9f7;
+    --ink-dim:#9d99b8;
+    --cool:#5ce1e6;
+    --warm:#ff7a52;
+    --line:#242540;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px); scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Sora',sans-serif;
+    font-weight:300;
+    line-height:1.7;
+    overflow-x:hidden;
+  }
+  canvas#field{
+    position:fixed; inset:0; width:100%; height:100%;
+    z-index:0; opacity:0.55; pointer-events:none;
+  }
+  .wrap{position:relative; z-index:1;}
+
+  section{
+    max-width:760px;
+    margin:0 auto;
+    padding:min(14vw,7rem) 1.5rem;
+  }
+
+  /* ---------- HERO ---------- */
+  .hero{
+    min-height:100svh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:flex-start;
+    max-width:820px;
+    padding-top:calc(env(safe-area-inset-top,0px) + 4rem);
+  }
+  .hero .kicker{
+    font-family:'Space Mono', monospace;
+    font-size:0.8rem;
+    color:var(--cool);
+    letter-spacing:0.02em;
+    margin-bottom:1.4rem;
+    opacity:0;
+    animation:rise 1s ease forwards 0.2s;
+  }
+  h1.title{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(3.2rem, 12vw, 6.5rem);
+    line-height:0.95;
+    margin:0 0 1.2rem 0;
+    background:linear-gradient(100deg, var(--ink) 40%, var(--cool) 65%, var(--warm) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    opacity:0;
+    animation:rise 1.1s cubic-bezier(.2,.8,.2,1) forwards 0.4s;
+  }
+  .hero p.sub{
+    font-size:clamp(1.05rem,2.4vw,1.3rem);
+    color:var(--ink-dim);
+    max-width:34ch;
+    margin:0;
+    opacity:0;
+    animation:rise 1s ease forwards 0.9s;
+  }
+  .hero .byline{
+    margin-top:3rem;
+    font-family:'Space Mono', monospace;
+    font-size:0.85rem;
+    color:var(--ink-dim);
+    display:flex;
+    align-items:center;
+    gap:0.6rem;
+    opacity:0;
+    animation:rise 1s ease forwards 1.3s;
+  }
+  .hero .byline .dot{width:6px;height:6px;border-radius:50%;background:var(--warm);}
+  @keyframes rise{ from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:translateY(0);} }
+
+  .scroll-cue{
+    position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 2rem); left:1.5rem;
+    font-family:'Space Mono',monospace; font-size:0.72rem; color:var(--ink-dim);
+    opacity:0; animation:rise 1s ease forwards 1.7s;
+  }
+
+  /* ---------- POEM ---------- */
+  .poem{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:400;
+    font-size:clamp(1.3rem, 3.4vw, 1.8rem);
+    line-height:1.65;
+    color:var(--ink);
+    border-left:2px solid var(--warm);
+    padding-left:1.6rem;
+  }
+  .poem span.hi{color:var(--warm); font-style:normal;}
+
+  /* ---------- SECTION HEADS ---------- */
+  h2{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(1.7rem,4vw,2.3rem);
+    margin:0 0 1.4rem 0;
+    color:var(--ink);
+  }
+  h2 em{ color:var(--cool); font-style:normal; }
+  p{ font-size:1.02rem; color:#d6d3ea; margin:0 0 1.1rem 0; }
+  p:last-child{margin-bottom:0;}
+  strong{color:var(--ink); font-weight:500;}
+
+  /* ---------- DATA / TRAINING BOX (thematic monospace, justified use) ---------- */
+  .databox{
+    background:var(--bg-panel);
+    border:1px solid var(--line);
+    border-radius:2px;
+    padding:1.6rem 1.7rem;
+    margin:1.8rem 0;
+    font-family:'Space Mono', monospace;
+    font-size:0.86rem;
+    color:var(--ink-dim);
+    overflow-x:auto;
+  }
+  .databox .k{color:var(--cool);}
+  .databox .v{color:var(--warm);}
+  .databox .comment{color:#5a5878;}
+  .databox pre{margin:0; white-space:pre-wrap;}
+
+  /* ---------- QUANTUM ---------- */
+  .quantum{position:relative;}
+  .quantum .glyphs{
+    display:flex; gap:2.2rem; flex-wrap:wrap;
+    font-family:'Fraunces', serif; font-size:2.2rem; color:var(--cool);
+    margin:1.6rem 0 2rem 0; opacity:0.85;
+  }
+  .quantum .glyphs small{
+    display:block; font-family:'Space Mono',monospace; font-size:0.65rem;
+    color:var(--ink-dim); margin-top:0.3rem;
+  }
+  blockquote{
+    margin:1.8rem 0; padding:0 0 0 1.4rem;
+    border-left:2px solid var(--cool);
+    font-family:'Fraunces', serif; font-style:italic; font-size:1.15rem;
+    color:var(--ink);
+  }
+
+  /* ---------- GLOSSARY ---------- */
+  .glossary-intro{color:#d6d3ea;}
+  .glossary-list{margin-top:2.2rem;}
+  .glossary-item{
+    display:flex; gap:1.1rem;
+    padding:1.3rem 0;
+    border-top:1px solid var(--line);
+  }
+  .glossary-item:last-child{border-bottom:1px solid var(--line);}
+  .gnum{
+    font-family:'Space Mono', monospace; font-size:0.78rem;
+    color:var(--cool); flex:0 0 auto; padding-top:0.2rem;
+  }
+  .gkey{
+    font-family:'Fraunces', serif; font-style:italic; font-weight:500;
+    font-size:1.08rem; color:var(--ink); margin:0 0 0.35rem 0;
+  }
+  .gtext{font-size:0.95rem; color:#c9c6e0; margin:0;}
+  .gtag{
+    display:inline-block; font-family:'Space Mono',monospace; font-size:0.62rem;
+    color:var(--warm); border:1px solid var(--warm); border-radius:2px;
+    padding:0.1rem 0.4rem; margin-left:0.6rem; vertical-align:middle;
+    opacity:0.85;
+  }
+  .gtag.cool{color:var(--cool); border-color:var(--cool);}
+
+  .extra-terms{
+    margin-top:2.6rem; padding-top:2rem; border-top:1px dashed var(--line);
+  }
+  .extra-terms h3{
+    font-family:'Fraunces', serif; font-weight:500; font-size:1.2rem;
+    color:var(--ink-dim); margin:0 0 1.2rem 0;
+  }
+  .extra-item{margin-bottom:1rem;}
+  .extra-item .gkey{font-size:0.98rem;}
+  .extra-item .gtext{font-size:0.9rem;}
+
+  .keyword-index{
+    margin-top:2.6rem; padding:1.6rem 1.7rem;
+    background:var(--bg-panel); border:1px solid var(--line);
+  }
+  .keyword-index h3{
+    font-family:'Space Mono', monospace; font-size:0.72rem; color:var(--ink-dim);
+    margin:0 0 1rem 0; font-weight:400;
+  }
+  .keyword-grid{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:0.4rem 1.2rem;
+    font-family:'Space Mono', monospace; font-size:0.78rem; color:var(--ink-dim);
+  }
+  .keyword-grid span.n{color:var(--cool); margin-right:0.5rem;}
+  @media (max-width:520px){ .keyword-grid{grid-template-columns:1fr;} }
+
+  /* ---------- CRITICAL THINKING (personal) ---------- */
+  .manifesto{
+    background:linear-gradient(180deg, rgba(92,225,230,0.04), rgba(0,0,0,0));
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    padding:3.4rem 1.5rem;
+  }
+  .manifesto p{font-size:1.08rem; color:var(--ink);}
+
+  /* ---------- RESOLUTION ---------- */
+  .resolution .databox{border-color:var(--warm); }
+
+  /* ---------- FOOTER / MODEL CARD ---------- */
+  footer{
+    max-width:760px; margin:0 auto; padding:3rem 1.5rem calc(env(safe-area-inset-bottom,0px) + 3.5rem);
+  }
+  .modelcard{
+    font-family:'Space Mono', monospace;
+    font-size:0.8rem;
+    color:var(--ink-dim);
+    border-left:2px solid var(--warm);
+    padding-left:1.3rem;
+    line-height:2;
+  }
+  .modelcard .name{
+    font-family:'Fraunces', serif; font-style:italic; font-size:1.3rem;
+    color:var(--ink); display:block; margin-bottom:0.6rem;
+  }
+  .modelcard .row .k{color:var(--cool);}
+
+  @media (max-width:520px){
+    section{padding:4.5rem 1.3rem;}
+    .poem{padding-left:1.1rem;}
+    .quantum .glyphs{gap:1.4rem; font-size:1.7rem;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.01ms !important; animation-iteration-count:1 !important;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="field"></canvas>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="kicker">/// dil — ek overfitted model</div>
+    <h1 class="title">Overfitting</h1>
+    <p class="sub">Tum move on kyun nahi kar paate — ek kahani jo Machine Learning aur Quantum Mechanics se hoke guzarti hai.</p>
+    <div class="byline"><span class="dot"></span> likha aur socha — Vikash Patel</div>
+    <div class="scroll-cue">scroll ↓</div>
+  </section>
+
+  <section>
+    <div class="poem">
+      Tumhare baad,<br>
+      mera dil ek aisa <span class="hi">model</span> ban gaya —<br>
+      jo sirf ek hi <span class="hi">dataset</span> pe train hua,<br>
+      tumhari hansi, tumhari chup,<br>
+      tumhara wo ek jhootha waada.<br><br>
+      Ab jo bhi naya aata hai,<br>
+      <span class="hi">loss</span> badhne lagta hai —<br>
+      kyunki mera model<br>
+      sirf tumhe hi pehchanta hai.
+    </div>
+  </section>
+
+  <section>
+    <h2>Training, Data aur <em>Overfitting</em> — seedhi bhasha mein</h2>
+    <p>Machine Learning mein ek model ko baar-baar wahi <strong>data</strong> dikhaya jaata hai, taaki wo usme chhupe <strong>patterns</strong> seekh le. Isi process ko <strong>training</strong> kehte hain.</p>
+    <p>Lekin agar model ek hi data ko zyada der tak, zyada gehrai se dekhta rahe — to wo pattern <em>seekhta</em> nahi, sirf <em>yaad</em> kar leta hai. Isse kehte hain <strong>overfitting</strong>: model purane data pe perfect chalta hai, par jaise hi koi naya, thoda-sa alag data aata hai — wo confuse ho jaata hai. Wo generalize nahi kar paata.</p>
+    <div class="databox">
+<pre><span class="comment">// jo dimaag ke andar chal raha hai</span>
+<span class="k">training_data</span> = [uski hansi, uski chup, wo ek shaam]
+<span class="k">epochs</span> = infinite <span class="comment">// baar baar wahi yaad replay</span>
+<span class="k">model.loss</span>(naya_insaan) → <span class="v">high</span>
+<span class="k">model.loss</span>(purani_yaad) → <span class="v">~0.00</span>
+<span class="comment">// yही hai overfitting</span></pre>
+    </div>
+    <p>Real life mein bhi kuch aisa hi hota hai. Jab hum kisi ek insaan ki memories ko dimaag mein baar-baar replay karte hain, hamara dimaag bhi ek tarah se usi "dataset" pe overfit ho jaata hai — aur koi naya rishta, naya insaan, us purane pattern se match nahi kar paata. Isiliye lagta hai ki move on nahi ho raha — dracle actual mein, model bas generalize nahi kar pa raha.</p>
+  </section>
+
+  <section class="quantum">
+    <h2>Jab <em>Quantum</em> beech mein aaya</h2>
+    <div class="glyphs">
+      <div>|ψ⟩<small>superposition</small></div>
+      <div>⟨0|+⟨1|<small>observer effect</small></div>
+      <div>⊗<small>entanglement</small></div>
+    </div>
+    <p>Jab maine Quantum Mechanics padhna shuru kiya, ek cheez samajh aayi — duniya, jab tak observe na ki jaaye, sirf <strong>possibilities ka jodh</strong> hai. Isse <strong>superposition</strong> kehte hain: har cheez ek saath sab kuch ho sakti hai, jab tak koi decision — koi measurement — na ho jaaye.</p>
+    <blockquote>Jaise hi hum choose karte hain, baaki saari possibilities ke beech se sirf ek reality bach jaati hai — isse kehte hain <strong>wavefunction collapse</strong>.</blockquote>
+    <p>Aur ek concept hai — <strong>entanglement</strong>: do particles jo ek baar jud jaate hain, unki state hamesha ke liye connected reh jaati hai, chahe wo kitni bhi door chale jaayein. Shayad isiliye kuch rishte itni door jaane ke baad bhi, bina kisi signal ke, dil mein kabhi-kabhi "correlate" kar jaate hain.</p>
+  </section>
+
+  <section class="manifesto">
+    <h2>Jab se yeh sab pe kaam karna shuru kiya</h2>
+    <p>Jab se maine Machine Learning, Classical Learning aur Quantum Computing pe kaam karna shuru kiya hai — na jaane kyun yeh duniya kabhi-kabhi ek <strong>simulation</strong> jaisi lagne lagti hai. Har cheez ko main logic aur critical thinking ki tarah dekhne laga hoon.</p>
+    <p>Emotional hoon — par thoda deeply chala jaata hoon sochne mein. Isiliye ab main free hoon: apne decisions khud leta hoon, jo sahi lagta hai wahi karta hoon.</p>
+    <p>Main kisi bhi tarah ke jaadu ya chamatkar par vishwaas nahi karta — jab tak wo proven na ho. Sirf isliye ki log kisi cheez ko maan rahe hain, iska matlab yeh nahi ki main bhi maan loon. Main dekhunga, jaanunga — phir samjhunga.</p>
+  </section>
+
+  <section class="resolution">
+    <h2>Overfitting se bahar nikalne ka rasta</h2>
+    <p>ML mein ek tareeka hota hai jise <strong>regularization</strong> kehte hain — model ko jaan-boojh kar naya, thoda "noisy" data diya jaata hai, kabhi kabhi kuch purane connections <strong>drop</strong> kar diye jaate hain — taaki model sirf ek hi pattern pe atka na reh jaaye, aur naye data ko bhi utni hi sachchai se samajh sake.</p>
+    <div class="databox">
+<pre><span class="comment">// regularization — dil ke liye</span>
+<span class="k">new_experiences.add</span>(naye log, nayi jagah, nayi soch)
+<span class="k">dropout</span>(purani_yaadein, rate=0.3)
+<span class="k">model.generalize</span>() → <span class="v">learning...</span></pre>
+    </div>
+    <p>Zindagi mein bhi shayad yehi chahiye — thoda naya data. Taaki dil sirf ek hi training set pe overfit na rahe, aur naye experiences ko bhi utni hi ईमानदारी se accept kar sake, jitni purani yaadon ko kiya tha.</p>
+  </section>
+
+  <section class="glossary">
+    <h2>Quantum Computing — <em>zindagi ke saare rishton</em> se</h2>
+    <p class="glossary-intro">Pyaar sirf gf-bf wala nahi hota — maa-baap ka pyaar, dosti, aur khud se rishta bhi utna hi real hai. Har quantum concept ko yahaan kisi na kisi rishte se jod ke rakha hai — jo bhi zyada connect kare, wahi apna le lena.</p>
+
+    <div class="glossary-list">
+      <div class="glossary-item">
+        <span class="gnum">01</span>
+        <div><p class="gkey">Superposition — confusion wala dil <span class="gtag">romance</span></p>
+        <p class="gtext">Jab tak proposal ka jawab nahi aata, dil qubit jaisa hota hai — "haan" aur "naa", dono state mein ek saath zinda, jab tak measure na karo.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">02</span>
+        <div><p class="gkey">Entanglement — maa aur bacche ka rishta <span class="gtag">family</span></p>
+        <p class="gtext">Do particles itna judd jaate hain ki ek ka mood dusre pe turant asar dalta hai — bilkul waise jaise maa ka mood, chahe kitni bhi door ho, bacche tak pahunch hi jaata hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">03</span>
+        <div><p class="gkey">Measurement / Collapse — bada faisla lene ka pal <span class="gtag cool">life</span></p>
+        <p class="gtext">Jab tak faisla nahi hota, sab kuch possible hota hai. Jaise hi "haan" ya "naa" bol diya jaata hai, saari maybe wali baatein ek hi sach mein badal jaati hain.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">04</span>
+        <div><p class="gkey">Quantum Gate — zindagi ka turning point <span class="gtag cool">life</span></p>
+        <p class="gtext">Har gate qubit ki state ghumata hai — bilkul waise jaise ek achhi advice ya ek bura experience zindagi ki direction badal deta hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">05</span>
+        <div><p class="gkey">Hadamard Gate — clear se confuse karne wala nazariya <span class="gtag cool">dosti</span></p>
+        <p class="gtext">Jo sure tha (0 ya 1), Hadamard usse superposition mein daal deta hai — jaise ek sachcha dost ya teacher tumhe naya nazariya dikha ke thoda confuse kar deta hai, dono options ko equally sahi bata ke.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">06</span>
+        <div><p class="gkey">Deutsch Algorithm — ek hi sawal mein sach <span class="gtag cool">dosti</span></p>
+        <p class="gtext">Baar baar pucchna nahi padta "tu mera sachcha dost hai?" — ek sachcha dost ek hi glance mein bata deta hai, bina drama ke.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">07</span>
+        <div><p class="gkey">Grover's Algorithm — bheed mein apna insaan dhoondhna <span class="gtag">romance</span></p>
+        <p class="gtext">Poora college ghoomne ki zaroorat nahi — smart tareeke se, kam try mein, sabse sahi insaan mil jaata hai. Classical N tries leta, Grover's ka rasta bahut chhota hota hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">08</span>
+        <div><p class="gkey">Shor's Algorithm — koi tumhe puri tarah samajh le <span class="gtag cool">dosti</span></p>
+        <p class="gtext">Bade se bade lock (encryption) ko bhi tod sakta hai — jaise wo ek insaan jo tumhari sabse chhupi baat bhi bina bataye samajh leta hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">09</span>
+        <div><p class="gkey">QAOA — bahut saare options mein se best chunna <span class="gtag cool">life</span></p>
+        <p class="gtext">Zindagi mein options infinite hote hain — job, shehar, rishte. QAOA jaisa tareeka sabse best possible combination approx karke nikal deta hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">10</span>
+        <div><p class="gkey">Quantum Machine Learning — galtiyon se jaldi seekhna <span class="gtag cool">family</span></p>
+        <p class="gtext">Jaise papa-mummy ki batayi baatein baad mein samajh aati hain — QML bhi data se seekhta hai, bas normal se kaafi tez.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">11</span>
+        <div><p class="gkey">SVM — green flag, red flag ka boundary <span class="gtag cool">dosti</span></p>
+        <p class="gtext">SVM do groups ke beech ek clear line kheenchta hai — jaise wo dost jo saaf saaf bata deta hai, "ye insaan green flag hai ya red flag."</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">12</span>
+        <div><p class="gkey">QSVM — complicated logo ka filter <span class="gtag cool">life</span></p>
+        <p class="gtext">Jab normal boundary kaam na kare, QSVM cheezon ko ek naye "space" mein le jaake asaani se separate kar deta hai — complicated logo ko bhi thoda clarity se samajhne ka tareeka.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">13</span>
+        <div><p class="gkey">PCA — sirf zaroori baat pakadna <span class="gtag">family</span></p>
+        <p class="gtext">Lambi kahani sunke bhi papa ek hi line mein pooch lete hain — "asli baat kya hai?" PCA bhi bade data mein se sirf important hissa nikaal deta hai, baaki hata ke.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">14</span>
+        <div><p class="gkey">QPCA — turant sach pakadna <span class="gtag cool">dosti</span></p>
+        <p class="gtext">Wahi kaam jo PCA karta hai, quantum speed mein — jaise ek dost jo ek hi sentence sunke poora scene samajh jaata hai, zero time waste.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">15</span>
+        <div><p class="gkey">Quantum Neural Network — feelings ko layer by layer samajhna <span class="gtag cool">self</span></p>
+        <p class="gtext">Dimaag emotions ko layers mein process karta hai — pehle shock, phir dukh, phir acceptance. QNN bhi data ko layers mein process karta hai, bas quantum speed ke saath.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">16</span>
+        <div><p class="gkey">Quantum Annealing — sabse kam dard wala rasta <span class="gtag cool">life</span></p>
+        <p class="gtext">Koi bhi bada decision lete waqt, dimaag wahi rasta chunta hai jisme sabse kam pain ho — annealing bhi lowest-energy, best solution dhoondhta hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">17</span>
+        <div><p class="gkey">No-Cloning Theorem — koi bhi rishta copy nahi ho sakta <span class="gtag cool">life</span></p>
+        <p class="gtext">Quantum state ko exactly copy nahi kiya ja sakta. Waise hi koi bhi real rishta — chahe pyaar ho ya dosti — duplicate nahi hota, har ek apne aap mein original hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">18</span>
+        <div><p class="gkey">Quantum Tunneling — impossible ke paar nikal jaana <span class="gtag cool">self</span></p>
+        <p class="gtext">Wall kitni bhi mota kyun na ho, particle phir bhi tunnel karke nikal jaata hai — himmat ho to sabse bada "impossible" bhi cross ho jaata hai.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">19</span>
+        <div><p class="gkey">Decoherence — rishta kharab hone ki wajah <span class="gtag cool">life</span></p>
+        <p class="gtext">Bahar ka noise — log, gossip, outside dakhal — zyada ho jaaye to andar ki purity kho jaati hai, chahe wo qubit ho ya koi bhi rishta.</p></div>
+      </div>
+      <div class="glossary-item">
+        <span class="gnum">20</span>
+        <div><p class="gkey">Quantum Supremacy — apna best version prove karna <span class="gtag cool">self</span></p>
+        <p class="gtext">Jab quantum computer classical se behtar result deta hai, sab shocked ho jaate hain — waise hi jab tum apna best version prove karte ho, wahi moment hai.</p></div>
+      </div>
+    </div>
+
+    <div class="extra-terms">
+      <h3>baaki bache keywords, chhote mein</h3>
+      <div class="extra-item"><p class="gkey">Pauli-X Gate — ulta karne wala dost</p>
+      <p class="gtext">State ko bilkul flip kar deta hai (0→1) — jaise wo dost jo tumhara nazariya poora ulta ghuma deta hai, ek hi baat se.</p></div>
+      <div class="extra-item"><p class="gkey">CNOT Gate — conditional saath</p>
+      <p class="gtext">Ek qubit ka action dusre pe depend karta hai — healthy rishte mein bhi, "agar tum theek ho, tabhi main react karunga" wala balance.</p></div>
+      <div class="extra-item"><p class="gkey">Quantum Circuit — poori zindagi ka design</p>
+      <p class="gtext">Gates ka sequence milke pura circuit banata hai — waise hi chhote-chhote decisions milke poori zindagi ka path bana dete hain.</p></div>
+      <div class="extra-item"><p class="gkey">Deutsch-Jozsa Algorithm — ek hi baar mein pata "genuine ya fake"</p>
+      <p class="gtext">Deutsch algorithm ka bada version — ek hi query mein bata deta hai koi cheez balanced hai ya constant, sachchi hai ya bas dikhava.</p></div>
+      <div class="extra-item"><p class="gkey">VQE — sabse peaceful state dhoondhna</p>
+      <p class="gtext">Trial aur error se sabse stable, lowest-energy state dhoondhta hai — jaise zindagi mein apna comfort aur sukoon dhoondhna.</p></div>
+      <div class="extra-item"><p class="gkey">Quantum Fourier Transform — chhupe pattern ko saamne laana</p>
+      <p class="gtext">Thoda dhyan se dekho to kisi ke behavior ke peeche chhupa hua pattern dikh jaata hai — jaise chhupi hui frequency ko surface pe laana.</p></div>
+      <div class="extra-item"><p class="gkey">Bloch Sphere — har feeling ek unique point hai</p>
+      <p class="gtext">Emotions sirf 0 ya 1 nahi hote — har feeling sphere pe kahin bhi ho sakti hai, apni jagah, apne aap mein unique.</p></div>
+      <div class="extra-item"><p class="gkey">Quantum Error Correction — galtiyon ko sudharne ka system</p>
+      <p class="gtext">Rishton mein bhi galtiyan hoti hain — healthy rishta wahi hai jisme maafi aur samjhauta, dono, built-in ho.</p></div>
+      <div class="extra-item"><p class="gkey">Quantum Kernel Method — complex cheez ko simple bana dena</p>
+      <p class="gtext">Kisi complicated situation ko naye nazariye (higher dimension) se dekho, to wahi cheez achanak simple lagne lagti hai.</p></div>
+    </div>
+
+    <div class="databox">
+<pre><span class="comment">// do numbers wali kahaniyan</span>
+<span class="k">Grover's:</span> 10,00,000 logo mein best dost dhoondhna
+  classical → <span class="v">~5,00,000 tries</span>
+  Grover's  → <span class="v">~1000 tries</span>  <span class="comment">// 1000 guna fast</span>
+
+<span class="k">Deutsch:</span> pata karna — coin fake hai ya real
+  classical → <span class="v">kam se kam 2 checks</span>
+  Deutsch   → <span class="v">sirf 1 query</span>  <span class="comment">// bina baar baar dekhe</span></pre>
+    </div>
+
+    <div class="keyword-index">
+      <h3>/// 30 quantum keywords — quick index</h3>
+      <div class="keyword-grid">
+        <div><span class="n">01</span>Qubit</div><div><span class="n">16</span>Quantum Annealing</div>
+        <div><span class="n">02</span>Superposition</div><div><span class="n">17</span>QAOA</div>
+        <div><span class="n">03</span>Entanglement</div><div><span class="n">18</span>VQE</div>
+        <div><span class="n">04</span>Measurement</div><div><span class="n">19</span>Quantum Machine Learning</div>
+        <div><span class="n">05</span>Quantum Gate</div><div><span class="n">20</span>SVM</div>
+        <div><span class="n">06</span>Hadamard Gate</div><div><span class="n">21</span>QSVM</div>
+        <div><span class="n">07</span>Pauli-X Gate</div><div><span class="n">22</span>PCA</div>
+        <div><span class="n">08</span>CNOT Gate</div><div><span class="n">23</span>QPCA</div>
+        <div><span class="n">09</span>Quantum Circuit</div><div><span class="n">24</span>Quantum Neural Network</div>
+        <div><span class="n">10</span>Deutsch Algorithm</div><div><span class="n">25</span>Quantum Fourier Transform</div>
+        <div><span class="n">11</span>Deutsch-Jozsa Algorithm</div><div><span class="n">26</span>Decoherence</div>
+        <div><span class="n">12</span>Grover's Algorithm</div><div><span class="n">27</span>Quantum Tunneling</div>
+        <div><span class="n">13</span>Shor's Algorithm</div><div><span class="n">28</span>No-Cloning Theorem</div>
+        <div><span class="n">14</span>Bloch Sphere</div><div><span class="n">29</span>Quantum Supremacy</div>
+        <div><span class="n">15</span>Quantum Error Correction</div><div><span class="n">30</span>Quantum Kernel Method</div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="modelcard">
+      <span class="name">Vikash Patel</span>
+      <div class="row"><span class="k">model:</span> human_v1.0</div>
+      <div class="row"><span class="k">status:</span> learning to generalize</div>
+      <div class="row"><span class="k">trained_on:</span> Machine Learning · Classical Learning · Quantum Computing · Critical Thinking</div>
+      <div class="row"><span class="k">note:</span> observation se pehle koi belief nahi.</div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('field');
+  const ctx = canvas.getContext('2d');
+  let w, h, particles = [];
+  const isMobile = window.innerWidth < 640;
+  const COUNT = isMobile ? 34 : 60;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = document.documentElement.scrollHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function initParticles(){
+    particles = [];
+    for(let i=0;i<COUNT;i++){
+      particles.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        vx: (Math.random()-0.5)*0.15,
+        vy: (Math.random()-0.5)*0.15,
+        r: Math.random()*1.6+0.6,
+        hue: Math.random() > 0.75 ? '255,122,82' : '92,225,230'
+      });
+    }
+  }
+  initParticles();
+
+  function step(){
+    ctx.clearRect(0,0,w,h);
+    for(const p of particles){
+      if(!reduceMotion){
+        p.x += p.vx; p.y += p.vy;
+        if(p.x < 0 || p.x > w) p.vx *= -1;
+        if(p.y < 0 || p.y > h) p.vy *= -1;
+      }
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(${p.hue},0.55)`;
+      ctx.fill();
+    }
+    // entanglement lines between nearby particles
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const a = particles[i], b = particles[j];
+        const dx = a.x-b.x, dy = a.y-b.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist < 140){
+          ctx.beginPath();
+          ctx.moveTo(a.x,a.y);
+          ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle = `rgba(92,225,230,${0.09*(1-dist/140)})`;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+    if(!reduceMotion) requestAnimationFrame(step);
+  }
+  step();
+
+  window.addEventListener('load', () => { resize(); initParticles(); });
+})();
+</script>
+
+</body>
+</html>
