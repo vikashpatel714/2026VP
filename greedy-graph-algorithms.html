@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Greedy &amp; Graph Algorithms – Animated Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5fa;--fg:#0f172a;--card:#fff;--mut:#475569;--ac:#6d28d9;--ac2:#0e7490;--ln:#cbd5e1;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#060a14;--fg:#e8edf7;--card:#0e1526;--mut:#93a1ba;--ac:#a78bfa;--ac2:#22d3ee;--ln:#26324d;--warn:#fbbf24}}
+:root[data-theme="dark"]{--bg:#060a14;--fg:#e8edf7;--card:#0e1526;--mut:#93a1ba;--ac:#a78bfa;--ac2:#22d3ee;--ln:#26324d;--warn:#fbbf24}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 56px);scroll-behavior:smooth}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 Sora,system-ui,Segoe UI,sans-serif}
+nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;display:flex;gap:6px;overflow-x:auto;padding:10px 14px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--ln)}
+nav a{white-space:nowrap;color:var(--mut);text-decoration:none;font-size:14px;padding:4px 12px;border-radius:99px}
+nav a:hover,nav a:focus-visible{color:var(--fg);background:var(--card);outline:2px solid var(--ac)}
+.hero{position:relative;overflow:hidden;min-height:78vh;display:grid;place-items:center;text-align:center;padding:60px 20px}
+.hero i{position:absolute;width:46vmax;height:46vmax;border-radius:50%;filter:blur(90px);opacity:.28;animation:drift 14s ease-in-out infinite alternate}
+.hero i:nth-child(1){background:var(--ac);left:-12vmax;top:-14vmax}
+.hero i:nth-child(2){background:var(--ac2);right:-14vmax;bottom:-16vmax;animation-delay:-7s}
+@keyframes drift{to{transform:translate(9vmax,6vmax) scale(1.2)}}
+.hero h1{position:relative;margin:0;font-size:clamp(34px,8vw,88px);line-height:1.02;font-weight:800;letter-spacing:-.03em;animation:rise 1.6s cubic-bezier(.2,.7,.2,1) both}
+.hero p{position:relative;max-width:620px;margin:22px auto 0;color:var(--mut);animation:rise 1.6s .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;letter-spacing:.25em;filter:blur(12px)}}
+main{max-width:1000px;margin:auto;padding:0 18px 80px}
+section{padding:56px 0 20px;border-top:1px solid var(--ln)}
+h2{font-size:clamp(26px,4vw,40px);margin:0 0 4px;letter-spacing:-.02em}
+.tag{color:var(--ac2);margin:0 0 22px}
+h3{font-size:17px;margin:0 0 6px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px}
+.b{background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:16px 18px}
+.b ol,.b ul{margin:0;padding-left:20px}
+.b.re{border-left:4px solid var(--ac2)}
+.b.os{border-left:4px solid var(--ac)}
+code{background:color-mix(in srgb,var(--ac) 14%,transparent);padding:1px 6px;border-radius:4px;font-size:.9em}
+.sim{margin-top:20px;background:var(--card);border:1px solid var(--ln);border-radius:10px;padding:14px}
+.sim h3{color:var(--ac)}
+.viz{overflow-x:auto}
+svg{width:100%;max-width:640px;display:block;margin:auto}
+line.e{stroke:var(--ln);stroke-width:3;transition:.5s}
+line.ok{stroke:#22c55e;stroke-width:6;filter:drop-shadow(0 0 5px #22c55e)}
+line.cand{stroke:#f59e0b;stroke-width:5}
+line.rej{stroke:#ef4444;stroke-width:3;stroke-dasharray:6 5}
+.n circle{fill:var(--card);stroke:var(--ac);stroke-width:3;transition:.5s}
+.n.vis circle{fill:var(--ac)}
+.n.cur circle{fill:#f59e0b;stroke:#f59e0b;filter:drop-shadow(0 0 8px #f59e0b)}
+.n .l{fill:var(--fg);font-weight:800;text-anchor:middle;font-size:18px}
+.n.vis .l,.n.cur .l{fill:#000}
+.n .d{fill:var(--warn);font-weight:600;text-anchor:middle;font-size:15px}
+.w{fill:var(--mut);font-size:14px;text-anchor:middle;font-weight:600}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+button,input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--ln);border-radius:8px;padding:6px 14px;cursor:pointer}
+button:hover{border-color:var(--ac)}button:focus-visible,input:focus-visible{outline:2px solid var(--ac)}
+.log{min-height:52px;margin:6px 0 0;padding:10px 12px;border-radius:8px;background:var(--bg);color:var(--fg);font-size:15px}
+.mx{border-collapse:collapse;margin:auto}
+.mx td,.mx th{border:1px solid var(--ln);padding:6px 12px;text-align:center;min-width:44px;transition:.4s}
+.mx th{color:var(--mut)}.mx td.ch{background:#22c55e;color:#000;font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:8px;min-height:44px}
+.chips span{padding:6px 12px;border-radius:99px;background:var(--ac);color:#000;font-weight:800;animation:pop .4s both}
+@keyframes pop{from{transform:scale(0)}}
+table.t{width:100%;border-collapse:collapse;font-size:14px}.t th,.t td{border-bottom:1px solid var(--ln);padding:8px;text-align:left}
+.rv{opacity:0;transform:translateY(24px);transition:1s}.rv.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv{opacity:1;transform:none}}
+</style></head><body>
+<nav><a href="#greedy">Greedy</a><a href="#dijkstra">Dijkstra</a><a href="#bellman">Bellman-Ford</a><a href="#floyd">Floyd-Warshall</a><a href="#prim">Prim</a><a href="#kruskal">Kruskal</a><a href="#compare">Compare</a></nav>
+<header class="hero"><i></i><i></i><div><h1>Greedy &amp; Graph<br>Algorithms</h1><p>Six classic algorithms explained with step-by-step animated simulations, real-life examples and their link to Operating Systems. Press Play in every simulator and watch the algorithm think.</p></div></header>
+<main>
+
+<section id="greedy" class="rv"><h2>Greedy Algorithm</h2><p class="tag">Take the best option available right now and never look back.</p>
+<div class="g"><div class="b"><h3>Concept</h3>A greedy algorithm builds a solution piece by piece, always choosing the locally best option. It works when the problem has two properties: the <b>greedy-choice property</b> (a local optimum leads to a global optimum) and <b>optimal substructure</b> (the rest of the problem is a smaller copy of the same problem). It is fast and simple, but for some problems it gives wrong answers, so it must be proven correct.</div>
+<div class="b"><h3>General steps</h3><ol><li>Define the candidate choices.</li><li>Pick the best one by a fixed rule (largest, smallest, earliest…).</li><li>Check that it is feasible; keep it if yes.</li><li>Repeat until the problem is solved.</li></ol></div>
+<div class="b re"><h3>Real-life example</h3>Giving change at a shop: to return ₹289 you hand over the biggest note or coin that fits (₹100, ₹100, ₹50 …) until nothing is left. It is quick and, for Indian denominations, optimal.</div>
+<div class="b os"><h3>Operating System link</h3><b>Shortest Job First (SJF)</b> CPU scheduling always picks the process with the smallest burst time, which minimises average waiting time. Disk scheduling (SSTF) is greedy too: serve the nearest track first.</div></div>
+<div class="b" style="margin-top:18px"><b>Where greedy fails:</b> coins {1, 3, 4}, amount 6. Greedy gives 4+1+1 (3 coins) but the best is 3+3 (2 coins). This is why Dijkstra needs non-negative weights, and why some problems need dynamic programming.</div>
+<div class="sim" data-a="greedy"></div></section>
+
+<section id="dijkstra" class="rv"><h2>Dijkstra's Algorithm</h2><p class="tag">Single-source shortest path, non-negative weights.</p>
+<div class="g"><div class="b"><h3>Concept</h3>Starting from a source, Dijkstra repeatedly finalises the closest unvisited node. Once a node is finalised, its distance is guaranteed shortest, because every other path would have to pass through a node that is already farther away. That is the greedy choice.</div>
+<div class="b"><h3>Steps</h3><ol><li>Set dist(source)=0 and all others ∞.</li><li>Pick the unvisited node u with the smallest distance.</li><li>Mark u visited.</li><li>Relax every edge (u,v): if dist(u)+w &lt; dist(v), update dist(v).</li><li>Repeat until all nodes are visited.</li></ol></div>
+<div class="b"><h3>Complexity</h3>Array: <code>O(V²)</code><br>Binary heap: <code>O((V+E) log V)</code><br>Space: <code>O(V)</code><br>Fails with negative edges.</div>
+<div class="b re"><h3>Real-life example</h3>Google Maps finding the fastest road from your home to the airport. Each junction is a node, each road is an edge and travel time is the weight.</div>
+<div class="b os"><h3>Operating System link</h3><b>OSPF</b> routing in the network stack of an OS and routers runs Dijkstra on the link-state map to fill the routing table.</div></div>
+<div class="sim" data-a="dij"></div></section>
+
+<section id="bellman" class="rv"><h2>Bellman-Ford Algorithm</h2><p class="tag">Shortest paths that survive negative edges.</p>
+<div class="g"><div class="b"><h3>Concept</h3>Instead of trusting the closest node, Bellman-Ford relaxes <i>all</i> edges again and again. After pass k, all shortest paths using at most k edges are correct. A shortest path has at most V−1 edges, so V−1 passes are enough. If a V-th pass still improves something, a negative cycle exists.</div>
+<div class="b"><h3>Steps</h3><ol><li>Set dist(source)=0, others ∞.</li><li>Repeat V−1 times: for each edge (u,v,w) relax it.</li><li>Run one more pass: if any distance still drops, report a negative cycle.</li></ol></div>
+<div class="b"><h3>Complexity</h3>Time: <code>O(V·E)</code><br>Space: <code>O(V)</code><br>Slower than Dijkstra but handles negative weights.</div>
+<div class="b re"><h3>Real-life example</h3>Currency exchange. Convert rates to logarithms, and a negative cycle means an <b>arbitrage</b>: a loop of trades that makes free money.</div>
+<div class="b os"><h3>Operating System link</h3>The <b>RIP</b> protocol (distance-vector routing) is a distributed Bellman-Ford: each router shares its table with neighbours and relaxes routes.</div></div>
+<div class="sim" data-a="bf"></div></section>
+
+<section id="floyd" class="rv"><h2>Floyd-Warshall Algorithm</h2><p class="tag">All-pairs shortest paths with dynamic programming.</p>
+<div class="g"><div class="b"><h3>Concept</h3>Floyd-Warshall answers "what is the shortest path between <i>every</i> pair of nodes?" It allows intermediate nodes one at a time. After processing node k, dist[i][j] is the best path from i to j using only the first k nodes as stops.</div>
+<div class="b"><h3>Steps</h3><ol><li>Build a matrix: 0 on the diagonal, edge weight where an edge exists, ∞ otherwise.</li><li>For each intermediate node k, for each pair (i,j):</li><li>If dist[i][k]+dist[k][j] &lt; dist[i][j], update dist[i][j].</li></ol>Core line: <code>d[i][j]=min(d[i][j], d[i][k]+d[k][j])</code></div>
+<div class="b"><h3>Complexity</h3>Time: <code>O(V³)</code><br>Space: <code>O(V²)</code><br>Handles negative edges (not negative cycles). Ideal for small dense graphs.</div>
+<div class="b re"><h3>Real-life example</h3>A flight app that pre-computes the cheapest fare between every pair of cities, so any query is a table look-up.</div>
+<div class="b os"><h3>Operating System link</h3>Building a full routing table for a small network, and computing the <b>transitive closure</b> of resource-allocation graphs used in deadlock analysis.</div></div>
+<div class="sim" data-a="fw"></div></section>
+
+<section id="prim" class="rv"><h2>Prim's Algorithm</h2><p class="tag">Grow one tree, one cheapest edge at a time.</p>
+<div class="g"><div class="b"><h3>Concept</h3>A <b>Minimum Spanning Tree (MST)</b> connects all nodes with the lowest total edge weight and no cycles. Prim starts from one node and keeps expanding the tree with the cheapest edge that reaches a new node. By the cut property, that edge always belongs to some MST.</div>
+<div class="b"><h3>Steps</h3><ol><li>Start with any node in the tree.</li><li>Look at all edges leaving the tree.</li><li>Add the cheapest one and its new node.</li><li>Repeat until all V nodes are in (V−1 edges).</li></ol></div>
+<div class="b"><h3>Complexity</h3>Heap: <code>O(E log V)</code><br>Matrix version: <code>O(V²)</code><br>Best for dense graphs.</div>
+<div class="b re"><h3>Real-life example</h3>Laying fibre-optic cable between offices of a company using the least total cable length.</div>
+<div class="b os"><h3>Operating System link</h3>Spanning trees stop switching loops and broadcast storms in LANs (the idea behind the Spanning Tree Protocol).</div></div>
+<div class="sim" data-a="prim"></div></section>
+
+<section id="kruskal" class="rv"><h2>Kruskal's Algorithm</h2><p class="tag">Sort all edges, accept those that do not form a cycle.</p>
+<div class="g"><div class="b"><h3>Concept</h3>Kruskal also builds an MST, but it thinks in edges instead of nodes. It sorts every edge by weight and accepts the cheapest edge unless it would close a cycle. A <b>Disjoint Set Union (Union-Find)</b> structure checks in almost constant time whether two nodes are already connected.</div>
+<div class="b"><h3>Steps</h3><ol><li>Sort edges by weight, ascending.</li><li>For each edge (u,v): find the sets of u and v.</li><li>If the sets differ, accept the edge and union them.</li><li>Otherwise reject it (cycle).</li><li>Stop after V−1 accepted edges.</li></ol></div>
+<div class="b"><h3>Complexity</h3>Time: <code>O(E log E)</code><br>Space: <code>O(V)</code><br>Best for sparse graphs.</div>
+<div class="b re"><h3>Real-life example</h3>A government connecting villages by roads: build the cheapest roads first, skip any road that links villages already connected.</div>
+<div class="b os"><h3>Operating System link</h3>Union-Find is the same structure used to group connected components, e.g. detecting groups of processes or resources that are linked together.</div></div>
+<div class="sim" data-a="kr"></div></section>
+
+<section id="compare" class="rv"><h2>Quick Comparison</h2><p class="tag">Choose the right tool.</p>
+<div class="b" style="overflow-x:auto"><table class="t"><tr><th>Algorithm</th><th>Solves</th><th>Negative edges</th><th>Time</th></tr>
+<tr><td>Dijkstra</td><td>Single-source shortest path</td><td>No</td><td>O((V+E) log V)</td></tr>
+<tr><td>Bellman-Ford</td><td>Single-source, detects negative cycles</td><td>Yes</td><td>O(V·E)</td></tr>
+<tr><td>Floyd-Warshall</td><td>All-pairs shortest path</td><td>Yes (no neg. cycle)</td><td>O(V³)</td></tr>
+<tr><td>Prim</td><td>MST (dense graphs)</td><td>Yes</td><td>O(E log V)</td></tr>
+<tr><td>Kruskal</td><td>MST (sparse graphs)</td><td>Yes</td><td>O(E log E)</td></tr></table></div>
+<div class="b" style="margin-top:18px"><h3>Exam tips</h3><ul><li>Dijkstra, Prim and Kruskal are greedy; Floyd-Warshall is dynamic programming; Bellman-Ford is repeated relaxation.</li><li>Shortest path tree ≠ minimum spanning tree: one minimises distance from a source, the other minimises total weight.</li><li>Always state the complexity and one real-life use in your answer.</li></ul></div></section>
+</main>
+<script>
+const N={A:[60,160],B:[200,50],C:[200,270],D:[380,50],E:[380,270],F:[540,160]},K=Object.keys(N),
+E=[['A','B',4],['A','C',2],['B','C',1],['B','D',5],['C','E',8],['D','E',2],['D','F',6],['E','F',3]],I=Infinity;
+const nb=(u,i)=>{const[a,b]=E[i];return a==u?b:b==u?a:null};
+function svg(){return '<svg viewBox="0 0 600 320" role="img" aria-label="Weighted graph with nodes A to F">'+E.map(([a,b,w])=>{const[x1,y1]=N[a],[x2,y2]=N[b];return `<line class="e" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="w" x="${(x1+x2)/2+(a=='B'&&b=='C'?-14:0)}" y="${(y1+y2)/2-7}">${w}</text>`}).join('')+K.map(k=>`<g class="n"><circle cx="${N[k][0]}" cy="${N[k][1]}" r="22"/><text class="l" x="${N[k][0]}" y="${N[k][1]+6}">${k}</text><text class="d" x="${N[k][0]}" y="${N[k][1]+(N[k][1]<100?-32:44)}"></text></g>`).join('')+'</svg>'}
+function gr(v,f){if(!v.firstChild)v.innerHTML=svg();v.querySelectorAll('line').forEach((l,i)=>l.setAttribute('class','e '+(f.e[i]||'')));v.querySelectorAll('.n').forEach((g,i)=>{const k=K[i];g.setAttribute('class','n '+(f.nc[k]||''));g.querySelector('.d').textContent=f.n?f.n[k]:''})}
+const nc=(d,cur)=>Object.fromEntries(K.map(k=>[k,k==cur?'cur':d[k]?'vis':'']));
+function dij(){let d={},dn={},ec={},fr=[];K.forEach(k=>d[k]=I);d.A=0;
+const s=(m,c)=>fr.push({e:{...ec},nc:nc(dn,c),n:Object.fromEntries(K.map(k=>[k,d[k]==I?'∞':d[k]])),m});
+s('Start: dist(A)=0, every other node is ∞.');
+for(;;){let u=null;K.forEach(k=>{if(!dn[k]&&d[k]<I&&(u==null||d[k]<d[u]))u=k});if(!u)break;dn[u]=1;let m=`Pick ${u}, the closest unvisited node (${d[u]}). `;
+E.forEach((x,i)=>{const v=nb(u,i);if(v&&!dn[v]&&d[u]+x[2]<d[v]){d[v]=d[u]+x[2];E.forEach((y,j)=>{if(ec[j]&&(y[0]==v||y[1]==v))delete ec[j]});ec[i]='ok';m+=`Relax ${u}→${v}: new distance ${d[v]}. `}});s(m,u)}
+s('Finished. Green edges form the shortest-path tree from A.');return fr}
+function bf(){let d={},ec={},fr=[];K.forEach(k=>d[k]=I);d.A=0;
+const s=(m,e)=>fr.push({e:{...ec,...e},nc:nc(Object.fromEntries(K.map(k=>[k,d[k]<I])),null),n:Object.fromEntries(K.map(k=>[k,d[k]==I?'∞':d[k]])),m});
+s('Start: dist(A)=0, others ∞. We will relax all edges, pass after pass.');
+for(let p=1;p<=5;p++){let ch=0;E.forEach(([a,b,w],i)=>{let m=`Pass ${p}, edge ${a}–${b} (${w}): `,hit=0;[[a,b],[b,a]].forEach(([u,v])=>{if(d[u]<I&&d[u]+w<d[v]){d[v]=d[u]+w;E.forEach((y,j)=>{if(ec[j]&&(y[0]==v||y[1]==v))delete ec[j]});ec[i]='ok';m+=`${v} improves to ${d[v]}. `;hit=1;ch=1}});s(hit?m:m+'no improvement.',hit?{}:{[i]:'cand'})});
+if(!ch){s(`Pass ${p} changed nothing, so we stop early. All distances are final (no negative cycle).`,{});break}}
+return fr}
+function prim(){let t={A:1},ec={},fr=[],tot=0;const s=(m,e)=>fr.push({e:{...ec,...e},nc:nc(t,null),m});
+s('Start the tree at node A.',{});
+while(Object.keys(t).length<6){let best=-1,cr=[];E.forEach(([a,b,w],i)=>{if(!!t[a]!=!!t[b]){cr.push(i);if(best<0||w<E[best][2])best=i}});
+const cand={};cr.forEach(i=>cand[i]='cand');const[a,b,w]=E[best];const nw=t[a]?b:a;t[nw]=1;ec[best]='ok';tot+=w;cand[best]='ok';
+s(`Edges leaving the tree: ${cr.map(i=>E[i][0]+E[i][1]+'('+E[i][2]+')').join(', ')}. Cheapest is ${a}–${b} (${w}), so add ${nw}. Total = ${tot}.`,cand)}
+s(`MST complete with total weight ${tot}.`,{});return fr}
+function kr(){let p={};K.forEach(k=>p[k]=k);const f=x=>p[x]==x?x:p[x]=f(p[x]),ec={},used={},fr=[];let tot=0;
+const s=m=>fr.push({e:{...ec},nc:nc(used,null),m});s('Sorted edge order: '+E.map((x,i)=>i).sort((x,y)=>E[x][2]-E[y][2]).map(i=>E[i][0]+E[i][1]+'('+E[i][2]+')').join(', ')+'.');
+E.map((x,i)=>i).sort((x,y)=>E[x][2]-E[y][2]).forEach(i=>{const[a,b,w]=E[i];if(f(a)!=f(b)){p[f(a)]=f(b);ec[i]='ok';used[a]=used[b]=1;tot+=w;s(`Edge ${a}–${b} (${w}): different components, ACCEPT. Total = ${tot}.`)}else{ec[i]='rej';s(`Edge ${a}–${b} (${w}): already connected, it would form a cycle, REJECT.`)}});
+s(`MST complete with total weight ${tot}.`);return fr}
+function fw(){const D=K.map(()=>K.map(()=>I));K.forEach((k,i)=>D[i][i]=0);E.forEach(([a,b,w])=>{D[K.indexOf(a)][K.indexOf(b)]=D[K.indexOf(b)][K.indexOf(a)]=w});
+const c=()=>D.map(r=>[...r]),fr=[{D:c(),ch:[],m:'Initial matrix: direct edge weights only, ∞ where no edge exists.'}];
+K.forEach((k,x)=>{const ch=[];D.forEach((r,i)=>r.forEach((_,j)=>{if(D[i][x]+D[x][j]<D[i][j]){D[i][j]=D[i][x]+D[x][j];ch.push([i,j])}}));fr.push({D:c(),ch,m:`Allow ${k} as an intermediate node. `+(ch.length?ch.length+' cell(s) improved (green).':'No cell improved.')})});
+fr.push({D:c(),ch:[],m:'Done. Every cell now holds the shortest distance between that pair of nodes.'});return fr}
+function fwr(v,f){v.innerHTML='<table class="mx"><tr><th></th>'+K.map(k=>`<th>${k}</th>`).join('')+'</tr>'+f.D.map((r,i)=>`<tr><th>${K[i]}</th>`+r.map((x,j)=>`<td class="${f.ch.some(q=>q[0]==i&&q[1]==j)?'ch':''}">${x==I?'∞':x}</td>`).join('')+'</tr>').join('')+'</table>'}
+function greedy(){const den=[100,50,20,10,5,2,1];let r=289,fr=[{r,ch:[],m:'Amount to return: ₹289. Rule: always take the largest denomination that fits.'}],ch=[];
+den.forEach(d=>{const n=Math.floor(r/d);if(n){for(let i=0;i<n;i++)ch.push(d);r-=n*d;fr.push({r,ch:[...ch],m:`Take ${n} × ₹${d}. Remaining: ₹${r}.`})}});fr.push({r:0,ch:[...ch],m:`Done with ${ch.length} coins/notes. Greedy is optimal for this denomination set.`});return fr}
+function grr(v,f){v.innerHTML=`<p>Remaining: <b>₹${f.r}</b></p><div class="chips">${f.ch.map(x=>`<span>₹${x}</span>`).join('')}</div>`}
+const A={greedy:['Simulation: Coin change (greedy)',greedy,grr],dij:['Simulation: Dijkstra from A',dij,gr],bf:['Simulation: Bellman-Ford from A',bf,gr],fw:['Simulation: Floyd-Warshall matrix',fw,fwr],prim:['Simulation: Prim from A',prim,gr],kr:['Simulation: Kruskal',kr,gr]};
+document.querySelectorAll('.sim').forEach(b=>{const[t,mk,rd]=A[b.dataset.a],fr=mk();let i=0,T=null;
+b.innerHTML=`<h3>${t}</h3><div class="viz"></div><div class="ctl"><button class="p">▶ Play</button><button class="s">Step</button><button class="r">Reset</button></div><div class="log" aria-live="polite"></div>`;
+const v=b.querySelector('.viz'),lg=b.querySelector('.log'),pb=b.querySelector('.p');
+const show=()=>{rd(v,fr[i]);lg.textContent=`(${i+1}/${fr.length}) `+fr[i].m},stop=()=>{clearInterval(T);T=null;pb.textContent='▶ Play'},
+step=()=>{if(i<fr.length-1){i++;show()}else stop()};
+pb.onclick=()=>{if(T)return stop();if(i>=fr.length-1)i=0;show();pb.textContent='⏸ Pause';T=setInterval(step,1500)};
+b.querySelector('.s').onclick=()=>{stop();step()};b.querySelector('.r').onclick=()=>{stop();i=0;show()};show()});
+const io=new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.add('in')),{threshold:.08});document.querySelectorAll('.rv').forEach(x=>io.observe(x));
+</script></body></html>
