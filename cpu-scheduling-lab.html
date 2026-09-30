@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CPU Scheduling – OS Lab Manual (Programs 6–11)</title>
+<style>
+:root{--bg:#f5f6fb;--card:#fff;--tx:#1b1f2a;--mu:#5d6577;--ac:#4f46e5;--bd:#dfe3ee;--cb:#f0f2f9;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131a;--card:#1a1f2b;--tx:#e9ecf5;--mu:#98a2b8;--ac:#8b83ff;--bd:#2a3142;--cb:#12161f}}
+:root[data-theme="dark"]{--bg:#10131a;--card:#1a1f2b;--tx:#e9ecf5;--mu:#98a2b8;--ac:#8b83ff;--bd:#2a3142;--cb:#12161f}
+:root[data-theme="ocean"]{--bg:#e8f4fb;--card:#fff;--tx:#0b2942;--mu:#4a6a82;--ac:#0a7abf;--bd:#c5dfee;--cb:#eaf5fc}
+:root[data-theme="forest"]{--bg:#eef5ee;--card:#fff;--tx:#142a1a;--mu:#4f6b57;--ac:#2e7d32;--bd:#cfe0d1;--cb:#eef6ef}
+:root[data-theme="sunset"]{--bg:#211526;--card:#2e1b33;--tx:#ffeede;--mu:#d2aab8;--ac:#ff8a4c;--bd:#4a2b50;--cb:#26152b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:960px;margin:auto;padding:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h1{font-size:1.5rem;margin:0}h2{margin:.3em 0}h3{margin:1.4em 0 .4em;color:var(--ac)}h4{margin:1em 0 .3em}
+.sub{color:var(--mu);margin:2px 0 10px}
+select,input,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
+button{cursor:pointer}
+nav{display:flex;gap:6px;overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 0;z-index:5}
+nav button{white-space:nowrap}
+nav .on,.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.flow{display:flex;flex-wrap:wrap;gap:12px 26px}
+.flow span{background:var(--card);border:2px solid var(--ac);border-radius:10px;padding:6px 10px;font-size:.9rem;position:relative}
+.flow span:not(:last-child)::after{content:"→";position:absolute;right:-21px;top:50%;transform:translateY(-50%);color:var(--ac);font-weight:700}
+table{border-collapse:collapse;margin:6px 0}
+th,td{border:1px solid var(--bd);padding:5px 10px;text-align:center}
+th{background:var(--cb)}
+td input{width:72px}
+.gt{display:flex;padding:8px 0 28px;overflow-x:auto}
+.b{position:relative;min-width:40px;height:46px;color:#fff;display:flex;align-items:center;justify-content:center;border-right:2px solid var(--card);animation:pop .4s both;transform-origin:bottom}
+.b i,.b u{position:absolute;bottom:-22px;font-size:.75rem;color:var(--mu);font-style:normal;text-decoration:none}
+.b i{left:0}.b u{right:0}
+@keyframes pop{from{opacity:0;transform:scaleY(.2)}}
+.code{background:var(--cb);border:1px solid var(--bd);border-radius:12px;padding:8px 12px}
+.ln{display:grid;grid-template-columns:28px 1fr;padding:6px 0;border-bottom:1px dashed var(--bd)}
+.ln:last-child{border:0}
+.ln span{color:var(--mu);font-size:.8rem;padding-top:3px}
+.ln code{font:.88rem/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.ln small{grid-column:2;color:var(--mu);font-size:.85rem}
+.ln small::before{content:"↳ ";color:var(--ac)}
+.er{color:#d33}
+.ed{--ec:var(--cb);--et:var(--tx)}
+.ed[data-et="term"]{--ec:#0b140b;--et:#6dff8a}
+.ed[data-et="paper"]{--ec:#fffdf4;--et:#2b2b2b}
+.ed[data-et="night"]{--ec:#0d1117;--et:#c9d1d9}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+@media(max-width:700px){.g2{grid-template-columns:1fr}}
+.ed textarea,.ed pre{display:block;width:100%;margin:0;padding:8px;background:var(--ec);color:var(--et);border:1px solid var(--bd);border-radius:8px;font:.85rem/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow:auto}
+#src{min-height:340px}#stdin{min-height:120px}.ed pre{min-height:120px;white-space:pre-wrap}
+</style>
+</head>
+<body>
+<div class="w">
+<header><div><h1>⚙️ CPU Scheduling – OS Lab Manual</h1><p class="sub">Programs 6 to 11 · CO2 · Beginner friendly</p></div>
+<label>🎨 Theme <select id="th"><option value="light">Light</option><option value="dark">Dark</option><option value="ocean">Ocean</option><option value="forest">Forest</option><option value="sunset">Sunset</option></select></label></header>
+<nav id="nv"></nav>
+<main id="m"></main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const E=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+/* shared code lines: [code, explanation] */
+const INC=['#include <stdio.h>','Includes the standard input/output library so we can use printf and scanf.'];
+const MAIN=['int main() {','Program execution starts here.'];
+const END=[['  return 0;','Tell the operating system the program ended successfully.'],['}','End of main().']];
+const OUT=[['  for (i = 0; i < n; i++)','Loop over every process to print its result.'],['    printf("P%d CT=%d TAT=%d WT=%d\\n", i+1, ct[i], ct[i]-at[i], ct[i]-at[i]-bt[i]);','Print CT, then TAT = CT - AT and WT = TAT - BT.']];
+const CL=['  }','Closes the loop or block above.'];
+const RD=['  for (i = 0; i < n; i++) { scanf("%d %d", &at[i], &bt[i]); rt[i] = bt[i]; }','Read arrival and burst time of each process. Remaining time (rt) starts equal to burst time.'];
+const WH=['  while (done < n) {','Repeat until all processes are finished.'];
+const IDLE=['    if (k < 0) { t++; continue; }','No process is ready, so the CPU stays idle for 1 time unit and we look again.'];
+const RUN=['    t += run; rt[k] -= run;','Move the clock forward by "run" and reduce the remaining time of the process.'];
+const FIN=['    if (rt[k] == 0) { ct[k] = t; done++; }','If the process has finished, save its Completion Time (CT) and count it as done.'];
+const K1=['    k = -1;','k = -1 means "no process chosen yet".'];
+const jf=p=>[INC,MAIN,
+['  int n, i, k, t = 0, done = 0, mode;','n = number of processes, k = chosen process, t = clock, done = finished count, mode = 0 (non-preemptive) or 1 (preemptive).'],
+['  int at[20], bt[20], rt[20], ct[20]'+(p?', pr[20]':'')+';','Arrays for arrival, burst, remaining and completion time'+(p?', and priority (smaller number = higher priority).':'.')],
+['  scanf("%d %d", &n, &mode);','Read the number of processes and the mode.'],
+p?['  for (i = 0; i < n; i++) { scanf("%d %d %d", &at[i], &bt[i], &pr[i]); rt[i] = bt[i]; }','Read arrival time, burst time and priority of each process.']:RD,
+WH,K1,['    for (i = 0; i < n; i++)','Check every process.'],
+['      if (at[i] <= t && rt[i] > 0 && (k < 0 || '+(p?'pr[i] < pr[k]':'rt[i] < rt[k]')+')) k = i;','Choose a process that has arrived, is unfinished and has the '+(p?'best (smallest) priority number.':'shortest remaining time. In non-preemptive mode rt equals bt, so this means "shortest burst first".')],
+IDLE,['    int run = mode ? 1 : rt[k];','Preemptive: run only 1 unit, then choose again. Non-preemptive: run until the process finishes.'],
+RUN,FIN,CL,...OUT,...END];
+const ARR=['    for (i = 0; i < n; i++) if (!in[i] && at[i] <= t) { q[r++] = i; in[i] = 1; }'];
+const PR=[
+{n:6,t:'FCFS',full:'First Come First Served',k:'fcfs',c:['at','bt'],rows:[[0,5],[1,3],[2,8],[3,6]],aim:'To implement the FCFS CPU scheduling algorithm.',
+con:`FCFS is the simplest algorithm. The process that arrives first gets the CPU first, just like people standing in a queue at a ticket counter. It is non-preemptive: once a process starts, it runs until it finishes. Drawback: one long process at the front makes everyone behind it wait (the convoy effect).`,
+flow:['Start','Read AT and BT','Pick the earliest arrived process','Run it until it finishes','Calculate CT, TAT, WT','Repeat for all, then Stop'],
+fmt:'Input: first line n, then n lines of "AT BT" (sorted by arrival time).',
+code:[INC,MAIN,
+['  int n, i, t = 0, at[20], bt[20];','n = number of processes, i = loop counter, t = current clock time. at[] and bt[] store arrival and burst times.'],
+['  scanf("%d", &n);','Read how many processes there are.'],
+['  for (i = 0; i < n; i++) scanf("%d %d", &at[i], &bt[i]);','Read arrival time and burst time of every process.'],
+['  printf("P AT BT CT TAT WT\\n");','Print the table heading.'],
+['  for (i = 0; i < n; i++) {','Serve processes one by one in the order they arrived.'],
+['    if (t < at[i]) t = at[i];','If the CPU is idle (next process has not arrived yet), jump the clock to its arrival time.'],
+['    t += bt[i];','The process runs to completion, so the clock moves forward by its burst time. Now t is its Completion Time (CT).'],
+['    printf("P%d %d %d %d %d %d\\n", i+1, at[i], bt[i], t, t-at[i], t-at[i]-bt[i]);','Print AT, BT, CT, TAT = CT - AT and WT = TAT - BT.'],
+CL,...END]},
+{n:7,t:'SJF',full:'Shortest Job First',k:'sjf',o:'mode',c:['at','bt'],rows:[[0,7],[2,4],[4,1],[5,4]],aim:'To implement the SJF CPU scheduling algorithm (non-preemptive and preemptive).',
+con:`SJF gives the CPU to the process with the smallest burst time. It gives the minimum average waiting time. In the non-preemptive version the chosen process runs to completion. In the preemptive version (also called SRTF, Shortest Remaining Time First) a new process with a shorter remaining time takes over the CPU. Drawback: long processes may starve.`,
+flow:['Start','Read processes and mode','Find processes that have arrived','Pick the shortest (remaining) burst','Run fully (non-pre) or 1 unit (pre)','If finished, save CT','Repeat until all done'],
+fmt:'Input: first line "n mode" (0 = non-preemptive, 1 = preemptive), then n lines of "AT BT".',code:jf(0)},
+{n:8,t:'Priority',full:'Priority Scheduling',k:'pri',o:'mode',c:['at','bt','pr'],rows:[[0,5,2],[1,3,1],[2,8,4],[3,6,3]],aim:'To implement the Priority CPU scheduling algorithm (non-preemptive and preemptive).',
+con:`Every process has a priority number. Here a smaller number means a higher priority. The CPU goes to the highest-priority process that is ready. In the preemptive version, a newly arrived process with higher priority takes the CPU immediately. Drawback: low-priority processes may starve (a fix is aging: slowly raising the priority of waiting processes).`,
+flow:['Start','Read processes, priority and mode','Find processes that have arrived','Pick the best priority number','Run fully (non-pre) or 1 unit (pre)','If finished, save CT','Repeat until all done'],
+fmt:'Input: first line "n mode" (0 or 1), then n lines of "AT BT Priority".',code:jf(1)},
+{n:9,t:'Round Robin',full:'Round Robin',k:'rr',o:'tq',c:['at','bt'],rows:[[0,5],[1,4],[2,2],[4,1]],aim:'To implement the Round Robin CPU scheduling algorithm.',
+con:`Round Robin is made for time-sharing systems. Each process gets the CPU for a small fixed time called the time quantum. If it is not finished, it goes to the back of the ready queue and waits for its next turn. It is preemptive and fair, and no process starves. A huge quantum behaves like FCFS; a tiny quantum wastes time in context switches.`,
+flow:['Start','Add arrived processes to queue','Take the front process','Run for one time quantum','Add new arrivals, then re-queue if unfinished','Repeat until all done'],
+fmt:'Input: first line "n quantum", then n lines of "AT BT".',
+code:[INC,MAIN,
+['  int n, tq, i, k, run, t = 0, f = 0, r = 0, done = 0;','tq = time quantum, f and r = front and rear of the ready queue, run = time given in this turn.'],
+['  int at[20], bt[20], rt[20], ct[20], in[20] = {0}, q[200];','q[] is the ready queue. in[i] becomes 1 once process i has entered the queue.'],
+['  scanf("%d %d", &n, &tq);','Read the number of processes and the time quantum.'],
+RD,WH,
+[...ARR,'Add every newly arrived process to the back of the queue.'],
+['    if (f == r) { t++; continue; }','Queue is empty: the CPU is idle for 1 unit.'],
+['    k = q[f++];','Take the process at the front of the queue.'],
+['    run = rt[k] < tq ? rt[k] : tq;','Run for one full quantum, or less if the process needs less time.'],
+RUN,
+[...ARR,'Processes that arrived during this turn join the queue BEFORE the current process is put back.'],
+['    if (rt[k] > 0) q[r++] = k;','Not finished: send it to the back of the queue.'],
+['    else { ct[k] = t; done++; }','Finished: save its Completion Time.'],
+CL,...OUT,...END]},
+{n:10,t:'MLQ',full:'Multi-Level Queue',k:'mlq',o:'tq',c:['at','bt','qt'],rows:[[0,4,1],[1,3,2],[2,2,1],[3,5,2]],aim:'To implement the Multi-Level Queue CPU scheduling algorithm.',
+con:`The ready queue is divided into separate queues, for example Queue 1 for system or interactive processes and Queue 2 for batch processes. Each queue has its own algorithm. Here Queue 1 uses Round Robin and Queue 2 uses FCFS. Queue 1 has higher priority, so Queue 2 runs only when Queue 1 is empty. A process stays in its own queue forever.`,
+flow:['Start','Read AT, BT and queue number','Queue 1 has a ready process?','Yes: run it (Round Robin)','No: run Queue 2 process (FCFS)','Check again after each slice','Repeat until all done'],
+fmt:'Input: first line "n quantum" (for Queue 1), then n lines of "AT BT Queue" (queue = 1 or 2, sorted by AT).',
+code:[INC,MAIN,
+['  int n, tq, i, j, k, run, t = 0, done = 0, last = -1;','tq = quantum of Queue 1, last = the process Queue 1 ran most recently.'],
+['  int at[20], bt[20], rt[20], qt[20], ct[20];','qt[i] = queue number of process i (1 = Round Robin queue, 2 = FCFS queue).'],
+['  scanf("%d %d", &n, &tq);','Read the number of processes and the quantum of Queue 1.'],
+['  for (i = 0; i < n; i++) { scanf("%d %d %d", &at[i], &bt[i], &qt[i]); rt[i] = bt[i]; }','Read arrival time, burst time and queue number of each process.'],
+WH,K1,
+['    for (j = 1; j <= n && k < 0; j++) {','Queue 1 (higher priority) uses Round Robin: scan processes in circular order, starting after the last one served.'],
+['      i = (last + j) % n;','Circular index, so after the last process we wrap around to the first.'],
+['      if (qt[i] == 1 && at[i] <= t && rt[i] > 0) k = i;','Choose the first process of Queue 1 that has arrived and is unfinished.'],
+['    }','End of the Queue 1 scan.'],
+['    if (k >= 0) { run = rt[k] < tq ? rt[k] : tq; last = k; }','Queue 1 process found: give it one quantum (or less) and remember it.'],
+['    else {','Queue 1 has nothing ready, so Queue 2 may use the CPU.'],
+['      for (i = 0; i < n && k < 0; i++)','Scan for a Queue 2 process.'],
+['        if (qt[i] == 2 && at[i] <= t && rt[i] > 0) k = i;','Queue 2 is FCFS: pick the earliest arrived, unfinished process.'],
+['      run = 1;','Run only 1 unit so a new Queue 1 process can take over immediately.'],
+['    }','End of the Queue 2 part.'],
+IDLE,RUN,FIN,CL,...OUT,...END]},
+{n:11,t:'MLFQ',full:'Multi-Level Feedback Queue',k:'mlfq',c:['at','bt'],rows:[[0,9],[1,4],[2,6],[3,2]],aim:'To implement the Multi-Level Feedback Queue CPU scheduling algorithm.',
+con:`MLFQ is like MLQ, but processes can move between queues. Every new process starts in the top queue. Here: Queue 0 (quantum 2), Queue 1 (quantum 4) and Queue 2 (FCFS). If a process uses its whole quantum without finishing, it is demoted to the next lower queue. Short jobs finish quickly, long jobs sink down. Real operating systems use this idea.`,
+flow:['Start','All processes enter Queue 0','Pick from the highest non-empty queue','Run for that queue quantum','Not finished? Move down one queue','Repeat until all done'],
+fmt:'Input: first line n, then n lines of "AT BT". Queue quanta are fixed in the code: 2, 4, FCFS.',
+code:[INC,MAIN,
+['  int n, i, k, run, t = 0, done = 0;','n = number of processes, k = chosen process, run = time given in this turn, t = clock.'],
+['  int tq[3] = {2, 4, 1000};','Quantum of Queue 0, Queue 1 and Queue 2. The value 1000 means "run to completion" (FCFS).'],
+['  int at[20], bt[20], rt[20], lv[20] = {0}, rdy[20], ct[20];','lv[i] = current queue level (starts at 0). rdy[i] = time the process joined its queue, to keep first-in first-out order.'],
+['  scanf("%d", &n);','Read the number of processes.'],
+['  for (i = 0; i < n; i++) { scanf("%d %d", &at[i], &bt[i]); rt[i] = bt[i]; rdy[i] = at[i]; }','Read each process. It becomes ready at its arrival time.'],
+WH,K1,['    for (i = 0; i < n; i++)','Check every process.'],
+['      if (at[i] <= t && rt[i] > 0 && (k < 0 || lv[i] < lv[k] || (lv[i] == lv[k] && rdy[i] < rdy[k]))) k = i;','Pick the process in the highest queue (lowest level). Inside the same queue, pick the one that has waited longest.'],
+IDLE,
+['    run = rt[k] < tq[lv[k]] ? rt[k] : tq[lv[k]];','Run for the quantum of its current queue, or less if it needs less.'],
+RUN,
+['    if (rt[k] == 0) { ct[k] = t; done++; }','Finished: save Completion Time.'],
+['    else { if (lv[k] < 2) lv[k]++; rdy[k] = t; }','Used its whole quantum but not finished: demote it one queue down (feedback) and note the time it re-joins.'],
+CL,...OUT,...END]}];
+const BASICS=`<h2>Start here: Basic Terms</h2><div class="box"><p>The <b>CPU</b> can run only one process at a time. <b>CPU scheduling</b> decides <i>which</i> process gets the CPU next. These words are used in all 6 programs:</p><ul>
+<li><b>Arrival Time (AT)</b> – time when the process enters the ready queue.</li>
+<li><b>Burst Time (BT)</b> – total CPU time the process needs.</li>
+<li><b>Completion Time (CT)</b> – time when the process finishes.</li>
+<li><b>Turnaround Time (TAT)</b> = CT − AT.</li>
+<li><b>Waiting Time (WT)</b> = TAT − BT.</li>
+<li><b>Preemptive</b> – the OS can take the CPU away from a running process. <b>Non-preemptive</b> – the process keeps the CPU until it finishes.</li>
+<li><b>Time Quantum</b> – the fixed time slice used in Round Robin.</li>
+<li><b>Gantt Chart</b> – a bar diagram showing which process ran at which time.</li></ul></div>
+<h3>How to use this page</h3><div class="box"><ol><li>Open a program tab (6 to 11).</li><li>Read the concept and the diagram.</li><li>Change the input table, press <b>Run Simulation</b> and watch the Gantt chart.</li><li>Study the C code with its line-by-line explanation.</li><li>Change colours any time with the <b>Theme</b> menu at the top.</li></ol><p>To run a C program: <code>gcc prog.c -o prog</code> and then <code>./prog</code></p></div>`;
+/* simulator: mirrors the C programs */
+function sim(k,P,o){const n=P.length,rt=P.map(p=>p.bt),ct=[],S=[];let t=0,d=0;
+const add=(p,s,e)=>{const l=S[S.length-1];if(l&&l.p==p&&l.e==s)l.e=e;else S.push({p,s,e})};
+const idle=()=>{add(-1,t,t+1);t++},go=()=>d<n&&t<9999,ok=(i,q)=>P[i].at<=t&&rt[i]>0;
+const fin=m=>{if(!rt[m]){ct[m]=t;d++}};
+if(k=='fcfs'){P.map((p,i)=>i).sort((a,b)=>P[a].at-P[b].at).forEach(i=>{if(t<P[i].at){add(-1,t,P[i].at);t=P[i].at}add(i,t,t+P[i].bt);t+=P[i].bt;ct[i]=t})}
+else if(k=='sjf'||k=='pri'){const key=i=>k=='sjf'?rt[i]:P[i].pr;while(go()){let m=-1;for(let i=0;i<n;i++)if(ok(i)&&(m<0||key(i)<key(m)))m=i;if(m<0){idle();continue}const r=o.pre?1:rt[m];add(m,t,t+r);t+=r;rt[m]-=r;fin(m)}}
+else if(k=='rr'){const q=[],inq=[];let f=0;const enq=()=>P.forEach((p,i)=>{if(!inq[i]&&p.at<=t){q.push(i);inq[i]=1}});
+while(go()){enq();if(f==q.length){idle();continue}const m=q[f++],r=Math.min(rt[m],o.tq);add(m,t,t+r);t+=r;rt[m]-=r;enq();if(rt[m])q.push(m);else fin(m)}}
+else if(k=='mlq'){let last=-1;while(go()){let m=-1,r=1;for(let j=1;j<=n&&m<0;j++){const i=(last+j)%n;if(P[i].qt==1&&ok(i))m=i}
+if(m>=0){r=Math.min(rt[m],o.tq);last=m}else for(let i=0;i<n&&m<0;i++)if(P[i].qt==2&&ok(i))m=i;
+if(m<0){idle();continue}add(m,t,t+r);t+=r;rt[m]-=r;fin(m)}}
+else{const tq=[2,4,1e3],lv=P.map(()=>0),rd=P.map(p=>p.at);while(go()){let m=-1;for(let i=0;i<n;i++)if(ok(i)&&(m<0||lv[i]<lv[m]||(lv[i]==lv[m]&&rd[i]<rd[m])))m=i;
+if(m<0){idle();continue}const r=Math.min(rt[m],tq[lv[m]]);add(m,t,t+r);t+=r;rt[m]-=r;if(!rt[m])fin(m);else{if(lv[m]<2)lv[m]++;rd[m]=t}}}
+return{segs:S,ct}}
+const LBL={at:'Arrival (AT)',bt:'Burst (BT)',pr:'Priority',qt:'Queue (1 or 2)'};
+const opt=p=>p.o=='mode'?'<label>Mode: <select id="o"><option value="0">Non-preemptive</option><option value="1">Preemptive</option></select></label>':p.o=='tq'?'<label>Time Quantum: <input id="o" type="number" min="1" value="2"></label>':'';
+const tbl=p=>`<table><tr><th>Process</th>${p.c.map(c=>`<th>${LBL[c]}</th>`).join('')}</tr>${p.rows.map((r,i)=>`<tr><td>P${i+1}</td>${r.map((v,j)=>`<td><input type="number" min="0" value="${v}" data-i="${i}" data-j="${j}"></td>`).join('')}</tr>`).join('')}</table>`;
+const gantt=S=>{const T=S[S.length-1].e;return`<div class="gt">${S.map((s,i)=>`<div class="b" style="flex:${s.e-s.s};background:${s.p<0?'var(--mu)':`hsl(${s.p*67%360} 60% 42%)`};animation-delay:${i*.35}s"><b>${s.p<0?'Idle':'P'+(s.p+1)}</b><i>${s.s}</i>${i==S.length-1?`<u>${T}</u>`:''}</div>`).join('')}</div>`};
+let cur=0;
+function run(){const p=PR[cur-1],o=$('o')?+$('o').value:0,Q=p.rows.map(r=>{const x={};p.c.forEach((c,j)=>x[c]=r[j]);return x});
+if(Q.some(x=>Object.values(x).some(v=>!(v>=0))||!(x.bt>=1)||(p.k=='mlq'&&x.qt!=1&&x.qt!=2))||(p.o=='tq'&&!(o>=1))){$('out').innerHTML='<p class="er">Please enter valid numbers (BT ≥ 1, quantum ≥ 1, queue = 1 or 2).</p>';return}
+const {segs,ct}=sim(p.k,Q,{pre:p.o=='mode'&&o==1,tq:o}),T=Q.map((x,i)=>[ct[i],ct[i]-x.at,ct[i]-x.at-x.bt]),av=k=>(T.reduce((s,r)=>s+r[k],0)/T.length).toFixed(2);
+$('out').innerHTML=`<h4>Gantt Chart (CPU timeline diagram)</h4>${gantt(segs)}<h4>Result Table</h4><div class="box"><table><tr><th>Process</th>${p.c.map(c=>`<th>${c.toUpperCase()}</th>`).join('')}<th>CT</th><th>TAT</th><th>WT</th></tr>${Q.map((x,i)=>`<tr><td>P${i+1}</td>${p.c.map(c=>`<td>${x[c]}</td>`).join('')}${T[i].map(v=>`<td>${v}</td>`).join('')}</tr>`).join('')}</table><p><b>Average TAT</b> = ${av(1)} &nbsp; <b>Average WT</b> = ${av(2)}</p></div>`}
+function addR(){const p=PR[cur-1];if(p.rows.length<10){p.rows.push(p.c.map(c=>c=='at'?p.rows[p.rows.length-1][0]+1:c=='bt'?3:1));$('tb').innerHTML=tbl(p)}}
+function delR(){const p=PR[cur-1];if(p.rows.length>1){p.rows.pop();$('tb').innerHTML=tbl(p)}}
+function cp(){try{navigator.clipboard.writeText(PR[cur-1].code.map(l=>l[0]).join('\n')).then(()=>{$('cb').textContent='Copied ✓'},()=>{})}catch(e){}}
+const SRC=p=>p.code.map(l=>l[0]).join('\n');
+const smp=p=>`${p.rows.length}${p.o=='tq'?' 2':p.o?' 0':''}\n`+p.rows.map(r=>r.join(' ')).join('\n');
+const EDHTML=p=>`<h3>5. Practice Editor: Code, Input and Output</h3><div class="box ed" id="ed"><div class="bar"><label>Editor theme <select id="et"><option value="">Match page</option><option value="term">Terminal</option><option value="paper">Paper</option><option value="night">Night</option></select></label> <button onclick="edInit()">↺ Reset</button> <button class="pri" onclick="edRun()">▶ Run</button></div><div class="g2"><div><h4>main.c (editable)</h4><textarea id="src" spellcheck="false"></textarea></div><div><h4>Input (stdin)</h4><textarea id="stdin" spellcheck="false"></textarea><h4>Output</h4><pre id="stdout"></pre></div></div><p class="sub">${p.fmt}<br>Note: a browser cannot compile C. <b>Run</b> reads your Input and prints what the original program above would print. If you change the code, compile it yourself: <code>gcc main.c -o main</code></p></div>`;
+function edInit(){const p=PR[cur-1],s=$('src');s.value=SRC(p);$('stdin').value=smp(p);
+s.onkeydown=e=>{if(e.key=='Tab'){e.preventDefault();s.setRangeText('  ',s.selectionStart,s.selectionEnd,'end')}};
+let et='';try{et=localStorage.getItem('et')||''}catch(x){}
+$('et').value=et;$('ed').dataset.et=et;$('et').onchange=e=>{$('ed').dataset.et=e.target.value;try{localStorage.setItem('et',e.target.value)}catch(x){}};edRun()}
+function edRun(){const p=PR[cur-1],o=$('stdout'),tk=$('stdin').value.trim().split(/\s+/).map(Number),hn=p.o?2:1,n=tk[0],w=p.c.length,bad=m=>{o.textContent='Error: '+m};
+if(tk.some(isNaN)||!(n>=1)||n>20||tk.length<hn+n*w)return bad('the input does not match the format written below the editor.');
+const a=p.o?tk[1]:0,Q=[];for(let i=0;i<n;i++){const x={};p.c.forEach((c,j)=>x[c]=tk[hn+i*w+j]);Q.push(x)}
+if(Q.some(x=>!(x.bt>=1)||!(x.at>=0)||(p.k=='mlq'&&x.qt!=1&&x.qt!=2))||(p.o=='tq'&&!(a>=1))||(p.o=='mode'&&a!=0&&a!=1))return bad('BT must be at least 1, quantum at least 1, mode 0 or 1, queue 1 or 2.');
+const L=[];
+if(p.k=='fcfs'){L.push('P AT BT CT TAT WT');let t=0;Q.forEach((x,i)=>{if(t<x.at)t=x.at;t+=x.bt;L.push(`P${i+1} ${x.at} ${x.bt} ${t} ${t-x.at} ${t-x.at-x.bt}`)})}
+else{const{ct}=sim(p.k,Q,{pre:p.o=='mode'&&a==1,tq:a});Q.forEach((x,i)=>L.push(`P${i+1} CT=${ct[i]} TAT=${ct[i]-x.at} WT=${ct[i]-x.at-x.bt}`))}
+o.textContent=L.join('\n')+'\n\n[Program exited with code 0]'}
+function show(i){cur=i;[...$('nv').children].forEach((b,j)=>b.classList.toggle('on',j==i));const m=$('m');
+if(!i){m.innerHTML=BASICS;return}
+const p=PR[i-1];
+m.innerHTML=`<h2>Program ${p.n}: ${p.full} (${p.t})</h2><div class="box"><b>Aim:</b> ${p.aim} &nbsp;<b>CO2</b></div>
+<h3>1. Concept</h3><p>${p.con}</p>
+<h3>2. Diagram: how it works</h3><div class="flow">${p.flow.map(x=>`<span>${x}</span>`).join('')}</div>
+<h3>3. Simulation</h3><div class="box">${opt(p)}<div id="tb">${tbl(p)}</div><p><button onclick="addR()">+ Add process</button> <button onclick="delR()">− Remove last</button> <button class="pri" onclick="run()">▶ Run Simulation</button></p></div><div id="out"></div>
+<h3>4. C code with line-by-line explanation</h3><p>${p.fmt} <button id="cb" onclick="cp()">Copy code</button></p><div class="code">${p.code.map((l,i)=>`<div class="ln"><span>${i+1}</span><code>${E(l[0])}</code><small>${E(l[1])}</small></div>`).join('')}</div>`;
+m.insertAdjacentHTML('beforeend',EDHTML(p));edInit();run();scrollTo(0,0)}
+$('m').addEventListener('input',e=>{const d=e.target.dataset;if(d.i!==undefined)PR[cur-1].rows[d.i][d.j]=e.target.value===''?NaN:+e.target.value});
+['Basics','6 · FCFS','7 · SJF','8 · Priority','9 · Round Robin','10 · MLQ','11 · MLFQ'].forEach((l,i)=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>show(i);$('nv').appendChild(b)});
+const setT=v=>{document.documentElement.dataset.theme=v;try{localStorage.setItem('th',v)}catch(e){}};
+let v;try{v=localStorage.getItem('th')}catch(e){}
+v=v||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+$('th').value=v;setT(v);$('th').onchange=e=>setT(e.target.value);
+show(0);
+</script>
+</body>
+</html>
