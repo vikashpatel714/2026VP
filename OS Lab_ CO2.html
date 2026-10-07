@@ -1,0 +1,286 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>OS Lab: C Code, Line by Line</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Nunito+Sans:wght@400;600&family=JetBrains+Mono&display=swap">
+<style>
+:root{--bg:#0b0720;--fg:#ece9ff;--card:rgba(32,20,78,.8);--a:#a78bfa;--b:#60a5fa;--m:#b9b2e0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 'Nunito Sans',system-ui,sans-serif}
+#bg{position:fixed;inset:0;z-index:-1}
+h1,h2,h3{font-family:Sora,system-ui,sans-serif;line-height:1.2;margin:.2em 0 .5em}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;gap:6px;overflow-x:auto;padding:8px 12px;background:var(--card);backdrop-filter:blur(8px)}
+.bar button,.btn{flex:none;border:1px solid var(--m);background:transparent;color:var(--fg);padding:6px 13px;border-radius:20px;cursor:pointer;font:inherit;font-size:14px}
+.bar button.on,.btn.on,.btn:hover{background:var(--a);color:var(--bg);border-color:var(--a)}
+main{max-width:1000px;margin:auto;padding:12px 16px 40px}
+.card{background:var(--card);border:1px solid color-mix(in srgb,var(--m) 35%,transparent);border-radius:14px;padding:18px;margin:18px 0;backdrop-filter:blur(6px)}
+.mono,code,pre{font-family:'JetBrains Mono',ui-monospace,monospace}
+.dim{color:var(--m)}
+*:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+.nav{display:flex;flex-wrap:wrap;gap:6px}
+.code{margin:0;padding:10px 0;border-radius:10px;background:color-mix(in srgb,var(--bg) 55%,transparent);border:1px solid var(--m);overflow-x:auto;font-size:13.5px;line-height:1.7}
+.ln{white-space:pre;padding:0 12px 0 0;border-left:4px solid transparent;transition:.25s}.ln span{display:inline-block;width:34px;text-align:right;margin-right:12px;color:var(--m)}
+.ln.on{background:color-mix(in srgb,var(--a) 30%,transparent);border-left-color:var(--a)}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.say{padding:12px 14px;border-radius:10px;background:color-mix(in srgb,var(--b) 20%,transparent);border-left:4px solid var(--b);min-height:52px}
+.con{margin:10px 0 0;padding:10px;border-radius:8px;background:#000;color:#8dffb0;min-height:54px;font-size:13.5px;white-space:pre-wrap}
+.g{display:flex;margin:6px 0 24px;border-radius:6px}.g div{position:relative;color:#111;text-align:center;font-size:13px;padding:6px 0;border-right:2px solid rgba(0,0,0,.35);transform-origin:left;animation:gr .7s both}.g small{position:absolute;left:2px;bottom:-20px;color:var(--fg)}
+@keyframes gr{from{transform:scaleX(0);opacity:0}}
+.tag{display:inline-block;padding:1px 10px;border-radius:12px;background:var(--a);color:var(--bg);font-size:13px;margin-right:6px}
+@media(prefers-reduced-motion:reduce){.g div{animation:none}}
+</style></head><body><canvas id="bg"></canvas><div class="bar" role="toolbar" aria-label="Theme"></div><main>
+<section class="card"><h1>Operating System Lab: C Code, Line by Line</h1>
+<p>Pick an experiment, then press <b>Next</b>. The highlighted line is the one being executed; the box below explains it and the black console shows what gets printed. Scheduling experiments also show a Gantt chart (the timeline of who uses the CPU).</p>
+<div class="nav" id="nav"></div></section>
+<section class="card" id="ex"></section></main><script>
+const $=s=>document.querySelector(s);
+const TH={galaxy:['Galaxy','#0b0720','#ece9ff','rgba(32,20,78,.8)','#a78bfa','#60a5fa','#b9b2e0'],blackhole:['Black Hole','#050505','#f4efe8','rgba(22,16,12,.82)','#ff9a3c','#ffe3b0','#cbbfae'],supernova:['Supernova','#1a0505','#fff1e6','rgba(60,15,8,.8)','#ff6a2b','#ffd23f','#f0c4a8'],aurora:['Aurora','#04161a','#e6fff6','rgba(8,44,48,.8)','#3ef2b0','#2ec4d6','#a6d9cc'],neon:['Cyberpunk Neon','#0a0014','#f5eaff','rgba(30,8,50,.82)','#ff2bd6','#19f0ff','#c9a8e6'],ocean:['Deep Ocean','#021326','#e4f6ff','rgba(5,40,76,.8)','#2fd0ff','#5effc8','#9cc7dd'],sunset:['Sunset Retro','#2a0f3c','#fff4ea','rgba(70,20,70,.78)','#ff9a3d','#ff4f9a','#f3c9d8'],paper:['Light Paper','#fbfaf7','#1f2430','#ffffff','#5b3fd1','#0f8a7a','#5a6070']};
+const cv=$('#bg'),cx=cv.getContext('2d'),RM=matchMedia('(prefers-reduced-motion:reduce)').matches;let W,H,cur='galaxy',P=[];
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;P=Array.from({length:130},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+.6,s:Math.random()+.3,p:Math.random()*6.28}))}
+function draw(t){t=RM?0:t;const w=W,h=H,k=cur;cx.globalAlpha=1;cx.shadowBlur=0;cx.fillStyle=TH[k][1];cx.fillRect(0,0,w,h);
+if(k=='galaxy'){[[.3,.3,'#7c3aed'],[.75,.7,'#2563eb']].forEach(([a,b,c])=>{const g=cx.createRadialGradient(w*a,h*b,0,w*a,h*b,w*.5);g.addColorStop(0,c+'55');g.addColorStop(1,'#0000');cx.fillStyle=g;cx.fillRect(0,0,w,h)});P.forEach(p=>{cx.globalAlpha=.3+.7*Math.abs(Math.sin(t/900+p.p));cx.fillStyle='#fff';cx.fillRect(p.x,p.y,p.r,p.r)})}
+else if(k=='blackhole'){const X=w/2,Y=h/2;for(let s=0;s<2;s++){if(s){const g=cx.createRadialGradient(X,Y,55,X,Y,150);g.addColorStop(0,'rgba(255,170,60,.6)');g.addColorStop(1,'#0000');cx.globalAlpha=1;cx.fillStyle=g;cx.fillRect(0,0,w,h);cx.fillStyle='#000';cx.beginPath();cx.arc(X,Y,62,0,7);cx.fill()}
+P.forEach(p=>{const r=110+p.x%320,a=p.p+t/(r*5);if((Math.sin(a)>=0)!=(s==1))return;cx.globalAlpha=.85;cx.fillStyle=`hsl(${30+(r-110)/16},100%,${95-(r-110)/6.4}%)`;cx.fillRect(X+Math.cos(a)*r,Y+Math.sin(a)*r*.3,p.r*1.6,p.r*1.6)})}}
+else if(k=='supernova'){const M=Math.max(w,h)*.7,g=cx.createRadialGradient(w/2,h/2,0,w/2,h/2,160);g.addColorStop(0,'rgba(255,140,50,.45)');g.addColorStop(1,'#0000');cx.fillStyle=g;cx.fillRect(0,0,w,h);P.forEach(p=>{const d=(t*p.s/8+p.x)%M,f=1-d/M;cx.globalAlpha=f;cx.fillStyle=`hsl(${55-f*50},100%,${50+f*20}%)`;cx.beginPath();cx.arc(w/2+Math.cos(p.p)*d,h/2+Math.sin(p.p)*d,p.r*2*f+.5,0,7);cx.fill()})}
+else if(k=='aurora'){['#3ef2b0','#2ec4d6','#7affc8'].forEach((c,b)=>{for(let x=0;x<w;x+=16){const y=h*.2+Math.sin(x/190+t/2200+b*2)*70+b*45,g=cx.createLinearGradient(0,y,0,y+260);g.addColorStop(0,c+'88');g.addColorStop(1,'#0000');cx.fillStyle=g;cx.fillRect(x,y,17,260)}});P.slice(0,60).forEach(p=>{cx.globalAlpha=.6;cx.fillStyle='#fff';cx.fillRect(p.x,p.y*.5,1.4,1.4)})}
+else if(k=='neon'){const z=h*.55;cx.lineWidth=1.2;cx.strokeStyle='#ff2bd6';cx.shadowColor='#ff2bd6';cx.shadowBlur=8;for(let i=0;i<14;i++){const y=z+Math.pow((i+(t/900)%1)/14,2)*(h-z);cx.beginPath();cx.moveTo(0,y);cx.lineTo(w,y);cx.stroke()}cx.strokeStyle='#19f0ff';cx.shadowColor='#19f0ff';for(let i=-12;i<=12;i++){cx.beginPath();cx.moveTo(w/2+i*12,z);cx.lineTo(w/2+i*w/12,h);cx.stroke()}cx.shadowBlur=0;const g=cx.createLinearGradient(0,z-150,0,z);g.addColorStop(0,'#ff2bd6');g.addColorStop(1,'#19f0ff');cx.fillStyle=g;cx.globalAlpha=.5;cx.beginPath();cx.arc(w/2,z-20,90,Math.PI,0);cx.fill()}
+else if(k=='ocean'){const g=cx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#04284d');g.addColorStop(1,'#010a14');cx.fillStyle=g;cx.fillRect(0,0,w,h);P.forEach(p=>{const y=h-(t*p.s/14+p.y)%(h+30)+10,x=p.x+Math.sin(t/700+p.p)*12;cx.globalAlpha=.55;cx.strokeStyle='#5effc8';cx.shadowColor='#2fd0ff';cx.shadowBlur=10;cx.beginPath();cx.arc(x,y,p.r*3,0,7);cx.stroke()})}
+else if(k=='sunset'){const g=cx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#2a0f3c');g.addColorStop(.6,'#b3365c');g.addColorStop(1,'#ff9a3d');cx.fillStyle=g;cx.fillRect(0,0,w,h);const s=cx.createLinearGradient(0,h*.4,0,h*.8);s.addColorStop(0,'#ffe066');s.addColorStop(1,'#ff4f9a');cx.fillStyle=s;cx.beginPath();cx.arc(w/2,h*.62,Math.min(w,h)*.22,0,7);cx.fill();cx.fillStyle='#b3365c';for(let i=0;i<6;i++)cx.fillRect(0,h*.62+i*14+Math.sin(t/800)*2,w,3+i*1.5)}
+requestAnimationFrame(draw)}
+function th(k){cur=k;const c=TH[k],s=document.documentElement.style;['--bg','--fg','--card','--a','--b','--m'].forEach((v,i)=>s.setProperty(v,c[i+1]));document.querySelectorAll('.bar button').forEach(b=>b.classList.toggle('on',b.dataset.k==k));window.onTh&&onTh()}
+Object.keys(TH).forEach(k=>{const b=document.createElement('button');b.textContent=TH[k][0];b.dataset.k=k;b.onclick=()=>th(k);$('.bar').append(b)});
+addEventListener('resize',rs);rs();requestAnimationFrame(draw);
+const R=String.raw;
+const E=[
+{n:'6',t:'FCFS',aim:'First-Come First-Served: the process that arrives first runs first, until it finishes.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3, bt[]={5,3,8}, wt=0, tat, sum=0;
+  for(int i=0;i<n;i++){
+    tat = wt + bt[i];
+    printf("P%d WT=%d TAT=%d\n",i+1,wt,tat);
+    sum += wt;
+    wt += bt[i];
+  }
+  printf("Avg WT=%.2f\n",(float)sum/n);
+}`,
+steps:[[3,'Three processes arrive at time 0 with burst times 5, 3, 8. wt (waiting time) starts at 0.'],[5,'P1: turnaround = wait + burst = 0 + 5 = 5.'],[6,'Print P1 result.','P1 WT=0 TAT=5\n'],[8,'The next process must wait for P1: wt = 5.'],[5,'P2: tat = 5 + 3 = 8.'],[6,'Print P2 result.','P2 WT=5 TAT=8\n'],[8,'wt = 8.'],[5,'P3: tat = 8 + 8 = 16.'],[6,'Print P3 result.','P3 WT=8 TAT=16\n'],[10,'Average waiting time = (0+5+8)/3.','Avg WT=4.33\n']],
+g:[['P1',0,5],['P2',5,8],['P3',8,16]]},
+{n:'7a',t:'SJF (non-pre-emptive)',aim:'Shortest Job First: always run the process with the smallest burst. Once started, it is not interrupted.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3, bt[]={6,2,4}, id[]={1,2,3}, wt=0, t;
+  for(int i=0;i<n-1;i++)
+    for(int j=0;j<n-1-i;j++)
+      if(bt[j]>bt[j+1]){
+        t=bt[j]; bt[j]=bt[j+1]; bt[j+1]=t;
+        t=id[j]; id[j]=id[j+1]; id[j+1]=t;
+      }
+  for(int i=0;i<n;i++){
+    printf("P%d WT=%d\n",id[i],wt);
+    wt += bt[i];
+  }
+}`,
+steps:[[3,'Bursts 6, 2, 4 (all arrive at 0). We first sort by burst time.'],[6,'bt[0]=6 > bt[1]=2, so swap.'],[7,'Bursts: 2, 6, 4.'],[8,'IDs swapped too: P2, P1, P3.'],[6,'bt[1]=6 > bt[2]=4, swap again.'],[7,'Bursts: 2, 4, 6.'],[8,'Order: P2, P3, P1.'],[11,'P2 waits 0.','P2 WT=0\n'],[12,'wt = 2.'],[11,'P3 waits 2.','P3 WT=2\n'],[12,'wt = 6.'],[11,'P1 waits 6. Average = (0+2+6)/3 = 2.67.','P1 WT=6\n']],
+g:[['P2',0,2],['P3',2,6],['P1',6,12]]},
+{n:'7b',t:'SJF (pre-emptive, SRTF)',aim:'Shortest Remaining Time First: at every time unit, run the process with the least time left. A new short process can pre-empt the running one.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3, at[]={0,1,2}, rt[]={7,4,1}, done=0, t=0;
+  while(done<n){
+    int k=-1;
+    for(int i=0;i<n;i++)
+      if(at[i]<=t && rt[i]>0 && (k<0 || rt[i]<rt[k])) k=i;
+    if(k<0){ t++; continue; }
+    rt[k]--; t++;
+    if(rt[k]==0){ done++; printf("P%d ends at %d\n",k+1,t); }
+  }
+}`,
+steps:[[3,'P1 (arrives 0, burst 7), P2 (1, 4), P3 (2, 1). Clock t = 0.'],[7,'t=0: only P1 has arrived, so k = P1.'],[9,'P1 runs 1 unit: rt 7 to 6, t = 1.'],[7,'t=1: P2 arrives with rt 4, less than 6, so P2 pre-empts P1.'],[9,'P2 runs: rt 3, t = 2.'],[7,'t=2: P3 arrives with rt 1, the shortest. P3 pre-empts.'],[10,'P3 finishes at t = 3.','P3 ends at 3\n'],[10,'P2 resumes (rt 3 < 6) and ends at t = 6.','P2 ends at 6\n'],[10,'P1 runs its remaining 6 units and ends at t = 12.','P1 ends at 12\n']],
+g:[['P1',0,1],['P2',1,2],['P3',2,3],['P2',3,6],['P1',6,12]]},
+{n:'8a',t:'Priority (non-pre-emptive)',aim:'Each process has a priority (here: smaller number = higher priority). The highest priority runs first and is not interrupted.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3, bt[]={5,3,4}, pr[]={2,1,3}, id[]={1,2,3}, wt=0, t;
+  for(int i=0;i<n-1;i++)
+    for(int j=0;j<n-1-i;j++)
+      if(pr[j]>pr[j+1]){
+        t=pr[j]; pr[j]=pr[j+1]; pr[j+1]=t;
+        t=bt[j]; bt[j]=bt[j+1]; bt[j+1]=t;
+        t=id[j]; id[j]=id[j+1]; id[j+1]=t;
+      }
+  for(int i=0;i<n;i++){
+    printf("P%d WT=%d\n",id[i],wt);
+    wt += bt[i];
+  }
+}`,
+steps:[[3,'Bursts 5, 3, 4; priorities 2, 1, 3. Sort by priority.'],[6,'pr[0]=2 > pr[1]=1, so swap P1 and P2.'],[9,'Order is now P2, P1, P3 (priorities 1, 2, 3).'],[12,'P2 waits 0.','P2 WT=0\n'],[13,'wt = 3.'],[12,'P1 waits 3.','P1 WT=3\n'],[13,'wt = 8.'],[12,'P3 waits 8. Average = (0+3+8)/3 = 3.67.','P3 WT=8\n']],
+g:[['P2',0,3],['P1',3,8],['P3',8,12]]},
+{n:'8b',t:'Priority (pre-emptive)',aim:'Same as above, but if a higher-priority process arrives, it takes the CPU immediately.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3, at[]={0,1,2}, rt[]={4,3,2}, pr[]={3,1,2}, done=0, t=0;
+  while(done<n){
+    int k=-1;
+    for(int i=0;i<n;i++)
+      if(at[i]<=t && rt[i]>0 && (k<0 || pr[i]<pr[k])) k=i;
+    if(k<0){ t++; continue; }
+    rt[k]--; t++;
+    if(rt[k]==0){ done++; printf("P%d ends at %d\n",k+1,t); }
+  }
+}`,
+steps:[[3,'P1 (arrives 0, burst 4, priority 3), P2 (1, 3, priority 1), P3 (2, 2, priority 2).'],[7,'t=0: only P1 is ready, so P1 runs.'],[9,'P1 runs 1 unit: rt = 3, t = 1.'],[7,'t=1: P2 (priority 1) beats P1 (3), so P2 pre-empts.'],[7,'t=2: P3 (2) arrives, but P2 (1) is still better, so P2 continues.'],[10,'P2 finishes at t = 4.','P2 ends at 4\n'],[7,'t=4: P3 (2) beats P1 (3), so P3 runs.'],[10,'P3 finishes at t = 6.','P3 ends at 6\n'],[10,'P1 runs its last 3 units and ends at t = 9.','P1 ends at 9\n']],
+g:[['P1',0,1],['P2',1,4],['P3',4,6],['P1',6,9]]},
+{n:'9',t:'Round Robin',aim:'Every process gets a fixed time slice (quantum). If it is not finished, it goes to the back of the line.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3, q=2, rt[]={5,3,1}, t=0, left=3;
+  while(left>0){
+    for(int i=0;i<n;i++){
+      if(rt[i]==0) continue;
+      int run = rt[i]<q ? rt[i] : q;
+      rt[i] -= run; t += run;
+      if(rt[i]==0){ left--; printf("P%d done at %d\n",i+1,t); }
+    }
+  }
+}`,
+steps:[[3,'Bursts 5, 3, 1. Quantum q = 2. Clock t = 0.'],[7,'P1: run = min(5, 2) = 2.'],[8,'rt[P1] = 3, t = 2.'],[8,'P2 runs 2: rt = 1, t = 4.'],[8,'P3 runs 1 (less than q): rt = 0, t = 5.'],[9,'P3 is finished.','P3 done at 5\n'],[8,'Round 2: P1 runs 2, rt = 1, t = 7.'],[9,'P2 runs its last unit and is done.','P2 done at 8\n'],[9,'P1 runs its last unit and is done.','P1 done at 9\n']],
+g:[['P1',0,2],['P2',2,4],['P3',4,5],['P1',5,7],['P2',7,8],['P1',8,9]]},
+{n:'10',t:'Multi-Level Queue',aim:'Processes are split into fixed queues. Queue 1 (foreground) has absolute priority over Queue 2 (background). Each queue has its own algorithm.',
+code:R`#include <stdio.h>
+int main(){
+  int fg[]={4,3}, bg[]={5,2}, t=0, q=2;
+  // Queue 1 (high priority): Round Robin
+  int left=2;
+  while(left){
+    for(int i=0;i<2;i++) if(fg[i]>0){
+      int r = fg[i]<q ? fg[i] : q;
+      fg[i]-=r; t+=r;
+      if(!fg[i]) left--;
+    }
+  }
+  printf("Foreground done at %d\n",t);
+  // Queue 2 (low priority): FCFS, only when Queue 1 is empty
+  for(int i=0;i<2;i++){ t+=bg[i]; printf("BG%d done at %d\n",i+1,t); }
+}`,
+steps:[[3,'Foreground bursts 4, 3 (Round Robin, q = 2). Background bursts 5, 2 (FCFS).'],[6,'Queue 1 has absolute priority, so it runs first.'],[9,'FG1 runs 2 units, t = 2.'],[9,'FG2 runs 2 units, t = 4.'],[9,'FG1 runs its last 2 units, t = 6 (left drops to 1).'],[9,'FG2 runs its last unit, t = 7 (left = 0).'],[13,'Queue 1 is empty.','Foreground done at 7\n'],[15,'Queue 2 (FCFS) now runs: BG1 takes 5 units, t = 12.','BG1 done at 12\n'],[15,'BG2 takes 2 units, t = 14.','BG2 done at 14\n']],
+g:[['FG1',0,2],['FG2',2,4],['FG1',4,6],['FG2',6,7],['BG1',7,12],['BG2',12,14]]},
+{n:'11',t:'Multi-Level Feedback Queue',aim:'Like MLQ, but processes move between queues. Using a full quantum means the process is CPU-heavy, so it is demoted to a lower level.',
+code:R`#include <stdio.h>
+int main(){
+  int rt[]={7,3}, lvl[]={0,0}, qt[]={2,4,100}, t=0, left=2;
+  while(left){
+    for(int i=0;i<2;i++){
+      if(rt[i]==0) continue;
+      int q=qt[lvl[i]], r = rt[i]<q ? rt[i] : q;
+      rt[i]-=r; t+=r;
+      if(rt[i]==0){ left--; printf("P%d done at %d\n",i+1,t); }
+      else if(lvl[i]<2) lvl[i]++;
+    }
+  }
+}`,
+steps:[[3,'P1 burst 7, P2 burst 3. Level 0 q = 2, level 1 q = 4, level 2 FCFS. Both start at level 0.'],[7,'P1 at level 0: quantum 2, so r = 2.'],[8,'rt = 5, t = 2.'],[10,'Full quantum used, so P1 is demoted to level 1.'],[8,'P2 runs 2 (t = 4), rt = 1.'],[10,'P2 is demoted to level 1 too.'],[7,'P1 at level 1: quantum 4.'],[10,'P1 ran 4 more (t = 8), rt = 1, demoted to level 2.'],[9,'P2 runs its last unit and finishes.','P2 done at 9\n'],[9,'P1 runs its last unit at level 2 and finishes.','P1 done at 10\n']],
+g:[['P1',0,2],['P2',2,4],['P1',4,8],['P2',8,9],['P1',9,10]]},
+{n:'12',t:'Race Condition',aim:'Two threads update the same variable without a lock. counter++ is three machine steps (load, add, store), so updates can be lost. Compile with: gcc race.c -o race -pthread',
+code:R`#include <stdio.h>
+#include <pthread.h>
+int counter=0;
+void* work(void*a){
+  for(int i=0;i<100000;i++)
+    counter++;      // load, add, store: NOT atomic
+  return NULL;
+}
+int main(){
+  pthread_t t1,t2;
+  pthread_create(&t1,NULL,work,NULL);
+  pthread_create(&t2,NULL,work,NULL);
+  pthread_join(t1,NULL); pthread_join(t2,NULL);
+  printf("counter=%d (expected 200000)\n",counter);
+}`,
+steps:[[3,'Shared variable counter = 0.'],[11,'Thread 1 is created and starts running work().'],[12,'Thread 2 is created and runs at the same time.'],[6,'T1 loads counter (say 5) into a register.'],[6,'T2 also loads counter = 5, before T1 has stored anything.'],[6,'T1 stores 6. T2 stores 6 as well. Two increments, but the value rose by only 1: one update is lost.'],[14,'The final value is usually below 200000. This is a race condition.','counter=143872 (expected 200000)\n']]},
+{n:'13',t:'Producer-Consumer (semaphores)',aim:'A producer fills a shared buffer, a consumer empties it. Semaphores stop the producer on a full buffer, the consumer on an empty one, and mutex protects the buffer. Compile with -pthread.',
+code:R`#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#define N 3
+int buf[N], in=0, out=0;
+sem_t empty, full, mutex;
+void* prod(void*a){ for(int i=1;i<=5;i++){
+  sem_wait(&empty); sem_wait(&mutex);
+  buf[in]=i; in=(in+1)%N; printf("Produced %d\n",i);
+  sem_post(&mutex); sem_post(&full); } return NULL; }
+void* cons(void*a){ for(int i=1;i<=5;i++){
+  sem_wait(&full); sem_wait(&mutex);
+  int x=buf[out]; out=(out+1)%N; printf("Consumed %d\n",x);
+  sem_post(&mutex); sem_post(&empty); } return NULL; }
+int main(){ pthread_t p,c;
+  sem_init(&empty,0,N); sem_init(&full,0,0); sem_init(&mutex,0,1);
+  pthread_create(&p,0,prod,0); pthread_create(&c,0,cons,0);
+  pthread_join(p,0); pthread_join(c,0); return 0; }`,
+steps:[[16,'empty = 3 (free slots), full = 0 (items ready), mutex = 1 (unlocked).'],[8,'Producer waits: empty 3 to 2, mutex 1 to 0 (locked).'],[9,'It places item 1 in buf[0].','Produced 1\n'],[10,'mutex back to 1, full 0 to 1 (one item ready).'],[12,'Consumer waits: full 1 to 0 and locks mutex. If full were 0, it would sleep here.'],[13,'It takes item 1 from buf[0].','Consumed 1\n'],[14,'Unlock mutex; empty 2 to 3 (the slot is free again).']]},
+{n:'14',t:"Dining Philosophers",aim:'Five philosophers share five forks. Each needs two forks to eat. If all grab their left fork, nobody can eat (deadlock). Letting only 4 sit at once prevents this. Compile with -pthread.',
+code:R`#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#define N 5
+sem_t fork_[N], room;
+void* phil(void*a){ int i=(long)a;
+  sem_wait(&room);
+  sem_wait(&fork_[i]); sem_wait(&fork_[(i+1)%N]);
+  printf("P%d eating\n",i);
+  sem_post(&fork_[(i+1)%N]); sem_post(&fork_[i]);
+  sem_post(&room); return NULL; }
+int main(){ pthread_t t[N];
+  sem_init(&room,0,N-1);
+  for(int i=0;i<N;i++) sem_init(&fork_[i],0,1);
+  for(long i=0;i<N;i++) pthread_create(&t[i],0,phil,(void*)i);
+  for(int i=0;i<N;i++) pthread_join(t[i],0); return 0; }`,
+steps:[[13,'room = 4: at most 4 philosophers sit, so a circular wait is impossible.'],[14,'Every fork semaphore = 1 (free).'],[7,'P0 enters the room (room 4 to 3).'],[8,'P0 picks fork 0, then fork 1.'],[8,'P1 wants fork 1 (busy), so it waits. P2 and P3 can still take their forks.'],[9,'P0 has both forks and eats.','P0 eating\n'],[10,'P0 puts both forks down; P1 can now continue.'],[11,'P0 leaves the room (room 3 to 4).']]},
+{n:'15',t:"Banker's Algorithm",aim:'Deadlock avoidance: grant resources only if the system stays in a safe state, meaning there is an order in which every process can finish.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3,m=2, alloc[3][2]={{1,0},{2,1},{1,1}}, max[3][2]={{3,2},{3,2},{2,2}};
+  int avail[2]={2,1}, fin[3]={0}, order[3], c=0;
+  while(c<n){ int found=0;
+    for(int i=0;i<n;i++) if(!fin[i]){
+      int ok=1;
+      for(int j=0;j<m;j++) if(max[i][j]-alloc[i][j] > avail[j]) ok=0;
+      if(ok){ for(int j=0;j<m;j++) avail[j]+=alloc[i][j];
+        fin[i]=1; order[c++]=i; found=1; }
+    }
+    if(!found){ printf("UNSAFE\n"); return 0; }
+  }
+  printf("SAFE: "); for(int i=0;i<n;i++) printf("P%d ",order[i]+1);
+}`,
+steps:[[3,'Allocation: P1 (1,0), P2 (2,1), P3 (1,1). Max: P1 (3,2), P2 (3,2), P3 (2,2).'],[4,'Available = (2,1). Need = Max - Alloc: P1 (2,2), P2 (1,1), P3 (1,1).'],[8,'P1: need (2,2) is more than avail (2,1), so it must wait.'],[8,'P2: need (1,1) fits in avail (2,1).'],[9,'P2 finishes and releases (2,1): avail = (4,2).'],[8,'P3: need (1,1) fits in (4,2). It finishes; avail = (5,3).'],[8,'Next pass: P1 need (2,2) fits in (5,3). avail = (6,3).'],[14,'Safe sequence found.','SAFE: P2 P3 P1 \n']]},
+{n:'16',t:'Deadlock Detection',aim:'Detection: let the system run, then check whether some processes can never finish because they wait for resources held by each other.',
+code:R`#include <stdio.h>
+int main(){
+  int n=3,m=2, alloc[3][2]={{1,0},{0,1},{0,0}}, req[3][2]={{0,1},{1,0},{0,0}};
+  int work[2]={0,0}, fin[3]={0}, again=1;
+  while(again){ again=0;
+    for(int i=0;i<n;i++) if(!fin[i]){
+      int ok=1;
+      for(int j=0;j<m;j++) if(req[i][j]>work[j]) ok=0;
+      if(ok){ for(int j=0;j<m;j++) work[j]+=alloc[i][j];
+        fin[i]=1; again=1; }
+    }
+  }
+  for(int i=0;i<n;i++) if(!fin[i]) printf("P%d is DEADLOCKED\n",i+1);
+}`,
+steps:[[3,'Allocation: P1 (1,0), P2 (0,1), P3 (0,0). Request: P1 (0,1), P2 (1,0), P3 (0,0).'],[4,'work = available = (0,0).'],[8,'P1 requests (0,1), more than work (0,0), so it must wait.'],[8,'P2 requests (1,0), more than work, so it must wait.'],[8,'P3 requests nothing, so it can finish.'],[9,'P3 releases its allocation (0,0); work stays (0,0).'],[12,'A full pass makes no more progress, so the loop ends.'],[13,'P1 holds R1 and wants R2; P2 holds R2 and wants R1. They wait for each other forever.','P1 is DEADLOCKED\nP2 is DEADLOCKED\n']]}];
+let cur_=0,si=-1,tm;
+$('#nav').innerHTML=E.map((e,i)=>`<button class="btn" onclick="pick(${i})">Exp ${e.n}: ${e.t}</button>`).join('');
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function pick(i){cur_=i;si=-1;stop();draw2()}
+function stop(){clearInterval(tm);tm=0}
+function nx(d){const e=E[cur_];si=Math.max(-1,Math.min(e.steps.length-1,si+d));upd2();if(si==e.steps.length-1)stop()}
+function auto(){if(tm){stop();return}tm=setInterval(()=>nx(1),1700)}
+function draw2(){const e=E[cur_];document.querySelectorAll('#nav .btn').forEach((b,i)=>b.classList.toggle('on',i==cur_));
+let g='';if(e.g){const T=e.g[e.g.length-1][2],cs={};let k=0;g='<h3>Gantt chart (timeline of the CPU)</h3><div class="g">'+e.g.map((s,i)=>{if(!(s[0] in cs))cs[s[0]]=k++;return `<div style="width:${(s[2]-s[1])/T*100}%;background:hsl(${cs[s[0]]*67+20},75%,72%);animation-delay:${i*.15}s">${s[0]}<small>${s[1]}</small></div>`}).join('')+'</div>'}
+$('#ex').innerHTML=`<h2><span class="tag">Exp ${e.n}</span>${e.t} <span class="tag" style="background:var(--b)">CO2</span></h2><p>${e.aim}</p><div class="code">${e.code.split('\n').map((l,i)=>`<div class="ln" id="l${i+1}"><span>${i+1}</span>${esc(l)}</div>`).join('')}</div>
+<div class="ctl"><button class="btn" onclick="nx(-1)">Back</button><button class="btn on" onclick="nx(1)">Next line</button><button class="btn" onclick="auto()">Auto play / pause</button><button class="btn" onclick="pick(cur_)">Reset</button><span class="dim" id="cnt"></span></div>
+<div class="say" id="say"></div><pre class="con" id="con"></pre>${g}<p class="dim">Compile and run: <code>gcc file.c -o out &amp;&amp; ./out</code>${/pthread/.test(e.code)?' (add <code>-pthread</code>)':''}</p>`;upd2()}
+function upd2(){const e=E[cur_];document.querySelectorAll('.ln').forEach(l=>l.classList.remove('on'));
+if(si<0){$('#say').textContent='Press "Next line" to start executing the program.';$('#con').textContent='$ ./out';$('#cnt').textContent='';return}
+const s=e.steps[si];$('#l'+s[0]).classList.add('on');$('#l'+s[0]).scrollIntoView({block:'nearest'});$('#say').innerHTML=`<b>Line ${s[0]}:</b> ${s[1]}`;$('#cnt').textContent=`Step ${si+1} of ${e.steps.length}`;
+$('#con').textContent='$ ./out\n'+e.steps.slice(0,si+1).map(x=>x[2]||'').join('')}
+th('galaxy');draw2();
+</script></body></html>
