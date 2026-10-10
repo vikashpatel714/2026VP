@@ -1,0 +1,176 @@
+<!DOCTYPE html><html lang="en" data-theme="galaxy"><head><meta charset="utf-8"><title>Memory Management – Visual Notes</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>
+:root{--fg:#ecebff;--card:rgba(14,10,40,.68);--ac:#9b8cff;--ac2:#4fd1ff;--bd:rgba(255,255,255,.2);--ok:#4ade80;--bad:#fb7185;--bg:#0b0820}
+[data-theme=blackhole]{--fg:#fff1e0;--card:rgba(10,6,4,.75);--ac:#ff9a2e;--ac2:#ffe2a8;--bg:#050403}
+[data-theme=supernova]{--fg:#fff1e6;--card:rgba(35,6,6,.72);--ac:#ff6a3d;--ac2:#ffd23f;--bg:#1a0505}
+[data-theme=aurora]{--fg:#e6fff6;--card:rgba(4,25,28,.72);--ac:#3ef0b0;--ac2:#4fe3ff;--bg:#04141a}
+[data-theme=cyber]{--fg:#f4eaff;--card:rgba(12,6,28,.78);--ac:#ff2bd6;--ac2:#00f0ff;--bg:#09040f}
+[data-theme=ocean]{--fg:#e3f6ff;--card:rgba(2,24,48,.72);--ac:#38bdf8;--ac2:#5eead4;--bg:#021a33}
+[data-theme=sunset]{--fg:#fff4ec;--card:rgba(60,15,60,.62);--ac:#ffb347;--ac2:#ff7eb3;--bg:#4a1560}
+[data-theme=paper]{--fg:#1d2433;--card:#fff;--ac:#3b5bdb;--ac2:#0b8a9e;--bd:#d6d2c4;--bg:#f6f4ee;--ok:#15803d;--bad:#be123c}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:16px/1.55 system-ui,Segoe UI,Roboto,sans-serif;color:var(--fg);background:var(--bg)}
+[data-theme=sunset] body{background:linear-gradient(180deg,#2b1055,#c2410c 60%,#ff7eb3)}
+[data-theme=galaxy] body{background:radial-gradient(ellipse at 30% 20%,#2a1670,#0b0820 70%)}
+canvas#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-1}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);backdrop-filter:blur(10px);border-bottom:1px solid var(--bd);padding:8px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+header b{color:var(--ac2)}#sw{display:flex;gap:6px;overflow-x:auto;flex:1}
+#sw button,.btn{background:transparent;color:var(--fg);border:1px solid var(--bd);border-radius:20px;padding:4px 10px;cursor:pointer;white-space:nowrap;font:inherit;font-size:13px}
+#sw button.on,.btn:hover{background:var(--ac);color:#000;border-color:var(--ac)}
+nav{display:flex;gap:6px;overflow-x:auto;padding:8px 12px}nav a{color:var(--ac2);font-size:13px;white-space:nowrap;text-decoration:none;border:1px solid var(--bd);border-radius:14px;padding:2px 10px;background:var(--card)}
+main{max-width:980px;margin:auto;padding:0 12px 60px}
+section{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:18px;margin:18px 0;backdrop-filter:blur(6px)}
+h1{margin:16px 0 0;font-size:28px;color:var(--ac2)}h2{margin:0 0 8px;color:var(--ac)}h3{margin:14px 0 6px;color:var(--ac2);font-size:16px}
+.real{border-left:4px solid var(--ac2);padding:6px 12px;margin:10px 0;background:rgba(127,127,127,.12);border-radius:0 8px 8px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.box{border:1px solid var(--bd);border-radius:12px;padding:10px;text-align:center;background:rgba(127,127,127,.1)}.box i{font-size:28px;display:block;font-style:normal}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center}.flow .box{min-width:100px;animation:glow 3s infinite}
+.flow .box:nth-child(3){animation-delay:.5s}.flow .box:nth-child(5){animation-delay:1s}.flow .box:nth-child(7){animation-delay:1.5s}.flow .box:nth-child(9){animation-delay:2s}
+.flow .ar{color:var(--ac);font-size:22px;animation:mv 1s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 0 var(--ac)}50%{box-shadow:0 0 16px var(--ac)}}@keyframes mv{50%{transform:translateX(5px)}}
+.mem{display:flex;height:56px;border:2px solid var(--fg);border-radius:8px;overflow:hidden;margin:8px 0}
+.blk{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:0;overflow:hidden;color:#111;font-size:12px;font-weight:700;border-right:1px solid #0007;cursor:pointer;transition:flex .5s;line-height:1.2}
+.blk small{font-weight:400}.blk.free{color:var(--fg);background:repeating-linear-gradient(45deg,transparent 0 6px,rgba(127,127,127,.3) 6px 8px)}
+.bar{width:90%;height:6px;background:rgba(0,0,0,.25);margin-top:2px}.bar i{display:block;height:100%;background:#0009}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+input,select{background:rgba(127,127,127,.15);color:var(--fg);border:1px solid var(--bd);border-radius:8px;padding:5px 8px;font:inherit}input[type=range]{width:min(100%,360px)}
+.msg{min-height:24px;font-weight:600}.ok{color:var(--ok)}.bad{color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:14px;display:block;overflow-x:auto}th,td{border:1px solid var(--bd);padding:6px 8px;text-align:left}th{background:rgba(127,127,127,.2)}
+.cells{display:flex;gap:4px;flex-wrap:wrap}.cell{width:62px;padding:6px 2px;text-align:center;border:1px solid var(--bd);border-radius:6px;font-size:12px;transition:.3s}.cell.hi{background:var(--ac);color:#000;transform:scale(1.1);font-weight:700}
+.tree{display:flex;flex-direction:column;align-items:center;gap:8px}.tree .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.pos{position:relative;height:50px;border:2px solid var(--fg);border-radius:8px;margin:10px 0}.pos div{position:absolute;top:0;height:100%;color:#111;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;border-right:1px solid #0007}
+.pin{position:absolute;top:-8px;width:3px;height:66px;background:var(--bad);transition:left .3s}
+ul{margin:6px 0;padding-left:20px}
+</style></head><body><canvas id="bg"></canvas>
+<header><b>🧠 Memory Mgmt</b><div id="sw"></div></header>
+<nav><a href="#s1">1 Basics</a><a href="#s2">2 Load &amp; Link</a><a href="#s3">3 Address Binding</a><a href="#s4">4 Techniques</a><a href="#s5">5 Fixed</a><a href="#s6">6 Variable + Fits</a><a href="#s7">7 Paging</a><a href="#s8">8 Segmentation</a><a href="#s9">9 Seg. Paging</a><a href="#s10">10 Revision</a></nav>
+<main>
+<h1>Memory Management – Visual Notes</h1><p>Zero to revision in one page. Play with every simulator – it is the fastest way to learn.</p>
+
+<section id="s1"><h2>1. What is Memory Management?</h2>
+<p><b>RAM</b> is the CPU's desk. Many programs (processes) want space on it at the same time. The <b>Memory Manager</b> (part of the OS) decides who gets which part.</p>
+<div class="grid"><div class="box"><i>🗺️</i><b>Track</b><br>Which bytes are free / used</div><div class="box"><i>📥</i><b>Allocate</b><br>Give memory to a process</div><div class="box"><i>♻️</i><b>Deallocate</b><br>Take it back when done</div><div class="box"><i>🛡️</i><b>Protect</b><br>Process A can't touch B</div><div class="box"><i>🔄</i><b>Swap</b><br>RAM full? Move to disk</div><div class="box"><i>🤝</i><b>Share</b><br>Common code (libraries)</div></div>
+<div class="real">🏨 <b>Real life:</b> RAM = hotel. Processes = guests. Memory manager = front desk: it tracks empty rooms, gives keys (allocate), collects keys at check-out (deallocate), stops guests entering others' rooms (protect).</div></section>
+
+<section id="s2"><h2>2. Loading &amp; Linking</h2>
+<div class="flow"><div class="box"><i>📄</i>Source<br>code</div><span class="ar">➜</span><div class="box"><i>⚙️</i>Compiler</div><span class="ar">➜</span><div class="box"><i>🧩</i>Object<br>file (.o)</div><span class="ar">➜</span><div class="box"><i>🔗</i>Linker</div><span class="ar">➜</span><div class="box"><i>📦</i>Loader<br>→ RAM</div></div>
+<ul><li><b>Linking</b> = joining your object files + library code into ONE executable.</li><li><b>Loading</b> = copying that executable from disk into RAM so it can run.</li></ul>
+<table><tr><th></th><th>Static</th><th>Dynamic</th></tr><tr><td>Linking</td><td>Library copied into exe at build time (big file, no dependency)</td><td>Library linked at run time (DLL / .so), shared by many programs, small exe</td></tr><tr><td>Loading</td><td>Whole program loaded before start</td><td>A routine is loaded only when first called → saves RAM</td></tr></table>
+<div class="real">🍳 <b>Real life:</b> Static linking = photocopy the whole recipe book into your notebook. Dynamic linking = keep one shared cookbook in the kitchen and open it only when needed (dynamic loading).</div></section>
+
+<section id="s3"><h2>3. Address Binding</h2>
+<p>Programs use <b>logical (virtual) addresses</b>. RAM uses <b>physical addresses</b>. Turning one into the other is <b>binding</b>.</p>
+<table><tr><th>When?</th><th>How</th><th>Note</th></tr><tr><td>Compile time</td><td>Compiler knows exact RAM location → absolute code</td><td>Must recompile if location changes</td></tr><tr><td>Load time</td><td>Relocatable code; fixed when loaded</td><td>Reload to move</td></tr><tr><td>Execution time</td><td>Done on every access by the <b>MMU</b></td><td>Process can move while running (used by modern OS)</td></tr></table>
+<h3>▶ MMU simulator: Physical = Relocation (base) register + Logical, if Logical &lt; Limit</h3>
+<div class="ctl">Base = <b>14000</b> · Limit = <b>3000</b> · Logical address: <input id="la" type="range" min="0" max="4000" value="346"> <b id="lav">346</b></div>
+<div class="pos" id="mmu"></div><div class="msg" id="mm"></div>
+<div class="real">📮 <b>Real life:</b> Apartment "Flat 5" inside your building (logical) is really "Building 14000 + 5" in the city (physical). Going beyond your own building's flats → security stops you (trap).</div></section>
+
+<section id="s4"><h2>4. Memory Management Techniques</h2>
+<div class="tree"><div class="box" style="min-width:200px"><b>Memory Management</b></div><div class="row"><div class="box"><b>Contiguous</b><br>one single block per process</div><div class="box"><b>Non-contiguous</b><br>process split into pieces anywhere</div></div>
+<div class="row"><div class="box">Fixed partitions<br><small>internal fragmentation</small></div><div class="box">Variable partitions<br><small>external fragmentation</small></div><div class="box">Paging</div><div class="box">Segmentation</div><div class="box">Segmented paging</div></div></div>
+<h3>Two kinds of waste (fragmentation)</h3><ul><li><b>Internal:</b> wasted space <i>inside</i> an allocated block (you took a big room, used a corner).</li><li><b>External:</b> enough total free space, but scattered in small holes – no single hole is big enough.</li></ul></section>
+
+<section id="s5"><h2>5. Contiguous – Fixed Partitions</h2>
+<p>RAM is divided into partitions of <b>fixed sizes</b> in advance. Each partition holds <b>one</b> process. Simple and fast, but a process smaller than its partition wastes the rest = <b>internal fragmentation</b>. Also limits the number of processes and max process size.</p>
+<div class="real">🚌 <b>Real life:</b> Buses with fixed seating sections. A family of 3 gets a 10-seat compartment – 7 seats wasted, nobody else can use them.</div>
+<h3>▶ Simulator (partitions: 100K, 200K, 300K, 400K) – click a process to remove it</h3>
+<div class="ctl">Process size (K): <input id="fs" type="number" value="150" min="1" style="width:80px"><button class="btn" onclick="fAl()">Allocate</button><button class="btn" onclick="fRs()">Reset</button></div>
+<div class="mem" id="fm"></div><div class="msg" id="fmsg"></div></section>
+
+<section id="s6"><h2>6. Contiguous – Variable Partitions &amp; Allocation Strategies</h2>
+<p>Partitions are created <b>on demand</b> exactly the size of the process → no internal waste. But as processes leave, <b>holes</b> appear → <b>external fragmentation</b>. Fix: <b>Compaction</b> (slide all processes together – costly).</p>
+<h3>Which hole to pick?</h3>
+<div class="grid"><div class="box"><i>🥇</i><b>First Fit</b><br>First hole big enough. Fast.</div><div class="box"><i>🎯</i><b>Best Fit</b><br>Smallest hole big enough. Leaves tiny useless holes; slow search.</div><div class="box"><i>🐘</i><b>Worst Fit</b><br>Largest hole. Leaves big leftover; usually worst performance.</div></div>
+<div class="real">🅿️ <b>Real life – parking:</b> First fit = take the first empty slot you see. Best fit = squeeze into the tightest slot. Worst fit = park in the biggest empty area.</div>
+<h3>▶ Simulator (1000K RAM) – click a process to free it</h3>
+<div class="ctl"><button class="btn" onclick="vDemo()">Load demo holes</button>Size: <input id="vs" type="number" value="70" style="width:80px">
+<select id="st"><option value="first">First Fit</option><option value="best">Best Fit</option><option value="worst">Worst Fit</option></select><button class="btn" onclick="vAl()">Allocate</button><button class="btn" onclick="vCp()">Compact</button><button class="btn" onclick="vRs()">Reset</button></div>
+<div class="mem" id="vm" style="height:70px"></div><div class="msg" id="vmsg"></div>
+<p><small>Try: click "Load demo", allocate 70K with each strategy (Reset→Demo between tries) and see which hole is chosen. Then request 250K: total free is enough but no single hole fits → external fragmentation → press Compact.</small></p></section>
+
+<section id="s7"><h2>7. Non-Contiguous – Paging</h2>
+<p>Logical memory is cut into equal <b>pages</b>; physical RAM into equal <b>frames</b> (same size). Any page can go into any free frame – no external fragmentation (only a little internal waste in the last page). The <b>page table</b> maps page → frame. A fast cache of recent entries is the <b>TLB</b>.</p>
+<p><b>Logical address = (page number p, offset d)</b> → <b>Physical = frame × page size + d</b></p>
+<div class="real">📚 <b>Real life:</b> A book's chapters (pages) are stored on random shelves (frames). The index card (page table) tells you the shelf of each chapter. TLB = sticky note with the shelves you used recently.</div>
+<h3>▶ Simulator (page size 1024 B, 8 pages, 8 frames)</h3>
+<div class="ctl">Logical address: <input id="pa" type="range" min="0" max="8191" value="2500"> <b id="pav">2500</b></div>
+<b>Pages (logical)</b><div class="cells" id="pg"></div><b>Frames (physical RAM)</b><div class="cells" id="fr"></div><div class="msg" id="pm"></div></section>
+
+<section id="s8"><h2>8. Non-Contiguous – Segmentation</h2>
+<p>Memory is split by <b>meaning</b>: Code, Data, Stack, Heap – each a <b>segment</b> of different size. Address = <b>(segment s, offset d)</b>. Segment table stores <b>base</b> and <b>limit</b>. If d ≥ limit → trap. Matches how programmers think, easy sharing/protection, but causes <b>external fragmentation</b>.</p>
+<div class="real">🏢 <b>Real life:</b> An office with departments (HR, Sales, IT) of different sizes. You address someone as "Department + desk number".</div>
+<h3>▶ Simulator – physical memory 0–7000</h3>
+<div class="ctl">Segment: <select id="sg"></select> Offset: <input id="so" type="number" value="200" style="width:90px"></div>
+<div class="pos" id="sm"></div><table id="stb"></table><div class="msg" id="sgm"></div></section>
+
+<section id="s9"><h2>9. Segmented Paging</h2>
+<p>Best of both: first divide into <b>segments</b>, then page each segment. Each segment has its own <b>page table</b>. Address = <b>(s, p, d)</b>. Path: <b>Segment table → that segment's page table → frame + offset</b>. No external fragmentation, still has logical structure.</p>
+<div class="real">🏬 <b>Real life:</b> A company (process) has departments (segments). Each department's files are stored in same-size boxes (pages) placed in any free cupboard slot (frames).</div>
+<div class="flow"><div class="box">(s, p, d)</div><span class="ar">➜</span><div class="box">Segment<br>table[s]</div><span class="ar">➜</span><div class="box">Page table<br>of s [p]</div><span class="ar">➜</span><div class="box">Frame f</div><span class="ar">➜</span><div class="box">f×1024 + d</div></div>
+<h3>▶ Simulator (page size 1024 B)</h3>
+<div class="ctl">Segment: <select id="gs"></select> Page: <input id="gp" type="number" value="1" min="0" style="width:70px"> Offset: <input id="gd" type="number" value="100" min="0" max="1023" style="width:80px"></div>
+<table id="gt"></table><div class="msg" id="gm"></div></section>
+
+<section id="s10"><h2>10. Quick Revision Cheat-Sheet</h2>
+<table><tr><th>Technique</th><th>Fragmentation</th><th>Key idea</th><th>Drawback</th></tr>
+<tr><td>Fixed partitions</td><td>Internal</td><td>Pre-made equal/unequal slots</td><td>Waste, fixed # of processes</td></tr>
+<tr><td>Variable partitions</td><td>External</td><td>Slot = process size</td><td>Holes; needs compaction</td></tr>
+<tr><td>Paging</td><td>Tiny internal</td><td>Equal pages → any frame</td><td>Page-table overhead</td></tr>
+<tr><td>Segmentation</td><td>External</td><td>Logical parts, base+limit</td><td>Holes again</td></tr>
+<tr><td>Segmented paging</td><td>Tiny internal</td><td>Segments, then pages</td><td>Complex, extra lookups</td></tr></table>
+<ul><li><b>First fit</b> = fastest · <b>Best fit</b> = tightest, tiny holes · <b>Worst fit</b> = biggest hole.</li><li>Physical (paging) = <b>frame × size + offset</b> · Physical (segmentation) = <b>base + offset</b> (offset &lt; limit).</li><li>Internal waste = inside block · External waste = between blocks.</li></ul></section>
+</main>
+<script>
+const $=i=>document.getElementById(i),hue=p=>`hsl(${p*57%360} 75% 68%)`;
+/* THEMES + BACKGROUND */
+const TH=[['galaxy','🌌 Galaxy','stars',['#fff','#b9a7ff','#7aa2ff']],['blackhole','🕳️ Black Hole','orbit',['#ff9a2e','#fff3d0','#ff6a00']],['supernova','💥 Supernova','burst',['#ff3d2e','#ff9a2e','#ffe14d']],['aurora','🌿 Aurora','aurora',[]],['cyber','🌆 Cyberpunk','grid',['#ff2bd6','#00f0ff']],['ocean','🌊 Deep Ocean','rise',['#38bdf8','#5eead4','#a5f3fc']],['sunset','🌇 Sunset Retro','drift',['#ffb347','#ff7eb3','#c084fc']],['paper','📄 Light Paper','none',[]]];
+const cv=$('bg'),cx=cv.getContext('2d');let W,H,P=[],cur=TH[0];
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;init()}addEventListener('resize',rs);
+function init(){P=[];const c=cur[3];for(let i=0;i<130;i++){const a=Math.random()*6.28;P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*2+.5,a,s:Math.random()*.02+.004,d:60+Math.random()*Math.max(W,H)*.5,v:Math.random()*2+.5,ph:Math.random()*9,c:c.length?c[i%c.length]:'#fff'})}}
+function setT(i){cur=TH[i];document.documentElement.dataset.theme=cur[0];[...$('sw').children].forEach((b,j)=>b.classList.toggle('on',j==i));init()}
+TH.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t[1];b.onclick=()=>setT(i);$('sw').appendChild(b)});
+function draw(t){cx.clearRect(0,0,W,H);const m=cur[2];
+if(m=='stars')P.forEach(p=>{cx.globalAlpha=.4+.6*Math.sin(t/500+p.ph)**2;cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r,0,6.28);cx.fill()});
+else if(m=='orbit'){const X=W/2,Y=H/2;P.forEach(p=>{p.a+=p.s*(200/p.d+.3);const r=70+p.d*.8;cx.globalAlpha=.8;cx.fillStyle=p.c;cx.beginPath();cx.arc(X+Math.cos(p.a)*r,Y+Math.sin(p.a)*r*.28,p.r,0,6.28);cx.fill()});const g=cx.createRadialGradient(X,Y,10,X,Y,110);g.addColorStop(0,'#000');g.addColorStop(.5,'#000');g.addColorStop(.6,'rgba(255,170,60,.5)');g.addColorStop(1,'transparent');cx.globalAlpha=1;cx.fillStyle=g;cx.beginPath();cx.arc(X,Y,110,0,6.28);cx.fill()}
+else if(m=='burst'){P.forEach(p=>{p.x+=Math.cos(p.a)*p.v*2;p.y+=Math.sin(p.a)*p.v*2;if(p.x<0||p.x>W||p.y<0||p.y>H){p.x=W/2;p.y=H/2;p.a=Math.random()*6.28}cx.globalAlpha=.8;cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r+1,0,6.28);cx.fill()})}
+else if(m=='aurora'){for(let k=0;k<3;k++){const g=cx.createLinearGradient(0,H*.1,0,H*.6);g.addColorStop(0,'transparent');g.addColorStop(.5,['#3ef0b0','#2dd4bf','#4fe3ff'][k]);g.addColorStop(1,'transparent');cx.fillStyle=g;cx.globalAlpha=.28;for(let x=0;x<W;x+=6){const y=H*.2+k*40+Math.sin(x/140+t/1800+k*2)*60;cx.fillRect(x,y,6,200)}}}
+else if(m=='grid'){cx.globalAlpha=.35;cx.strokeStyle=cur[3][0];cx.lineWidth=1;const hz=H*.55;for(let i=0;i<14;i++){const y=hz+Math.pow((i+(t/900)%1)/14,2)*(H-hz);cx.beginPath();cx.moveTo(0,y);cx.lineTo(W,y);cx.stroke()}cx.strokeStyle=cur[3][1];for(let i=-12;i<=12;i++){cx.beginPath();cx.moveTo(W/2+i*20,hz);cx.lineTo(W/2+i*140,H);cx.stroke()}}
+else if(m=='rise'){P.forEach(p=>{p.y-=p.v*.5;p.x+=Math.sin(t/700+p.ph)*.4;if(p.y<-10){p.y=H+10;p.x=Math.random()*W}cx.globalAlpha=.5;cx.strokeStyle=p.c;cx.lineWidth=1.2;cx.beginPath();cx.arc(p.x,p.y,p.r*3,0,6.28);cx.stroke()})}
+else if(m=='drift'){cx.globalAlpha=.5;const g=cx.createRadialGradient(W/2,H*.75,10,W/2,H*.75,220);g.addColorStop(0,'#ffe29a');g.addColorStop(1,'transparent');cx.fillStyle=g;cx.fillRect(0,0,W,H);P.forEach(p=>{p.x+=p.v*.4;if(p.x>W)p.x=0;cx.globalAlpha=.6;cx.fillStyle=p.c;cx.fillRect(p.x,p.y,p.r*6,1.5)})}
+requestAnimationFrame(draw)}
+rs();setT(0);requestAnimationFrame(draw);
+/* MMU */
+function mmu(){const l=+$('la').value;$('lav').textContent=l;const ok=l<3000;$('mmu').innerHTML=`<div style="left:0;width:75%;background:#9be7ff;">Process space: 0 … 2999 (limit 3000)</div><div style="left:75%;width:25%;background:#fda4af">Illegal</div><div class="pin" style="left:${l/4000*100}%"></div>`;$('mm').innerHTML=ok?`<span class="ok">Physical = 14000 + ${l} = ${14000+l} ✔</span>`:`<span class="bad">${l} ≥ limit 3000 → TRAP (addressing error) ✖</span>`}
+$('la').oninput=mmu;mmu();
+/* FIXED */
+let FM,fc;function fRs(){FM=[100,200,300,400].map(s=>({s,p:0,u:0}));fc=1;fR('')}
+function fR(m){$('fm').innerHTML=FM.map((b,i)=>`<div class="blk ${b.p?'':'free'}" style="flex:${b.s};${b.p?'background:'+hue(b.p):''}" onclick="FM[${i}].p=0;fR('')">${b.p?'P'+b.p+' ('+b.u+'K)':'Free'}<small>${b.s}K</small><div class="bar"><i style="width:${b.p?b.u/b.s*100:0}%"></i></div></div>`).join('');const w=FM.reduce((a,b)=>a+(b.p?b.s-b.u:0),0);$('fmsg').innerHTML=m+` Internal fragmentation (wasted inside blocks): <b>${w}K</b>`}
+function fAl(){const s=+$('fs').value,b=FM.find(b=>!b.p&&b.s>=s);if(!b)return fR('<span class="bad">No free partition big enough!</span>');b.p=fc++;b.u=s;fR('<span class="ok">Allocated.</span>')}fRs();
+/* VARIABLE */
+let M,pc;function vRs(){M=[{s:1000,p:0}];pc=1;vR('')}
+function vDemo(){const s=[[100,1],[50,0],[150,2],[200,0],[100,3],[80,0],[120,4],[200,0]];M=s.map(([s,p])=>({s,p}));pc=5;vR('Demo loaded. Holes: 50, 200, 80, 200.')}
+function vR(m){$('vm').innerHTML=M.map((b,i)=>`<div class="blk ${b.p?'':'free'}" style="flex:${b.s};${b.p?'background:'+hue(b.p):''}" onclick="vFr(${i})">${b.p?'P'+b.p:'Hole'}<small>${b.s}K</small></div>`).join('');const h=M.filter(b=>!b.p).map(b=>b.s);$('vmsg').innerHTML=m+` Free total: <b>${h.reduce((a,b)=>a+b,0)}K</b> · Holes: [${h.join(', ')}]`}
+function vAl(){const s=+$('vs').value,st=$('st').value,c=M.map((b,i)=>i).filter(i=>!M[i].p&&M[i].s>=s);if(!c.length){const f=M.filter(b=>!b.p).reduce((a,b)=>a+b.s,0);return vR(f>=s?'<span class="bad">External fragmentation! Enough total space but no single hole fits → try Compact.</span>':'<span class="bad">Not enough memory.</span>')}
+let i=c[0];if(st=='best')i=c.reduce((a,b)=>M[b].s<M[a].s?b:a);if(st=='worst')i=c.reduce((a,b)=>M[b].s>M[a].s?b:a);const b=M[i],r=b.s-s;b.s=s;b.p=pc++;if(r)M.splice(i+1,0,{s:r,p:0});vR(`<span class="ok">P${b.p} placed in hole #${i+1} (${st} fit).</span>`)}
+function vFr(i){if(!M[i].p)return;M[i].p=0;for(let k=M.length-1;k>0;k--)if(!M[k].p&&!M[k-1].p){M[k-1].s+=M[k].s;M.splice(k,1)}vR('Freed & merged.')}
+function vCp(){const u=M.filter(b=>b.p),f=M.filter(b=>!b.p).reduce((a,b)=>a+b.s,0);M=f?[...u,{s:f,p:0}]:u;vR('<span class="ok">Compacted – all holes merged into one.</span>')}vRs();
+/* PAGING */
+const PT=[5,2,7,0,3,6,1,4];
+function pag(){const a=+$('pa').value;$('pav').textContent=a;const p=a>>10,d=a&1023,f=PT[p];$('pg').innerHTML=PT.map((x,i)=>`<div class="cell ${i==p?'hi':''}">Page ${i}<br>→ F${x}</div>`).join('');$('fr').innerHTML=[...Array(8).keys()].map(i=>`<div class="cell ${i==f?'hi':''}">Frame ${i}<br>${PT.indexOf(i)>=0?'(P'+PT.indexOf(i)+')':''}</div>`).join('');$('pm').innerHTML=`p = ${a} ÷ 1024 = <b>${p}</b>, d = ${a} mod 1024 = <b>${d}</b> → frame <b>${f}</b> → Physical = ${f}×1024 + ${d} = <b class="ok">${f*1024+d}</b>`}
+$('pa').oninput=pag;pag();
+/* SEGMENTATION */
+const SG=[['Code',1400,1000],['Stack',6300,400],['Data',4300,400],['Heap',3200,1100]];
+$('sg').innerHTML=SG.map((s,i)=>`<option value="${i}">${i} – ${s[0]}</option>`).join('');
+$('stb').innerHTML='<tr><th>Seg</th><th>Name</th><th>Base</th><th>Limit</th></tr>'+SG.map((s,i)=>`<tr><td>${i}</td><td>${s[0]}</td><td>${s[1]}</td><td>${s[2]}</td></tr>`).join('');
+function seg(){const i=+$('sg').value,o=+$('so').value,s=SG[i],ok=o>=0&&o<s[2];let h=SG.map((x,k)=>`<div style="left:${x[1]/70}%;width:${x[2]/70}%;background:${hue(k+2)};${k==i?'outline:3px solid var(--fg);z-index:2':''}">${x[0]}</div>`).join('');if(ok)h+=`<div class="pin" style="left:${(s[1]+o)/70}%;width:3px;background:var(--bad);top:-8px;height:66px"></div>`;$('sm').innerHTML=h;$('sgm').innerHTML=ok?`Physical = base ${s[1]} + offset ${o} = <b class="ok">${s[1]+o}</b>`:`<span class="bad">Offset ${o} ≥ limit ${s[2]} → TRAP: segmentation fault ✖</span>`}
+$('sg').onchange=$('so').oninput=seg;seg();
+/* SEGMENTED PAGING */
+const SP=[['Code',[3,7,1]],['Data',[4,0]],['Stack',[6]]];
+$('gs').innerHTML=SP.map((s,i)=>`<option value="${i}">${i} – ${s[0]}</option>`).join('');
+$('gt').innerHTML='<tr><th>Seg</th><th>Name</th><th>Page table (page → frame)</th></tr>'+SP.map((s,i)=>`<tr><td>${i}</td><td>${s[0]}</td><td>${s[1].map((f,p)=>`P${p}→F${f}`).join(' · ')}</td></tr>`).join('');
+function sp(){const s=+$('gs').value,p=+$('gp').value,d=+$('gd').value,t=SP[s][1];$('gm').innerHTML=p>=t.length||p<0?`<span class="bad">Page ${p} not in segment ${s} (has ${t.length} pages) → TRAP ✖</span>`:`Segment ${s} (${SP[s][0]}) → page table → page ${p} = frame <b>${t[p]}</b> → Physical = ${t[p]}×1024 + ${d} = <b class="ok">${t[p]*1024+d}</b>`}
+$('gs').onchange=$('gp').oninput=$('gd').oninput=sp;sp();
+</script></body></html>
